@@ -1,5 +1,5 @@
 {
-  "api_key": "your_api_key_here",
+  "api_key": "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",
   "base_url": "https://integrate.api.nvidia.com/v1",
   "image_model": "qwen/qwen3.5-397b-a17b",
   "main_model": "qwen/qwen3.5-397b-a17b"
