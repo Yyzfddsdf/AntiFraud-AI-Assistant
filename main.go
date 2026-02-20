@@ -18,6 +18,10 @@ func main() {
 
 	r := gin.Default()
 
+	// 禁用代理信任警告：在开发环境中，如果你不使用反向代理（如 Nginx），设置为 nil 即可。
+	// 这表示不信任任何代理服务器发送的头部信息（如 X-Forwarded-For）。
+	r.SetTrustedProxies(nil)
+
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -32,6 +36,7 @@ func main() {
 
 	r.Use(middleware.RateLimitMiddleware())
 	r.StaticFile("/test-login", "login_system/web/test_login.html")
+	r.StaticFile("/", "login_system/web/index.html")
 
 	authRoutes := r.Group("/api/auth")
 	{

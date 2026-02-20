@@ -22,10 +22,10 @@ const (
 )
 
 type TaskPayload struct {
-	Text         string   `json:"text"`
-	Videos       []string `json:"videos"`
-	Audios       []string `json:"audios"`
-	Images       []string `json:"images"`
+	Text          string   `json:"text"`
+	Videos        []string `json:"videos"`
+	Audios        []string `json:"audios"`
+	Images        []string `json:"images"`
 	VideoInsights []string `json:"video_insights,omitempty"`
 	AudioInsights []string `json:"audio_insights,omitempty"`
 	ImageInsights []string `json:"image_insights,omitempty"`

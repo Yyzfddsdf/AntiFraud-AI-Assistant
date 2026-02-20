@@ -317,7 +317,7 @@
 
 ---
 
-## 9) 查询指定任务详情（需鉴权）
+## 10) 查询指定任务详情（需鉴权）
 
 - **Method**: `GET`
 - **Path**: `/api/scam/multimodal/tasks/:taskId`
@@ -330,18 +330,24 @@
 ```json
 {
   "task": {
-    "task_id": "TASK-7FA12BC09D11",
-    "user_id": "1",
+    "task_id": "TASK-7B1A038E7452",
+    "user_id": "5",
+    "title": "TED学术演讲视频风险核查",
     "status": "completed",
-    "created_at": "2026-02-20T10:30:00+08:00",
-    "updated_at": "2026-02-20T10:31:15+08:00",
+    "created_at": "2026-02-20T23:57:30+08:00",
+    "updated_at": "2026-02-20T23:57:30+08:00",
     "payload": {
-      "text": "...",
-      "videos": [],
+      "text": "",
+      "videos": ["<video_base64>"],
       "audios": [],
-      "images": []
+      "images": [],
+      "video_insights": [
+        "【整体视觉感受（主观特征）】\n视频为高质量的学术演讲录屏..."
+      ],
+      "audio_insights": [],
+      "image_insights": []
     },
-    "report": "1. 综合摘要\n..."
+    "report": "1. 综合摘要\n该视频为Beau Lotto在TED平台进行的学术演讲录屏..."
   }
 }
 ```
@@ -349,6 +355,7 @@
 ### 说明
 
 - `taskId` 统一使用：`TASK-...`
+- `payload` 中包含输入的多模态数据及各模态的初步分析洞察（`*_insights`）。
 
 ### 常见失败响应
 
@@ -357,7 +364,7 @@
 
 ---
 
-## 10) 测试页面
+## 11) 测试页面
 
 - **Method**: `GET`
 - **Path**: `/test-login`

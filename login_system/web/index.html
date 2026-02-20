@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模态诈骗分析平台 | Sentinel AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Dynamic Background */
+        .animated-bg {
+            background-image: radial-gradient(#3b82f6 1px, transparent 1px);
+            background-size: 24px 24px;
+            animation: bgMove 60s linear infinite;
+        }
+        @keyframes bgMove { from { background-position: 0 0; } to { background-position: 50px 50px; } }
+
+        /* Scanning Effect */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3b82f6, transparent);
+            animation: scan 2s linear infinite;
+            opacity: 0;
+        }
+        .group:hover .scan-line { opacity: 1; }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        /* Card Hover */
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15); border-color: #93c5fd; }
+
+        /* Staggered Animation */
+        .stagger-item { animation: slideUpFade 0.5s ease-out backwards; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Print Styles */
+        @media print {
+            body > :not(#app) { display: none; }
+            #app > div:not(.modal-overlay) { display: none; }
+            .modal-overlay { 
+                position: static !important; 
+                background: none !important; 
+                padding: 0 !important; 
+                display: block !important;
+            }
+            .modal-content { 
+                box-shadow: none !important; 
+                border: none !important; 
+                max-width: 100% !important; 
+                max-height: none !important; 
+                overflow: visible !important;
+            }
+            .no-print { display: none !important; }
+            /* Improve typography for print */
+            body { background: white; color: black; }
+            p { color: black !important; }
+            /* Ensure page breaks don't cut content awkwardly */
+            section { page-break-inside: avoid; }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-slate-800 antialiased">
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Toast Notification -->
+        <div class="fixed top-4 right-4 z-50 space-y-2">
+            <transition-group name="list" tag="div">
+                <div v-for="toast in toasts" :key="toast.id" 
+                     :class="['px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 animate-fade-in', 
+                              toast.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200']">
+                    <span>{{ toast.message }}</span>
+                </div>
+            </transition-group>
+        </div>
+
+        <!-- Auth View -->
+        <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+            <div class="absolute inset-0 z-0 opacity-10 animated-bg"></div>
+            
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden z-10 animate-slide-up border border-slate-100 backdrop-blur-sm bg-white/90">
+                <div class="p-8">
+                    <div class="text-center mb-8">
+                        <div class="w-12 h-12 bg-brand-600 rounded-xl mx-auto flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 animate-bounce">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-900">Sentinel AI</h2>
+                        <p class="text-slate-500 text-sm mt-1">多模态反诈骗智能分析平台</p>
+                    </div>
+
+                    <!-- Toggle Login/Register -->
+                    <div class="flex bg-slate-100 p-1 rounded-lg mb-6">
+                        <button @click="authMode = 'login'" :class="['flex-1 py-2 text-sm font-medium rounded-md transition-all', authMode === 'login' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">登录</button>
+                        <button @click="authMode = 'register'" :class="['flex-1 py-2 text-sm font-medium rounded-md transition-all', authMode === 'register' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">注册</button>
+                    </div>
+
+                    <form @submit.prevent="handleAuth" class="space-y-4">
+                        <div v-if="authMode === 'register'">
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">用户名</label>
+                            <input v-model="form.username" type="text" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all" placeholder="设置用户名">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">邮箱地址</label>
+                            <input v-model="form.email" type="email" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all" placeholder="name@company.com">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">密码</label>
+                            <input v-model="form.password" type="password" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all" placeholder="••••••••">
+                            <p v-if="authMode === 'register'" class="text-xs text-slate-400 mt-1">需包含大小写字母及符号</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">验证码</label>
+                                <input v-model="form.captchaCode" type="text" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all" placeholder="输入右侧字符">
+                            </div>
+                            <div class="relative h-[42px] mt-[21px] group cursor-pointer" @click="fetchCaptcha">
+                                <img :src="captchaImage" class="w-full h-full object-cover rounded-lg border border-slate-200" v-if="captchaImage">
+                                <div v-else class="w-full h-full bg-slate-100 rounded-lg animate-pulse"></div>
+                                <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" :disabled="loading" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-brand-500/30 transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+                            <span v-if="loading" class="loader !w-4 !h-4 !border-white !border-t-transparent"></span>
+                            {{ authMode === 'login' ? '立即登录' : '创建账户' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div v-else class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm">
+                <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                    <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shadow-md">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight">Sentinel AI</span>
+                </div>
+
+                <div class="p-4 space-y-1 flex-1 overflow-y-auto">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2 mt-4">分析中心</div>
+                    <button @click="activeTab = 'submit'" :class="['w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors', activeTab === 'submit' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50']">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        新建分析任务
+                    </button>
+                    <button @click="activeTab = 'tasks'" :class="['w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors', activeTab === 'tasks' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50']">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        任务列表
+                    </button>
+                    <button @click="activeTab = 'history'" :class="['w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors', activeTab === 'history' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50']">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        历史记录
+                    </button>
+
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2 mt-6">账户管理</div>
+                    <button @click="activeTab = 'profile'" :class="['w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors', activeTab === 'profile' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50']">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        个人资料
+                    </button>
+                </div>
+
+                <div class="p-4 border-t border-slate-200">
+                    <div class="flex items-center gap-3 mb-3 px-2">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
+                            {{ user.username ? user.username.substring(0,2).toUpperCase() : 'USER' }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-900 truncate">{{ user.username }}</p>
+                            <p class="text-xs text-slate-500 truncate">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <button @click="logout" class="w-full flex items-center justify-center gap-2 text-slate-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg text-sm transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        退出登录
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto bg-slate-50/50 p-6 md:p-8 relative">
+                <div class="absolute inset-0 z-0 opacity-[0.03] animated-bg pointer-events-none"></div>
+                <div class="relative z-10">
+                
+                <!-- Submit Task View -->
+                <div v-if="activeTab === 'submit'" class="max-w-4xl mx-auto animate-fade-in">
+                    <div class="mb-8">
+                        <h1 class="text-2xl font-bold text-slate-900">新建分析任务</h1>
+                        <p class="text-slate-500 mt-1">上传文本、音频、视频或图片进行多模态诈骗检测</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 space-y-6">
+                            <!-- Text Input -->
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">案情描述 / 对话文本</label>
+                                <textarea v-model="analyzeForm.text" class="w-full h-32 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none transition-all" placeholder="请描述遇到的情况，或粘贴可疑的聊天记录..."></textarea>
+                            </div>
+
+                            <!-- File Upload Area -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Image Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">图片凭证</label>
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-32 flex flex-col items-center justify-center group">
+                                        <div class="scan-line pointer-events-none z-0"></div>
+                                        <input type="file" multiple accept="image/*" @change="handleFileSelect($event, 'images')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                        <svg class="w-8 h-8 text-slate-300 group-hover:text-brand-500 mb-2 z-10 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <span class="text-xs text-slate-500 group-hover:text-brand-600 z-10 relative">点击上传图片</span>
+                                    </div>
+                                    <div v-if="analyzeForm.images.length" class="mt-2 text-xs text-brand-600 font-medium">{{ analyzeForm.images.length }} 个文件已选择</div>
+                                </div>
+
+                                <!-- Audio Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">通话录音</label>
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-32 flex flex-col items-center justify-center group">
+                                        <div class="scan-line pointer-events-none z-0"></div>
+                                        <input type="file" multiple accept="audio/*" @change="handleFileSelect($event, 'audios')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                        <svg class="w-8 h-8 text-slate-300 group-hover:text-brand-500 mb-2 z-10 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                        <span class="text-xs text-slate-500 group-hover:text-brand-600 z-10 relative">点击上传音频</span>
+                                    </div>
+                                    <div v-if="analyzeForm.audios.length" class="mt-2 text-xs text-brand-600 font-medium">{{ analyzeForm.audios.length }} 个文件已选择</div>
+                                </div>
+
+                                <!-- Video Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">视频资料</label>
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-32 flex flex-col items-center justify-center group">
+                                        <div class="scan-line pointer-events-none z-0"></div>
+                                        <input type="file" multiple accept="video/*" @change="handleFileSelect($event, 'videos')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                        <svg class="w-8 h-8 text-slate-300 group-hover:text-brand-500 mb-2 z-10 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                        <span class="text-xs text-slate-500 group-hover:text-brand-600 z-10 relative">点击上传视频</span>
+                                    </div>
+                                    <div v-if="analyzeForm.videos.length" class="mt-2 text-xs text-brand-600 font-medium">{{ analyzeForm.videos.length }} 个文件已选择</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                            <button @click="submitAnalysis" :disabled="analyzing" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg shadow-brand-500/20 transition-all active:scale-[0.98] flex items-center gap-2">
+                                <span v-if="analyzing" class="loader !w-4 !h-4 !border-white !border-t-transparent"></span>
+                                {{ analyzing ? '提交中...' : '开始智能分析' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List View -->
+                <div v-if="activeTab === 'tasks'" class="max-w-5xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold text-slate-900">任务监控</h1>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> 实时更新中
+                        </span>
+                    </div>
+
+                    <div v-if="tasks.length === 0" class="text-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
+                        <div class="text-slate-300 mb-3">
+                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <p class="text-slate-500 font-medium">暂无进行中的任务</p>
+                        <button @click="activeTab = 'submit'" class="text-brand-600 text-sm mt-2 hover:underline">去创建新任务</button>
+                    </div>
+
+                    <div v-else class="grid gap-4">
+                        <div v-for="(task, index) in tasks" :key="task.task_id" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 stagger-item" :style="{ animationDelay: index * 100 + 'ms' }">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">{{ task.title || '未命名任务' }}</h3>
+                                    <p class="text-xs text-slate-400 font-mono mt-1">{{ task.task_id }}</p>
+                                </div>
+                                <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 mt-4 text-xs text-slate-500">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    {{ formatTime(task.created_at) }}
+                                </span>
+                                <button @click="viewTaskDetail(task.task_id)" class="ml-auto text-brand-600 font-medium hover:text-brand-700 hover:bg-brand-50 px-3 py-1 rounded transition-colors">查看详情 &rarr;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History View -->
+                <div v-if="activeTab === 'history'" class="max-w-5xl mx-auto animate-fade-in">
+                    <h1 class="text-2xl font-bold text-slate-900 mb-6">历史档案</h1>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">案件标题</th>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">风险等级</th>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">摘要</th>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">时间</th>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in history" :key="item.record_id" class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-medium text-slate-900">{{ item.title || '无标题' }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="['px-2 py-1 rounded-full text-xs font-bold', getRiskClass(item.risk_level)]">
+                                                {{ item.risk_level }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ item.case_summary }}</td>
+                                        <td class="px-6 py-4 text-slate-400">{{ formatTime(item.created_at) }}</td>
+                                        <td class="px-6 py-4">
+                                            <button @click="viewHistoryDetail(item)" class="text-brand-600 hover:text-brand-800 font-medium">查看报告</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="history.length === 0" class="p-8 text-center text-slate-400">暂无历史记录</div>
+                    </div>
+                </div>
+
+                <!-- Profile View -->
+                <div v-if="activeTab === 'profile'" class="max-w-2xl mx-auto animate-fade-in">
+                    <h1 class="text-2xl font-bold text-slate-900 mb-6">个人资料</h1>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center text-2xl font-bold">
+                                {{ user.username ? user.username.substring(0,2).toUpperCase() : 'US' }}
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900">{{ user.username }}</h2>
+                                <p class="text-slate-500">{{ user.email }}</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6">
+                            <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">基本信息</h3>
+                            <div class="grid gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">用户 ID</label>
+                                    <div class="font-mono text-slate-700 bg-slate-50 px-3 py-2 rounded border border-slate-200">{{ user.id }}</div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">当前年龄</label>
+                                    <div class="font-mono text-slate-700 bg-slate-50 px-3 py-2 rounded border border-slate-200">{{ user.age || '未设置' }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6">
+                            <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">偏好设置</h3>
+                            <div class="grid gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">更新年龄</label>
+                                    <div class="flex gap-2">
+                                        <input v-model.number="ageForm.age" type="number" min="1" max="150" class="w-24 px-3 py-2 bg-white border border-slate-300 rounded focus:border-brand-500 outline-none">
+                                        <button @click="updateAge" class="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 text-sm font-medium">保存设置</button>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1">年龄信息将用于优化AI分析模型的准确性</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6">
+                            <h3 class="text-sm font-semibold text-red-600 uppercase tracking-wider mb-4">危险区域</h3>
+                            <button @click="deleteAccount" class="px-4 py-2 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm font-medium w-full text-left flex items-center justify-between">
+                                <span>删除当前账户</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- Task Detail Modal -->
+        <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in modal-overlay" @click.self="selectedTask = null">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-10 no-print">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900">{{ selectedTask.title || '分析报告' }}</h3>
+                        <p class="text-xs text-slate-500 mt-1 font-mono">Task ID: {{ selectedTask.task_id }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Export Dropdown -->
+                        <div class="relative group">
+                            <button class="flex items-center gap-1 text-slate-500 hover:text-brand-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                导出报告
+                            </button>
+                            <div class="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50 animate-fade-in">
+                                <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
+                                    <button @click="exportData('md')" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm text-slate-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        Markdown (.md)
+                                    </button>
+                                    <button @click="exportData('json')" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm text-slate-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                        JSON Data (.json)
+                                    </button>
+                                    <button @click="printReport" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm text-slate-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                        打印 / PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="selectedTask = null" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                    <!-- 1. Analysis Report Section -->
+                    <section v-if="selectedTask.report">
+                        <h4 class="flex items-center gap-2 text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 pb-2 border-b border-brand-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            综合分析报告
+                        </h4>
+                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm">
+                            <div class="prose prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-800 prose-p:text-slate-600 prose-strong:text-slate-800">
+                                <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{{ selectedTask.report }}</pre>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <div v-else class="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <div class="loader mx-auto mb-4 border-slate-200 border-t-brand-500"></div>
+                        <p class="text-slate-500 font-medium animate-pulse">正在生成深度分析报告...</p>
+                    </div>
+
+                    <!-- 2. Multimodal Insights Section -->
+                    <section v-if="selectedTask.payload && (selectedTask.payload.video_insights?.length || selectedTask.payload.audio_insights?.length || selectedTask.payload.image_insights?.length)">
+                         <h4 class="flex items-center gap-2 text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 pb-2 border-b border-indigo-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            多模态洞察
+                        </h4>
+                        
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <!-- Video Insights -->
+                            <div v-for="(insight, idx) in selectedTask.payload.video_insights" :key="'v-'+idx" class="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 stagger-item" :style="{ animationDelay: idx * 100 + 'ms' }">
+                                <div class="flex items-center gap-2 mb-2 text-indigo-700 font-semibold text-xs uppercase">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    视频分析 #{{ idx + 1 }}
+                                </div>
+                                <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ insight }}</p>
+                            </div>
+
+                             <!-- Audio Insights -->
+                            <div v-for="(insight, idx) in selectedTask.payload.audio_insights" :key="'a-'+idx" class="bg-amber-50/50 p-4 rounded-lg border border-amber-100 stagger-item" :style="{ animationDelay: idx * 100 + 'ms' }">
+                                <div class="flex items-center gap-2 mb-2 text-amber-700 font-semibold text-xs uppercase">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    音频分析 #{{ idx + 1 }}
+                                </div>
+                                <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ insight }}</p>
+                            </div>
+
+                             <!-- Image Insights -->
+                            <div v-for="(insight, idx) in selectedTask.payload.image_insights" :key="'i-'+idx" class="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 stagger-item" :style="{ animationDelay: idx * 100 + 'ms' }">
+                                <div class="flex items-center gap-2 mb-2 text-emerald-700 font-semibold text-xs uppercase">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    图片分析 #{{ idx + 1 }}
+                                </div>
+                                <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ insight }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 3. Source Evidence Section -->
+                    <section v-if="selectedTask.payload">
+                         <h4 class="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 pb-2 border-b border-slate-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            原始证据文件
+                        </h4>
+
+                        <div class="space-y-6">
+                            <!-- Text Evidence -->
+                            <div v-if="selectedTask.payload.text" class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                                <span class="text-xs font-bold text-slate-400 uppercase mb-2 block">文本记录</span>
+                                <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{{ selectedTask.payload.text }}</p>
+                            </div>
+
+                            <!-- Media Gallery -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <!-- Videos -->
+                                <div v-for="(vid, idx) in selectedTask.payload.videos" :key="'v-src-'+idx" class="relative group rounded-lg overflow-hidden border border-slate-200 bg-black aspect-video">
+                                    <video controls class="w-full h-full object-contain">
+                                        <source :src="vid" type="video/mp4">
+                                        您的浏览器不支持视频播放
+                                    </video>
+                                    <div class="absolute top-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] rounded backdrop-blur-sm">视频 {{ idx + 1 }}</div>
+                                </div>
+
+                                <!-- Images -->
+                                <div v-for="(img, idx) in selectedTask.payload.images" :key="'i-src-'+idx" class="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100 aspect-video">
+                                    <img :src="img" class="w-full h-full object-contain cursor-zoom-in hover:scale-105 transition-transform duration-300" @click="openImage(img)">
+                                    <div class="absolute top-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] rounded backdrop-blur-sm">图片 {{ idx + 1 }}</div>
+                                </div>
+
+                                <!-- Audios -->
+                                <div v-for="(aud, idx) in selectedTask.payload.audios" :key="'a-src-'+idx" class="col-span-full md:col-span-1 bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col justify-center">
+                                    <span class="text-xs font-bold text-slate-500 mb-2 block">音频证据 {{ idx + 1 }}</span>
+                                    <audio controls class="w-full h-8">
+                                        <source :src="aud" type="audio/mpeg">
+                                        您的浏览器不支持音频播放
+                                    </audio>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, onMounted, computed, watch } = Vue;
+
+        createApp({
+            setup() {
+                // State
+                const isAuthenticated = ref(false);
+                const token = ref(localStorage.getItem('token') || '');
+                const user = ref({});
+                const authMode = ref('login'); // login | register
+                const activeTab = ref('tasks');
+                const loading = ref(false);
+                const analyzing = ref(false);
+                const captchaImage = ref('');
+                const captchaId = ref('');
+                const toasts = ref([]);
+                const tasks = ref([]);
+                const history = ref([]);
+                const selectedTask = ref(null);
+                
+                const form = reactive({
+                    username: '',
+                    email: '',
+                    password: '',
+                    captchaCode: ''
+                });
+
+                const ageForm = reactive({ age: 28 });
+
+                const analyzeForm = reactive({
+                    text: '',
+                    videos: [],
+                    audios: [],
+                    images: []
+                });
+
+                // Helpers
+                const showToast = (message, type = 'success') => {
+                    const id = Date.now();
+                    toasts.value.push({ id, message, type });
+                    setTimeout(() => toasts.value = toasts.value.filter(t => t.id !== id), 3000);
+                };
+
+                const request = async (path, method = 'GET', body = null) => {
+                    const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+                    if (token.value) headers['Authorization'] = `Bearer ${token.value}`;
+                    
+                    try {
+                        const res = await fetch(`/api${path}`, {
+                            method,
+                            headers,
+                            body: body ? JSON.stringify(body) : undefined
+                        });
+                        
+                        if (res.status === 401 && isAuthenticated.value) {
+                            logout();
+                            return null;
+                        }
+                        
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Request failed');
+                        return data;
+                    } catch (e) {
+                        showToast(e.message, 'error');
+                        return null;
+                    }
+                };
+
+                // Actions
+                const fetchCaptcha = async () => {
+                    try {
+                        const res = await fetch('/api/auth/captcha');
+                        const data = await res.json();
+                        captchaId.value = data.captchaId;
+                        captchaImage.value = data.captchaImage;
+                    } catch (e) {
+                        showToast('验证码获取失败', 'error');
+                    }
+                };
+
+                const handleAuth = async () => {
+                    loading.value = true;
+                    const endpoint = authMode.value === 'login' ? '/auth/login' : '/auth/register';
+                    const payload = { ...form, captchaId: captchaId.value };
+                    
+                    const res = await request(endpoint, 'POST', payload);
+                    loading.value = false;
+                    
+                    if (res) {
+                        if (authMode.value === 'register') {
+                            showToast('注册成功，请登录');
+                            authMode.value = 'login';
+                            fetchCaptcha();
+                        } else {
+                            token.value = res.token;
+                            localStorage.setItem('token', res.token);
+                            isAuthenticated.value = true;
+                            user.value = res.user;
+                            if (res.user.age) ageForm.age = res.user.age;
+                            else ageForm.age = 28;
+                            showToast('登录成功');
+                            startPolling();
+                        }
+                    } else {
+                        fetchCaptcha(); // Refresh captcha on fail
+                    }
+                };
+
+                const getUserInfo = async () => {
+                    const res = await request('/user');
+                    if (res) {
+                        user.value = res;
+                        if (res.age) ageForm.age = res.age;
+                        isAuthenticated.value = true;
+                        startPolling();
+                    } else {
+                        isAuthenticated.value = false;
+                    }
+                };
+
+                const logout = () => {
+                    token.value = '';
+                    localStorage.removeItem('token');
+                    isAuthenticated.value = false;
+                    user.value = {};
+                    stopPolling();
+                };
+
+                const updateAge = async () => {
+                    const res = await request('/scam/multimodal/user/age', 'PUT', { age: ageForm.age });
+                    if (res) {
+                        user.value.age = ageForm.age;
+                        showToast('年龄更新成功');
+                    }
+                };
+
+                const deleteAccount = async () => {
+                    if(!confirm('确定要删除账户吗？此操作不可逆！')) return;
+                    const res = await request('/user', 'DELETE');
+                    if (res) {
+                        showToast('账户已删除');
+                        logout();
+                    }
+                };
+
+                // File Handling
+                const fileToBase64 = (file) => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+
+                const handleFileSelect = async (event, type) => {
+                    const files = Array.from(event.target.files);
+                    if (files.length === 0) return;
+                    
+                    const base64Promises = files.map(file => fileToBase64(file));
+                    try {
+                        const results = await Promise.all(base64Promises);
+                        analyzeForm[type] = [...analyzeForm[type], ...results];
+                        showToast(`已添加 ${files.length} 个文件`);
+                    } catch (e) {
+                        showToast('文件读取失败', 'error');
+                    }
+                };
+
+                const submitAnalysis = async () => {
+                    if (!analyzeForm.text && analyzeForm.videos.length === 0 && analyzeForm.audios.length === 0 && analyzeForm.images.length === 0) {
+                        showToast('请至少提供一种输入（文本或文件）', 'error');
+                        return;
+                    }
+
+                    analyzing.value = true;
+                    const res = await request('/scam/multimodal/analyze', 'POST', analyzeForm);
+                    analyzing.value = false;
+
+                    if (res) {
+                        showToast('任务已提交');
+                        // Reset form
+                        analyzeForm.text = '';
+                        analyzeForm.videos = [];
+                        analyzeForm.audios = [];
+                        analyzeForm.images = [];
+                        activeTab.value = 'tasks';
+                        fetchTasks();
+                    }
+                };
+
+                const fetchTasks = async () => {
+                    if (!isAuthenticated.value) return;
+                    const res = await request('/scam/multimodal/tasks');
+                    if (res && res.tasks) {
+                        tasks.value = res.tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    }
+                };
+
+                const fetchHistory = async () => {
+                    const res = await request('/scam/multimodal/history');
+                    if (res && res.history) {
+                        history.value = res.history;
+                    }
+                };
+
+                const viewTaskDetail = async (taskId) => {
+                    const res = await request(`/scam/multimodal/tasks/${taskId}`);
+                    if (res && res.task) {
+                        selectedTask.value = res.task;
+                    }
+                };
+
+                const viewHistoryDetail = (item) => {
+                    selectedTask.value = { ...item, report: item.report }; // Reuse modal
+                };
+
+                // Polling
+                let pollInterval;
+                const startPolling = () => {
+                    fetchTasks();
+                    fetchHistory();
+                    if (pollInterval) clearInterval(pollInterval);
+                    pollInterval = setInterval(() => {
+                        if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks();
+                    }, 5000);
+                };
+                
+                const stopPolling = () => {
+                    if (pollInterval) clearInterval(pollInterval);
+                };
+
+                // Watchers
+                watch(activeTab, (newTab) => {
+                    if (newTab === 'tasks') fetchTasks();
+                    if (newTab === 'history') fetchHistory();
+                });
+
+                // Init
+                onMounted(() => {
+                    fetchCaptcha();
+                    if (token.value) {
+                        getUserInfo();
+                    }
+                });
+
+                // Formatting
+                const formatTime = (iso) => {
+                    return new Date(iso).toLocaleString('zh-CN', { hour12: false });
+                };
+
+                const getStatusLabel = (status) => {
+                    const map = { 'pending': '等待中', 'processing': '分析中', 'completed': '已完成', 'failed': '失败' };
+                    return map[status] || status;
+                };
+
+                const getStatusClass = (status) => {
+                    const map = {
+                        'pending': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold',
+                        'processing': 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold animate-pulse',
+                        'completed': 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold',
+                        'failed': 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold'
+                    };
+                    return map[status] || 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-bold';
+                };
+                
+                const getRiskClass = (level) => {
+                    if (level === '高') return 'bg-red-100 text-red-800';
+                    if (level === '中') return 'bg-yellow-100 text-yellow-800';
+                    return 'bg-green-100 text-green-800';
+                };
+
+                const openImage = (src) => {
+                    const win = window.open("", "_blank");
+                    win.document.write(`<img src="${src}" style="max-width:100%; height:auto;">`);
+                };
+
+                const exportData = (type) => {
+                    if (!selectedTask.value) return;
+                    
+                    const task = selectedTask.value;
+                    const date = new Date().toISOString().slice(0, 10);
+                    const filename = `scam-report-${task.task_id}-${date}`;
+
+                    if (type === 'json') {
+                        const dataStr = JSON.stringify(task, null, 2);
+                        const blob = new Blob([dataStr], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `${filename}.json`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } else if (type === 'md') {
+                        let content = `# 诈骗风险分析报告\n\n`;
+                        content += `**任务ID**: ${task.task_id}\n`;
+                        content += `**标题**: ${task.title}\n`;
+                        content += `**生成时间**: ${new Date(task.created_at).toLocaleString()}\n`;
+                        content += `**状态**: ${task.status}\n\n`;
+                        
+                        if (task.report) {
+                            content += `## 综合分析报告\n${task.report}\n\n`;
+                        }
+                        
+                        // Add Insights if available
+                        if (task.payload) {
+                             if (task.payload.video_insights && task.payload.video_insights.length) {
+                                 content += `## 视频分析洞察\n`;
+                                 task.payload.video_insights.forEach((insight, idx) => {
+                                     content += `### 视频 #${idx + 1}\n${insight}\n\n`;
+                                 });
+                             }
+                             if (task.payload.audio_insights && task.payload.audio_insights.length) {
+                                 content += `## 音频分析洞察\n`;
+                                 task.payload.audio_insights.forEach((insight, idx) => {
+                                     content += `### 音频 #${idx + 1}\n${insight}\n\n`;
+                                 });
+                             }
+                             if (task.payload.image_insights && task.payload.image_insights.length) {
+                                 content += `## 图片分析洞察\n`;
+                                 task.payload.image_insights.forEach((insight, idx) => {
+                                     content += `### 图片 #${idx + 1}\n${insight}\n\n`;
+                                 });
+                             }
+                             
+                             if (task.payload.text) {
+                                 content += `## 原始文本证据\n${task.payload.text}\n\n`;
+                             }
+                        }
+                        
+                        const blob = new Blob([content], { type: "text/markdown" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `${filename}.md`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                         URL.revokeObjectURL(url);
+                    }
+                };
+
+                const printReport = () => {
+                    window.print();
+                };
+
+                return {
+                    isAuthenticated, user, authMode, form, ageForm, analyzeForm, 
+                    captchaImage, fetchCaptcha, handleAuth, logout, loading,
+                    activeTab, tasks, history, selectedTask, toasts, analyzing,
+                    handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail,
+                    formatTime, getStatusLabel, getStatusClass, getRiskClass,
+                    updateAge, deleteAccount, openImage, exportData, printReport
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
