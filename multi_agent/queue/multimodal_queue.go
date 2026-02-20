@@ -21,14 +21,14 @@ type queuedTask struct {
 	TaskID string
 }
 
+const perUserQueueSize = 16
+
 var (
-	queueOnce sync.Once
-	taskQueue chan queuedTask
+	userQueuesMu sync.Mutex
+	userQueues   = map[string]chan queuedTask{}
 )
 
 func EnqueueMultimodalTask(userID string, request EnqueueRequest) (state.TaskRecord, error) {
-	initQueue()
-
 	payload := state.TaskPayload{
 		Text:   strings.TrimSpace(request.Text),
 		Videos: append([]string{}, request.Videos...),
@@ -37,8 +37,9 @@ func EnqueueMultimodalTask(userID string, request EnqueueRequest) (state.TaskRec
 	}
 	task := state.CreateTask(userID, payload)
 
+	ch := getOrCreateUserQueue(userID)
 	select {
-	case taskQueue <- queuedTask{UserID: userID, TaskID: task.TaskID}:
+	case ch <- queuedTask{UserID: userID, TaskID: task.TaskID}:
 		return task, nil
 	default:
 		state.MarkTaskFailed(userID, task.TaskID, "任务队列已满，请稍后重试")
@@ -50,15 +51,24 @@ func GetUserTaskState(userID string) state.UserStateView {
 	return state.GetUserStateView(userID)
 }
 
-func initQueue() {
-	queueOnce.Do(func() {
-		taskQueue = make(chan queuedTask, 256)
-		go worker()
-	})
+func getOrCreateUserQueue(userID string) chan queuedTask {
+	uid := strings.TrimSpace(userID)
+	if uid == "" {
+		uid = "demo-user"
+	}
+	userQueuesMu.Lock()
+	defer userQueuesMu.Unlock()
+	if ch, exists := userQueues[uid]; exists {
+		return ch
+	}
+	ch := make(chan queuedTask, perUserQueueSize)
+	userQueues[uid] = ch
+	go userWorker(ch)
+	return ch
 }
 
-func worker() {
-	for job := range taskQueue {
+func userWorker(ch chan queuedTask) {
+	for job := range ch {
 		state.MarkTaskProcessing(job.UserID, job.TaskID)
 
 		task, exists := state.GetTask(job.UserID, job.TaskID)
