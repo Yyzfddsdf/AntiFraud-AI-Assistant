@@ -7,6 +7,11 @@
 - 数据格式：`application/json`
 - 鉴权方式：`Authorization: Bearer <token>`
 
+## 配置说明
+
+- 请在 `config/config.json` 与 `config/config_ali.json` 中填写你自己的 `api_key`。
+- 配置文件中目前使用 `YOUR_API_KEY` 作为占位符，运行前需替换为真实密钥。
+
 ---
 
 ## 1) 获取验证码
