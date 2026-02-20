@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录系统测试页</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    h1 { margin-bottom: 8px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    input, textarea { padding: 8px; min-width: 220px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    pre { background: #111; color: #eee; padding: 12px; border-radius: 8px; overflow: auto; min-height: 120px; }
+    .hint { color: #555; font-size: 13px; }
+    .captcha-img { border: 1px solid #ddd; border-radius: 6px; height: 60px; background: #fafafa; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .preview-item { border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 12px; background: #fafafa; }
+    .preview-item img, .preview-item video, .preview-item audio { width: 100%; max-height: 160px; }
+  </style>
+</head>
+<body>
+  <h1>用户登录系统测试页</h1>
+  <p class="hint">默认连接当前服务同源接口（/api/*）。流程：注册 -> 登录 -> 获取当前用户 -> 删除当前用户。</p>
+
+  <div class="card">
+    <h3>基础配置</h3>
+    <div class="row">
+      <input id="baseUrl" placeholder="Base URL，例如 http://localhost:8081" value="" />
+      <button onclick="useCurrentOrigin()">使用当前站点</button>
+    </div>
+    <p class="hint">留空会自动使用当前网页所在域名（推荐）。</p>
+  </div>
+
+  <div class="card">
+    <h3>注册 / 登录</h3>
+    <div class="row">
+      <input id="username" placeholder="用户名" value="test_user_web" />
+      <input id="email" placeholder="邮箱" value="test_user_web@example.com" />
+      <input id="password" type="password" placeholder="密码(需含大小写和符号)" value="Test@1234" />
+    </div>
+    <div class="row">
+      <img id="captchaImage" class="captcha-img" alt="验证码" />
+      <input id="captchaCode" placeholder="输入验证码" value="" />
+      <button onclick="loadCaptcha()">刷新验证码</button>
+    </div>
+    <div class="row">
+      <button onclick="registerUser()">注册</button>
+      <button onclick="loginUser()">登录</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>鉴权接口</h3>
+    <div class="row">
+      <input id="token" placeholder="JWT Token（登录后自动填充）" style="flex:1; min-width: 500px;" />
+    </div>
+    <div class="row">
+      <button onclick="getCurrentUser()">获取当前用户</button>
+      <button onclick="deleteCurrentUser()">删除当前用户</button>
+    </div>
+    <div class="row">
+      <input id="userAge" type="number" min="1" max="150" placeholder="年龄（1-150）" value="28" />
+      <button onclick="updateUserAge()">更新年龄</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>响应日志</h3>
+    <pre id="log"></pre>
+  </div>
+
+  <div class="card">
+    <h3>多模态诈骗智能助手</h3>
+    <div class="row">
+      <input id="mmText" placeholder="文本描述（可选）" style="flex:1; min-width: 500px;" />
+    </div>
+    <div class="row">
+      <input id="videoFiles" type="file" multiple accept="video/*" style="flex:1; min-width: 500px;" />
+      <button onclick="importVideoFiles()">导入视频并转Base64</button>
+    </div>
+    <div class="row">
+      <textarea id="mmVideos" placeholder="视频 Base64（可选，每行一条）" style="width:100%; min-height:80px;"></textarea>
+    </div>
+    <div class="row">
+      <input id="audioFiles" type="file" multiple accept="audio/*" style="flex:1; min-width: 500px;" />
+      <button onclick="importAudioFiles()">导入音频并转Base64</button>
+    </div>
+    <div class="row">
+      <textarea id="mmAudios" placeholder="音频 Base64（可选，每行一条）" style="width:100%; min-height:80px;"></textarea>
+    </div>
+    <div class="row">
+      <input id="imageFiles" type="file" multiple accept="image/*" style="flex:1; min-width: 500px;" />
+      <button onclick="importImageFiles()">导入图像并转Base64</button>
+    </div>
+    <div class="row">
+      <textarea id="mmImages" placeholder="图像 Base64（可选，每行一条）" style="width:100%; min-height:80px;"></textarea>
+    </div>
+    <div class="row">
+      <button onclick="analyzeMultimodalScam()">发起多模态分析</button>
+      <button onclick="refreshMediaPreview()">刷新模态预览</button>
+      <button onclick="queryMultimodalTaskState()">查询任务状态</button>
+    </div>
+    <div class="row">
+      <input id="taskId" placeholder="任务ID（提交后自动填充）" style="flex:1; min-width: 500px;" />
+      <button onclick="queryMultimodalTaskDetail()">查询任务详情</button>
+    </div>
+    <p class="hint">说明：text/videos/audios/images 至少提供一种；三种模态支持一次传多条数据。</p>
+
+    <div class="row"><strong>模态预览（避免直接打印 Base64）</strong></div>
+    <div class="row"><div id="videoPreview" class="preview-grid" style="width:100%"></div></div>
+    <div class="row"><div id="audioPreview" class="preview-grid" style="width:100%"></div></div>
+    <div class="row"><div id="imagePreview" class="preview-grid" style="width:100%"></div></div>
+  </div>
+
+  <div class="card">
+    <h3>分析报告</h3>
+    <div class="row">
+      <button onclick="printReport()">打印报告</button>
+    </div>
+    <pre id="report"></pre>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const reportEl = document.getElementById('report');
+    const MAX_LOG_STRING = 220;
+    const MAX_PREVIEW_ITEMS = 3;
+    const MAX_PREVIEW_BASE64_LENGTH = 1500000;
+    let captchaId = '';
+
+    function appendLog(title, payload) {
+      const text = typeof payload === 'string' ? payload : JSON.stringify(sanitizeForLog(payload), null, 2);
+      logEl.textContent += `\n[${new Date().toLocaleTimeString()}] ${title}\n${text}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function sanitizeForLog(value, depth = 0) {
+      if (depth > 4) return '[max-depth]';
+      if (typeof value === 'string') {
+        if (value.length > MAX_LOG_STRING) {
+          return `${value.slice(0, MAX_LOG_STRING)}... [len=${value.length}]`;
+        }
+        return value;
+      }
+      if (Array.isArray(value)) {
+        if (value.length > 20) {
+          return [`[array len=${value.length}]`, ...value.slice(0, 3).map(item => sanitizeForLog(item, depth + 1))];
+        }
+        return value.map(item => sanitizeForLog(item, depth + 1));
+      }
+      if (value && typeof value === 'object') {
+        const output = {};
+        for (const [key, item] of Object.entries(value)) {
+          if ((key === 'videos' || key === 'audios' || key === 'images') && Array.isArray(item)) {
+            output[key] = {
+              count: item.length,
+              sampleLength: item[0] ? String(item[0]).length : 0,
+            };
+          } else {
+            output[key] = sanitizeForLog(item, depth + 1);
+          }
+        }
+        return output;
+      }
+      return value;
+    }
+
+    function getBaseUrl() {
+      const custom = document.getElementById('baseUrl').value.trim();
+      return custom || window.location.origin;
+    }
+
+    function useCurrentOrigin() {
+      document.getElementById('baseUrl').value = window.location.origin;
+      appendLog('BaseURL', { baseUrl: window.location.origin });
+    }
+
+    async function request(path, method, body, token) {
+      const url = `${getBaseUrl()}${path}`;
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const resp = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      let data;
+      try { data = await resp.json(); } catch { data = await resp.text(); }
+      appendLog(`${method} ${path} (${resp.status})`, data);
+      return { status: resp.status, data };
+    }
+
+    async function loadCaptcha() {
+      const result = await request('/api/auth/captcha', 'GET', null, '');
+      if (result.status === 200 && result.data) {
+        captchaId = result.data.captchaId || '';
+        document.getElementById('captchaImage').src = result.data.captchaImage || '';
+        document.getElementById('captchaCode').value = '';
+      }
+    }
+
+    async function registerUser() {
+      const payload = {
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        captchaId,
+        captchaCode: document.getElementById('captchaCode').value.trim(),
+      };
+      const result = await request('/api/auth/register', 'POST', payload);
+      if (result.status !== 201) {
+        await loadCaptcha();
+      }
+    }
+
+    async function loginUser() {
+      const payload = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        captchaId,
+        captchaCode: document.getElementById('captchaCode').value.trim(),
+      };
+      const result = await request('/api/auth/login', 'POST', payload);
+      if (result.status === 200 && result.data && result.data.token) {
+        document.getElementById('token').value = result.data.token;
+      } else {
+        await loadCaptcha();
+      }
+    }
+
+    async function getCurrentUser() {
+      const token = document.getElementById('token').value.trim();
+      await request('/api/user', 'GET', null, token);
+    }
+
+    async function deleteCurrentUser() {
+      const token = document.getElementById('token').value.trim();
+      await request('/api/user', 'DELETE', null, token);
+    }
+
+    async function updateUserAge() {
+      const token = document.getElementById('token').value.trim();
+      const ageRaw = document.getElementById('userAge').value.trim();
+      const age = Number(ageRaw);
+      if (!Number.isInteger(age) || age < 1 || age > 150) {
+        appendLog('更新年龄', '请输入 1-150 的整数年龄');
+        return;
+      }
+      await request('/api/scam/multimodal/user/age', 'PUT', { age }, token);
+    }
+
+    function parseMultiBase64Input(raw) {
+      return raw
+        .split('\n')
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+    }
+
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || '');
+          const base64 = result.includes(',') ? result.split(',')[1] : result;
+          resolve(base64.trim());
+        };
+        reader.onerror = () => reject(new Error(`读取文件失败: ${file.name}`));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function importFilesToTextarea(fileInputId, textareaId, label) {
+      const input = document.getElementById(fileInputId);
+      const textarea = document.getElementById(textareaId);
+      const files = Array.from(input.files || []);
+      if (files.length === 0) {
+        appendLog('文件导入提示', `${label}未选择文件`);
+        return;
+      }
+
+      try {
+        const lines = await Promise.all(files.map(readFileAsBase64));
+        const existing = textarea.value.trim();
+        textarea.value = existing ? `${existing}\n${lines.join('\n')}` : lines.join('\n');
+        appendLog('文件导入完成', { type: label, count: files.length });
+        refreshMediaPreview();
+      } catch (error) {
+        appendLog('文件导入失败', String(error));
+      }
+    }
+
+    async function importVideoFiles() {
+      await importFilesToTextarea('videoFiles', 'mmVideos', '视频');
+    }
+
+    async function importAudioFiles() {
+      await importFilesToTextarea('audioFiles', 'mmAudios', '音频');
+    }
+
+    async function importImageFiles() {
+      await importFilesToTextarea('imageFiles', 'mmImages', '图像');
+    }
+
+    async function analyzeMultimodalScam() {
+      const token = document.getElementById('token').value.trim();
+      const payload = {
+        text: document.getElementById('mmText').value.trim(),
+        videos: parseMultiBase64Input(document.getElementById('mmVideos').value),
+        audios: parseMultiBase64Input(document.getElementById('mmAudios').value),
+        images: parseMultiBase64Input(document.getElementById('mmImages').value),
+      };
+
+      const result = await request('/api/scam/multimodal/analyze', 'POST', payload, token);
+      if (result.status === 202 && result.data && result.data.task_id) {
+        document.getElementById('taskId').value = result.data.task_id;
+        reportEl.textContent = '任务已提交，后台处理中，请点击“查询任务详情”获取最终报告。';
+      }
+    }
+
+    function guessMime(type) {
+      if (type === 'image') return 'image/jpeg';
+      if (type === 'audio') return 'audio/mpeg';
+      return 'video/mp4';
+    }
+
+    function createMediaElement(type, base64) {
+      const source = `data:${guessMime(type)};base64,${base64}`;
+      if (type === 'image') {
+        const img = document.createElement('img');
+        img.src = source;
+        img.loading = 'lazy';
+        img.alt = 'image preview';
+        return img;
+      }
+      if (type === 'audio') {
+        const audio = document.createElement('audio');
+        audio.src = source;
+        audio.controls = true;
+        audio.preload = 'none';
+        return audio;
+      }
+      const video = document.createElement('video');
+      video.src = source;
+      video.controls = true;
+      video.preload = 'metadata';
+      return video;
+    }
+
+    function renderPreview(containerId, modalityType, base64List) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      if (!base64List.length) {
+        const empty = document.createElement('div');
+        empty.className = 'preview-item';
+        empty.textContent = `${modalityType}：暂无数据`;
+        container.appendChild(empty);
+        return;
+      }
+
+      base64List.slice(0, MAX_PREVIEW_ITEMS).forEach((item, index) => {
+        const block = document.createElement('div');
+        block.className = 'preview-item';
+        const title = document.createElement('div');
+        title.textContent = `${modalityType} #${index + 1}（len=${item.length}）`;
+        block.appendChild(title);
+
+        if (item.length > MAX_PREVIEW_BASE64_LENGTH) {
+          const note = document.createElement('div');
+          note.textContent = '数据过大，跳过预览';
+          block.appendChild(note);
+        } else {
+          try {
+            block.appendChild(createMediaElement(modalityType, item));
+          } catch {
+            const note = document.createElement('div');
+            note.textContent = '预览失败（可能编码或格式不匹配）';
+            block.appendChild(note);
+          }
+        }
+        container.appendChild(block);
+      });
+
+      if (base64List.length > MAX_PREVIEW_ITEMS) {
+        const more = document.createElement('div');
+        more.className = 'preview-item';
+        more.textContent = `其余 ${base64List.length - MAX_PREVIEW_ITEMS} 条未展示`;
+        container.appendChild(more);
+      }
+    }
+
+    function refreshMediaPreview() {
+      const videos = parseMultiBase64Input(document.getElementById('mmVideos').value);
+      const audios = parseMultiBase64Input(document.getElementById('mmAudios').value);
+      const images = parseMultiBase64Input(document.getElementById('mmImages').value);
+
+      renderPreview('videoPreview', 'video', videos);
+      renderPreview('audioPreview', 'audio', audios);
+      renderPreview('imagePreview', 'image', images);
+    }
+
+    async function queryMultimodalTaskState() {
+      const token = document.getElementById('token').value.trim();
+      await request('/api/scam/multimodal/tasks', 'GET', null, token);
+    }
+
+    async function queryMultimodalTaskDetail() {
+      const token = document.getElementById('token').value.trim();
+      const taskId = document.getElementById('taskId').value.trim();
+      if (!taskId) {
+        appendLog('查询任务详情', '请先输入或提交任务ID');
+        return;
+      }
+
+      const result = await request(`/api/scam/multimodal/tasks/${encodeURIComponent(taskId)}`, 'GET', null, token);
+      if (result.status === 200 && result.data && result.data.task) {
+        const task = result.data.task;
+        if (task.report) {
+          reportEl.textContent = String(task.report);
+        } else if (task.error) {
+          reportEl.textContent = `任务失败：${task.error}`;
+        } else {
+          reportEl.textContent = `任务状态：${task.status}（${task.updated_at || ''}）`;
+        }
+      }
+    }
+
+    function printReport() {
+      const reportText = (reportEl.textContent || '').trim();
+      if (!reportText) {
+        appendLog('打印报告', '暂无可打印报告，请先发起多模态分析。');
+        return;
+      }
+
+      const escaped = reportText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      const win = window.open('', '_blank');
+      if (!win) {
+        appendLog('打印报告', '无法打开打印窗口，请检查浏览器弹窗权限。');
+        return;
+      }
+
+      win.document.open();
+      win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>多模态诈骗分析报告</title><style>body{font-family:Arial,sans-serif;padding:24px;line-height:1.6}pre{white-space:pre-wrap;word-break:break-word}</style></head><body><h2>多模态诈骗分析报告</h2><pre>${escaped}</pre></body></html>`);
+      win.document.close();
+      win.focus();
+      win.print();
+    }
+
+    useCurrentOrigin();
+    loadCaptcha();
+    refreshMediaPreview();
+  </script>
+</body>
+</html>
