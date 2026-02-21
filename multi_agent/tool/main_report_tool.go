@@ -1,7 +1,9 @@
 package tool
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -146,4 +148,18 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	}
 
 	return strings.TrimSpace(report.String())
+}
+
+type FinalReportHandler struct{}
+
+func (h *FinalReportHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	payload, err := ParseFinalReportPayload(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("parse final report tool payload failed: %v", err)}}, nil
+	}
+	return ToolResponse{
+		Payload:            map[string]interface{}{"status": "accepted", "message": "final report received, please call write_user_history_case to persist user case history"},
+		SetFinalReport:     true,
+		FinalReportPayload: &payload,
+	}, nil
 }

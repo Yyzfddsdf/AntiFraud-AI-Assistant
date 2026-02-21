@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	chatapi "image_recognition/chat_system/httpapi"
 	"image_recognition/login_system/controllers"
 	"image_recognition/login_system/database"
 	"image_recognition/login_system/middleware"
@@ -50,6 +51,9 @@ func main() {
 	{
 		api.GET("/user", controllers.GetCurrentUserHandle)
 		api.DELETE("/user", controllers.DeleteCurrentUserHandle)
+		api.POST("/chat", chatapi.ChatHandle)
+		api.GET("/chat/context", chatapi.GetChatContextHandle)
+		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)
 		api.PUT("/scam/multimodal/user/age", httpapi.UpdateUserAgeHandle)
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)

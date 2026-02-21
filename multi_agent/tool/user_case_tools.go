@@ -188,7 +188,7 @@ func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
 func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) (map[string]interface{}, error) {
 	payload := CurrentTaskPayload(ctx)
 	insights := CurrentTaskInsights(ctx)
-	record := state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, input.RiskLevel, state.TaskPayload{
+	state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, input.RiskLevel, state.TaskPayload{
 		Text:          payload.Text,
 		Videos:        append([]string{}, payload.Videos...),
 		Audios:        append([]string{}, payload.Audios...),
@@ -199,13 +199,59 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 	}, CurrentFinalReport(ctx))
 	return map[string]interface{}{
 		"status":       "success",
-		"record_id":    record.RecordID,
-		"user_id":      record.UserID,
+		"record_id":    "CASE-WRITE-" + CurrentUserID(ctx),
+		"user_id":      CurrentUserID(ctx),
 		"message":      "历史案件写入成功(内存JSON)",
-		"title":        record.Title,
-		"created_at":   record.CreatedAt.Format(time.RFC3339),
-		"case_summary": record.CaseSummary,
-		"report":       record.Report,
+		"title":        input.Title,
+		"created_at":   time.Now().Format(time.RFC3339),
+		"case_summary": input.CaseSummary,
+		"report":       CurrentFinalReport(ctx),
 		"stored_level": strings.TrimSpace(input.RiskLevel),
 	}, nil
+}
+
+type QueryUserHistoryCasesHandler struct{}
+
+func (h *QueryUserHistoryCasesHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	_, err := ParseQueryUserHistoryCasesInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user history args: %v", err), "cases": []string{"无"}}}, nil
+	}
+	cases, queryErr := QueryUserHistoryCases(ctx)
+	if queryErr != nil {
+		boundUserID := CurrentUserID(ctx)
+		return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "error": queryErr.Error(), "cases": []string{"查询失败(模拟)"}}}, nil
+	}
+	boundUserID := CurrentUserID(ctx)
+	return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "cases": cases}}, nil
+}
+
+type QueryUserInfoHandler struct{}
+
+func (h *QueryUserInfoHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	_, err := ParseQueryUserInfoInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user info args: %v", err), "user": map[string]interface{}{"user_id": "demo-user", "user_name": "张三"}}}, nil
+	}
+	userInfo, queryErr := QueryUserInfo(ctx)
+	if queryErr != nil {
+		boundUserID := CurrentUserID(ctx)
+		return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "error": queryErr.Error(), "user": map[string]interface{}{"user_id": boundUserID, "user_name": "用户" + boundUserID}}}, nil
+	}
+	boundUserID := CurrentUserID(ctx)
+	return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "user": userInfo}}, nil
+}
+
+type WriteUserHistoryCaseHandler struct{}
+
+func (h *WriteUserHistoryCaseHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	input, err := ParseWriteUserHistoryCaseInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid write user history case args: %v", err), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "参数错误，已模拟写入"}}}, nil
+	}
+	writeResult, writeErr := WriteUserHistoryCase(ctx, input)
+	if writeErr != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": writeErr.Error(), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "写入失败，返回模拟结果"}}}, nil
+	}
+	return ToolResponse{Payload: map[string]interface{}{"status": "success", "record": writeResult}, SetHistoryWriteAfterFinal: true}, nil
 }

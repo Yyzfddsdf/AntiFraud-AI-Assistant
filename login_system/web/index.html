@@ -328,6 +328,7 @@
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 border-b border-slate-200">
                                     <tr>
+                                        <th class="px-6 py-4 font-semibold text-slate-600">任务ID</th>
                                         <th class="px-6 py-4 font-semibold text-slate-600">案件标题</th>
                                         <th class="px-6 py-4 font-semibold text-slate-600">风险等级</th>
                                         <th class="px-6 py-4 font-semibold text-slate-600">摘要</th>
@@ -337,6 +338,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
                                     <tr v-for="item in history" :key="item.record_id" class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ item.record_id }}</td>
                                         <td class="px-6 py-4 font-medium text-slate-900">{{ item.title || '无标题' }}</td>
                                         <td class="px-6 py-4">
                                             <span :class="['px-2 py-1 rounded-full text-xs font-bold', getRiskClass(item.risk_level)]">
@@ -410,6 +412,66 @@
                 </div>
 
                 </div>
+
+                <!-- Chat Bubble & Window -->
+                <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 no-print" v-if="isAuthenticated">
+                    <!-- Chat Window -->
+                    <transition name="fade">
+                        <div v-if="showChat" class="bg-white w-80 h-96 rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up origin-bottom-right">
+                            <!-- Header -->
+                            <div class="bg-brand-600 p-4 flex justify-between items-center text-white">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    <span class="font-bold text-sm">反诈助手</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="clearChatHistory" class="text-white/80 hover:text-white" title="清除历史">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                    <button @click="toggleChat" class="text-white/80 hover:text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Messages -->
+                            <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+                                <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex', msg.type === 'user' ? 'justify-end' : msg.type === 'tool' ? 'justify-center' : 'justify-start']">
+                                    <div v-if="msg.type === 'tool'" class="text-xs text-gray-400 italic my-2 px-4 py-1 bg-gray-50 rounded-full border border-gray-100">
+                                        {{ msg.content }}
+                                    </div>
+                                    <div v-else :class="['max-w-[85%] rounded-lg p-3 text-sm shadow-sm', msg.type === 'user' ? 'bg-brand-600 text-white rounded-br-none' : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none']">
+                                        <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                                    </div>
+                                </div>
+                                <div v-if="isChatting" class="flex justify-start">
+                                    <div class="bg-white text-slate-500 border border-slate-200 rounded-lg p-3 rounded-bl-none shadow-sm flex gap-1">
+                                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-75"></span>
+                                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Input -->
+                            <div class="p-3 bg-white border-t border-slate-100">
+                                <form @submit.prevent="sendChatMessage" class="flex gap-2">
+                                    <input v-model="chatInput" type="text" placeholder="输入问题..." class="flex-1 bg-slate-100 border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <button type="submit" :disabled="!chatInput.trim() || isChatting" class="bg-brand-600 text-white p-2 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </transition>
+
+                    <!-- Bubble Button -->
+                    <button @click="toggleChat" class="w-14 h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg shadow-brand-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group">
+                        <svg v-if="!showChat" class="w-7 h-7 group-hover:animate-wiggle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        <svg v-else class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
             </main>
         </div>
 
@@ -767,7 +829,7 @@
                 };
 
                 const viewHistoryDetail = (item) => {
-                    selectedTask.value = { ...item, report: item.report }; // Reuse modal
+                    viewTaskDetail(item.record_id);
                 };
 
                 // Polling
@@ -828,6 +890,224 @@
                 const openImage = (src) => {
                     const win = window.open("", "_blank");
                     win.document.write(`<img src="${src}" style="max-width:100%; height:auto;">`);
+                };
+
+                // Chat State
+                const showChat = ref(false);
+                const chatMessages = ref([
+                    { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险，解答疑问，或者总结最近的安全状况。' }
+                ]);
+                const chatInput = ref('');
+                const isChatting = ref(false);
+                const chatHistoryLoaded = ref(false);
+
+                // Chat Actions
+                const fetchChatHistory = async () => {
+                    if (!isAuthenticated.value) return;
+                    
+                    try {
+                        const data = await request('/chat/context');
+                        if (data.messages && Array.isArray(data.messages)) {
+                            const history = [];
+                            
+                            for (const msg of data.messages) {
+                                // Handle assistant messages with tool calls
+                                if (msg.role === 'assistant') {
+                                    // If there are tool calls, add them as tool status messages
+                                    if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+                                        for (const call of msg.tool_calls) {
+                                            const toolName = call.function?.name || 'unknown';
+                                            history.push({
+                                                type: 'tool',
+                                                content: `正在调用工具: ${toolName}...`
+                                            });
+                                        }
+                                    }
+                                    
+                                    // If there is content, add as AI message
+                                    if (msg.content) {
+                                        history.push({
+                                            type: 'ai',
+                                            content: msg.content
+                                        });
+                                    }
+                                } 
+                                // Handle tool result messages
+                                else if (msg.role === 'tool') {
+                                    // Optionally show tool completion
+                                    history.push({
+                                        type: 'tool',
+                                        content: `工具调用完成`
+                                    });
+                                }
+                                // Handle user messages
+                                else if (msg.role === 'user') {
+                                    history.push({
+                                        type: 'user',
+                                        content: msg.content
+                                    });
+                                }
+                            }
+                            
+                            if (history.length > 0) {
+                                // Keep welcome message and append history
+                                chatMessages.value = [
+                                    chatMessages.value[0], 
+                                    ...history
+                                ];
+                            }
+                        }
+                        chatHistoryLoaded.value = true;
+                        setTimeout(scrollToBottom, 100);
+                    } catch (e) {
+                        console.error('Fetch chat history failed:', e);
+                    }
+                };
+
+                const toggleChat = () => {
+                    showChat.value = !showChat.value;
+                    // Auto scroll to bottom when opening
+                    if (showChat.value) {
+                        if (!chatHistoryLoaded.value) {
+                            fetchChatHistory();
+                        }
+                        setTimeout(scrollToBottom, 100);
+                    }
+                };
+
+                const scrollToBottom = () => {
+                    const container = document.getElementById('chat-container');
+                    if (container) container.scrollTop = container.scrollHeight;
+                };
+
+                const sendChatMessage = async () => {
+                    if (!chatInput.value.trim() || isChatting.value) return;
+                    
+                    const message = chatInput.value.trim();
+                    chatMessages.value.push({ type: 'user', content: message });
+                    chatInput.value = '';
+                    isChatting.value = true;
+                    scrollToBottom();
+
+                    try {
+                        const response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token.value}`
+                            },
+                            body: JSON.stringify({ message })
+                        });
+
+                        if (!response.ok) throw new Error('Network response was not ok');
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let aiMessageContent = '';
+                        
+                        // Add placeholder for AI response
+                        chatMessages.value.push({ type: 'ai', content: '' });
+                        
+                        // We can't use a fixed index anymore because tool calls might insert messages
+                        // So we'll always target the last message if it's type 'ai', or append a new one
+                        
+                        let buffer = '';
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            const chunk = decoder.decode(value, { stream: true });
+                            console.log('Chunk received:', chunk);
+                            buffer += chunk;
+                            const lines = buffer.split('\n');
+                            
+                            // Keep the last potentially incomplete line in the buffer
+                            buffer = lines.pop();
+
+                            for (const line of lines) {
+                                const trimmedLine = line.trim();
+                                if (!trimmedLine) continue;
+                                
+                                if (trimmedLine.startsWith('data:')) {
+                                    try {
+                                        const jsonStr = trimmedLine.slice(5).trim();
+                                        const data = JSON.parse(jsonStr);
+                                        
+                                        // Helper to get active AI message index
+                                        const getActiveAiIndex = () => {
+                                            const lastIdx = chatMessages.value.length - 1;
+                                            if (lastIdx >= 0 && chatMessages.value[lastIdx].type === 'ai') {
+                                                return lastIdx;
+                                            }
+                                            // If last message is not AI (e.g. tool), push new AI placeholder
+                                            chatMessages.value.push({ type: 'ai', content: '' });
+                                            return chatMessages.value.length - 1;
+                                        };
+
+                                        if (data.type === 'content') {
+                                            const idx = getActiveAiIndex();
+                                            aiMessageContent += data.content;
+                                            chatMessages.value[idx].content = aiMessageContent;
+                                            scrollToBottom();
+                                        } else if (data.type === 'tool_call') {
+                                            // Insert tool message
+                                            const toolName = data.tool;
+                                            // If current AI message is empty, replace it
+                                            const lastIdx = chatMessages.value.length - 1;
+                                            if (lastIdx >= 0 && chatMessages.value[lastIdx].type === 'ai' && !chatMessages.value[lastIdx].content) {
+                                                chatMessages.value[lastIdx] = {
+                                                    type: 'tool',
+                                                    content: `正在调用工具: ${toolName}...`
+                                                };
+                                            } else {
+                                                chatMessages.value.push({
+                                                    type: 'tool',
+                                                    content: `正在调用工具: ${toolName}...`
+                                                });
+                                            }
+                                            // Reset aiMessageContent for next segment
+                                            aiMessageContent = '';
+                                            scrollToBottom();
+                                        } else if (data.type === 'tool_result') {
+                                            // Insert tool completion message
+                                            const toolName = data.tool;
+                                            chatMessages.value.push({
+                                                type: 'tool',
+                                                content: `工具 ${toolName} 调用完成`
+                                            });
+                                            scrollToBottom();
+                                        } else if (data.type === 'done') {
+                                            // Stream finished
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing SSE data:', e, 'Line:', trimmedLine);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Chat error:', error);
+                        chatMessages.value.push({ type: 'error', content: '抱歉，服务暂时不可用，请稍后再试。' });
+                    } finally {
+                        isChatting.value = false;
+                        scrollToBottom();
+                    }
+                };
+
+                const clearChatHistory = async () => {
+                    if (!confirm('确定要清除对话历史吗？')) return;
+                    
+                    try {
+                        await request('/chat/refresh', 'POST');
+                        chatMessages.value = [
+                            { type: 'ai', content: '对话历史已清除。' }
+                        ];
+                        chatHistoryLoaded.value = true;
+                        showToast('对话历史已重置');
+                    } catch (e) {
+                        showToast('清除历史失败', 'error');
+                    }
                 };
 
                 const exportData = (type) => {
@@ -907,7 +1187,8 @@
                     activeTab, tasks, history, selectedTask, toasts, analyzing,
                     handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail,
                     formatTime, getStatusLabel, getStatusClass, getRiskClass,
-                    updateAge, deleteAccount, openImage, exportData, printReport
+                    updateAge, deleteAccount, openImage, exportData, printReport,
+                    showChat, chatMessages, chatInput, isChatting, toggleChat, sendChatMessage, clearChatHistory
                 };
             }
         }).mount('#app');

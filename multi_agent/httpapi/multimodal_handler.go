@@ -55,21 +55,10 @@ func AnalyzeMultimodalScamHandle(c *gin.Context) {
 func GetMultimodalTaskStateHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
 	view := queue.GetUserTaskState(userID)
-	tasks := make([]MultimodalTaskListItem, 0, len(view.Pending)+len(view.History))
+	tasks := make([]MultimodalTaskListItem, 0, len(view.Pending))
 
 	for _, task := range view.Pending {
 		tasks = append(tasks, toTaskListItem(task))
-	}
-
-	for _, item := range view.History {
-		tasks = append(tasks, MultimodalTaskListItem{
-			TaskID:    item.RecordID,
-			UserID:    item.UserID,
-			Title:     item.Title,
-			Status:    state.TaskStatusCompleted,
-			CreatedAt: item.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: item.CreatedAt.Format(time.RFC3339),
-		})
 	}
 
 	sort.Slice(tasks, func(i, j int) bool {
@@ -82,7 +71,7 @@ func GetMultimodalTaskStateHandle(c *gin.Context) {
 	})
 }
 
-// GetMultimodalHistoryHandle 查询当前用户历史案件明细（含payload/base64）。
+// GetMultimodalHistoryHandle 查询当前用户历史案件明细（仅元数据）。
 func GetMultimodalHistoryHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
 	view := queue.GetUserTaskState(userID)
@@ -95,16 +84,6 @@ func GetMultimodalHistoryHandle(c *gin.Context) {
 			CaseSummary: item.CaseSummary,
 			RiskLevel:   item.RiskLevel,
 			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
-			Payload: MultimodalTaskPayload{
-				Text:          item.Payload.Text,
-				Videos:        append([]string{}, item.Payload.Videos...),
-				Audios:        append([]string{}, item.Payload.Audios...),
-				Images:        append([]string{}, item.Payload.Images...),
-				VideoInsights: append([]string{}, item.Payload.VideoInsights...),
-				AudioInsights: append([]string{}, item.Payload.AudioInsights...),
-				ImageInsights: append([]string{}, item.Payload.ImageInsights...),
-			},
-			Report: item.Report,
 		})
 	}
 

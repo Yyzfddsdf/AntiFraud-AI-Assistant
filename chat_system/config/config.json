@@ -1,0 +1,8 @@
+{
+  "api_key": "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",
+  "base_url": "https://integrate.api.nvidia.com/v1",
+  "chat_model": "qwen/qwen3.5-397b-a17b",
+  "redis_addr": "127.0.0.1:6379",
+  "redis_password": "",
+  "redis_db": 0
+}

@@ -54,13 +54,13 @@ const mainAgentSystemPrompt = `你是一位多模态风控总分析专家。你�
 - next_actions: 建议的下一步核查动作（数组）`
 
 type modalityResult struct {
-	Text              string
-	Image             string
-	Video             string
-	Audio             string
-	ImageInsights     []string
-	VideoInsights     []string
-	AudioInsights     []string
+	Text          string
+	Image         string
+	Video         string
+	Audio         string
+	ImageInsights []string
+	VideoInsights []string
+	AudioInsights []string
 }
 
 // AnalyzeMainReport 封装主分析智能体。
@@ -204,7 +204,6 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 	ctx = tool.BindUserID(ctx, userID)
 	ctx = tool.BindTaskID(ctx, taskID)
 	ctx = tool.BindTaskPayload(ctx, rawText, rawVideos, rawAudios, rawImages)
-	boundUserID := tool.CurrentUserID(ctx)
 
 	openaiCfg := openai.DefaultConfig(cfg.APIKey)
 	openaiCfg.BaseURL = cfg.BaseURL
@@ -295,153 +294,43 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 		}
 		for _, call := range msg.ToolCalls {
 			fmt.Printf("[MainAgent][Round %d] 调用工具: %s, 参数: %s\n", round+1, call.Function.Name, truncateForLog(call.Function.Arguments, 240))
-			switch call.Function.Name {
-			case tool.FinalReportToolName:
-				if !hasCaseSearch {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error": "必须先调用 search_similar_cases 再调用 submit_final_report",
-					})
-					fmt.Printf("[MainAgent][Round %d] 拦截最终报告: 尚未完成案件检索\n", round+1)
-					continue
-				}
-
-				payload, err := tool.ParseFinalReportPayload(call.Function.Arguments)
-				if err != nil {
-					return "", fmt.Errorf("parse final report tool payload failed: %w", err)
-				}
-				finalReportPayload = &payload
-				ctx = tool.BindFinalReport(ctx, tool.FormatFinalReport(payload))
-				hasHistoryWriteAfterFinal = false
-				appendToolResponse(call.ID, map[string]interface{}{
-					"status":  "accepted",
-					"message": "final report received, please call write_user_history_case to persist user case history",
-				})
-				fmt.Printf("[MainAgent][Round %d] 收到最终报告工具，等待写入用户历史后结束\n", round+1)
-				continue
-
-			case tool.CaseSearchToolName:
-				queryInput, err := tool.ParseCaseSearchInput(call.Function.Arguments)
-				if err != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error": fmt.Sprintf("invalid case search args: %v", err),
-					})
-					fmt.Printf("[MainAgent][Round %d] 案件检索参数解析失败: %v\n", round+1, err)
-					continue
-				}
-
-				cases, searchErr := tool.SearchSimilarCases(strings.TrimSpace(queryInput.Query))
-				hasCaseSearch = true
-				fmt.Printf("[MainAgent][Round %d] 执行案件检索, query: %s\n", round+1, truncateForLog(strings.TrimSpace(queryInput.Query), 200))
-				if searchErr != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"query": strings.TrimSpace(queryInput.Query),
-						"error": searchErr.Error(),
-						"cases": []string{},
-					})
-					fmt.Printf("[MainAgent][Round %d] 案件检索失败: %v\n", round+1, searchErr)
-					continue
-				}
-
-				appendToolResponse(call.ID, map[string]interface{}{
-					"query": strings.TrimSpace(queryInput.Query),
-					"cases": cases,
-				})
-				fmt.Printf("[MainAgent][Round %d] 案件检索完成, 返回案例数: %d\n", round+1, len(cases))
-
-			case tool.QueryUserHistoryCasesToolName:
-				_, err := tool.ParseQueryUserHistoryCasesInput(call.Function.Arguments)
-				if err != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error": fmt.Sprintf("invalid query user history args: %v", err),
-						"cases": []string{"无"},
-					})
-					fmt.Printf("[MainAgent][Round %d] 用户历史案件参数解析失败: %v\n", round+1, err)
-					continue
-				}
-
-				cases, queryErr := tool.QueryUserHistoryCases(ctx)
-				if queryErr != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"user_id": boundUserID,
-						"error":   queryErr.Error(),
-						"cases":   []string{"查询失败(模拟)"},
-					})
-					fmt.Printf("[MainAgent][Round %d] 用户历史案件查询失败: %v\n", round+1, queryErr)
-					continue
-				}
-
-				appendToolResponse(call.ID, map[string]interface{}{
-					"user_id": boundUserID,
-					"cases":   cases,
-				})
-				fmt.Printf("[MainAgent][Round %d] 用户历史案件查询完成, 返回案例数: %d\n", round+1, len(cases))
-
-			case tool.QueryUserInfoToolName:
-				_, err := tool.ParseQueryUserInfoInput(call.Function.Arguments)
-				if err != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error": fmt.Sprintf("invalid query user info args: %v", err),
-						"user":  map[string]interface{}{"user_id": "demo-user", "user_name": "张三"},
-					})
-					fmt.Printf("[MainAgent][Round %d] 用户信息参数解析失败: %v\n", round+1, err)
-					continue
-				}
-
-				userInfo, queryErr := tool.QueryUserInfo(ctx)
-				if queryErr != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"user_id": boundUserID,
-						"error":   queryErr.Error(),
-						"user":    map[string]interface{}{"user_id": boundUserID, "user_name": "用户" + boundUserID},
-					})
-					fmt.Printf("[MainAgent][Round %d] 用户信息查询失败: %v\n", round+1, queryErr)
-					continue
-				}
-
-				appendToolResponse(call.ID, map[string]interface{}{
-					"user_id": boundUserID,
-					"user":    userInfo,
-				})
-				fmt.Printf("[MainAgent][Round %d] 用户信息查询完成\n", round+1)
-
-			case tool.WriteUserHistoryCaseToolName:
-				input, err := tool.ParseWriteUserHistoryCaseInput(call.Function.Arguments)
-				if err != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error":  fmt.Sprintf("invalid write user history case args: %v", err),
-						"status": "failed",
-						"record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "参数错误，已模拟写入"},
-					})
-					fmt.Printf("[MainAgent][Round %d] 写入用户历史案件参数解析失败: %v\n", round+1, err)
-					continue
-				}
-
-				writeResult, writeErr := tool.WriteUserHistoryCase(ctx, input)
-				if writeErr != nil {
-					appendToolResponse(call.ID, map[string]interface{}{
-						"error":  writeErr.Error(),
-						"status": "failed",
-						"record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "写入失败，返回模拟结果"},
-					})
-					fmt.Printf("[MainAgent][Round %d] 写入用户历史案件失败: %v\n", round+1, writeErr)
-					continue
-				}
-
-				appendToolResponse(call.ID, map[string]interface{}{
-					"status": "success",
-					"record": writeResult,
-				})
-				fmt.Printf("[MainAgent][Round %d] 写入用户历史案件完成\n", round+1)
-				if finalReportPayload != nil {
-					hasHistoryWriteAfterFinal = true
-					fmt.Printf("[MainAgent][Round %d] 已在最终报告后完成历史写入，流程可结束\n", round+1)
-				}
-
-			default:
-				appendToolResponse(call.ID, map[string]interface{}{
-					"error": fmt.Sprintf("unsupported tool: %s", call.Function.Name),
-				})
+			handler := tool.GetToolHandler(call.Function.Name)
+			if handler == nil {
+				appendToolResponse(call.ID, map[string]interface{}{"error": "unsupported tool"})
 				fmt.Printf("[MainAgent][Round %d] 未支持工具: %s\n", round+1, call.Function.Name)
+				continue
+			}
+
+			// 特殊检查 for final report
+			if call.Function.Name == tool.FinalReportToolName && !hasCaseSearch {
+				appendToolResponse(call.ID, map[string]interface{}{
+					"error": "必须先调用 search_similar_cases 再调用 submit_final_report",
+				})
+				fmt.Printf("[MainAgent][Round %d] 拦截最终报告: 尚未完成案件检索\n", round+1)
+				continue
+			}
+
+			response, err := handler.Handle(ctx, call.Function.Arguments)
+			if err != nil {
+				appendToolResponse(call.ID, map[string]interface{}{"error": err.Error()})
+				continue
+			}
+
+			appendToolResponse(call.ID, response.Payload)
+
+			// 处理标志
+			if response.SetCaseSearch {
+				hasCaseSearch = true
+			}
+			if response.SetFinalReport {
+				finalReportPayload = response.FinalReportPayload
+				ctx = tool.BindFinalReport(ctx, tool.FormatFinalReport(*response.FinalReportPayload))
+				hasHistoryWriteAfterFinal = false
+				fmt.Printf("[MainAgent][Round %d] 收到最终报告工具，等待写入用户历史后结束\n", round+1)
+			}
+			if response.SetHistoryWriteAfterFinal {
+				hasHistoryWriteAfterFinal = true
+				fmt.Printf("[MainAgent][Round %d] 已在最终报告后完成历史写入，流程可结束\n", round+1)
 			}
 		}
 

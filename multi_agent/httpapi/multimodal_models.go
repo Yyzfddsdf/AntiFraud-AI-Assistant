@@ -56,15 +56,13 @@ type MultimodalTaskStateResponse struct {
 	Tasks  []MultimodalTaskListItem `json:"tasks"`
 }
 
-// MultimodalHistoryItem 历史案件条目（详细，包含payload/base64）。
+// MultimodalHistoryItem 历史案件条目（仅元数据，不含 payload/report）。
 type MultimodalHistoryItem struct {
-	RecordID    string                `json:"record_id"`
-	Title       string                `json:"title"`
-	CaseSummary string                `json:"case_summary"`
-	RiskLevel   string                `json:"risk_level"`
-	CreatedAt   string                `json:"created_at"`
-	Payload     MultimodalTaskPayload `json:"payload"`
-	Report      string                `json:"report,omitempty"`
+	RecordID    string `json:"record_id"`
+	Title       string `json:"title"`
+	CaseSummary string `json:"case_summary"`
+	RiskLevel   string `json:"risk_level"`
+	CreatedAt   string `json:"created_at"`
 }
 
 // MultimodalHistoryResponse 历史案件明细列表。

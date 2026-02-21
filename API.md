@@ -205,7 +205,7 @@
 
 ---
 
-## 7) 查询当前用户任务状态（需鉴权）
+## 7) 查询当前用户进行中任务（需鉴权）
 
 - **Method**: `GET`
 - **Path**: `/api/scam/multimodal/tasks`
@@ -226,24 +226,16 @@
       "status": "processing",
       "created_at": "2026-02-20T10:30:00+08:00",
       "updated_at": "2026-02-20T10:30:08+08:00"
-    },
-    {
-      "task_id": "TASK-123456",
-      "user_id": "1",
-      "title": "可疑转账引导",
-      "status": "completed",
-      "created_at": "2026-02-20T10:20:00+08:00",
-      "updated_at": "2026-02-20T10:25:00+08:00"
     }
   ]
 }
 ```
 
-> 说明：任务与历史统一使用 `TASK-...` 标识。
+> 说明：此接口仅返回状态为 `pending` 或 `processing` 的任务。已完成的任务请在历史记录中查询。
 
 ---
 
-## 8) 查询当前用户历史案件明细（需鉴权）
+## 8) 查询当前用户历史案件列表（需鉴权）
 
 - **Method**: `GET`
 - **Path**: `/api/scam/multimodal/history`
@@ -262,18 +254,15 @@
       "title": "疑似冒充客服退款",
       "case_summary": "对方要求转入安全账户",
       "risk_level": "高",
-      "created_at": "2026-02-20T10:35:00+08:00",
-      "report": "1. 综合摘要\n...",
-      "payload": {
-        "text": "...",
-        "videos": ["<video_base64_1>"],
-        "audios": ["<audio_base64_1>"],
-        "images": ["<image_base64_1>"]
-      }
+      "created_at": "2026-02-20T10:35:00+08:00"
     }
   ]
 }
 ```
+
+> 说明：
+> 1. 此接口仅返回历史案件的元数据（轻量级），不包含详细报告和原始文件。
+> 2. 如需查看详情，请使用 `GET /api/scam/multimodal/tasks/:taskId` 接口。
 
 ---
 
@@ -364,7 +353,168 @@
 
 ---
 
-## 11) 测试页面
+## 11) 聊天对话（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/chat`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: text/event-stream`
+
+### 请求体
+
+```json
+{
+  "message": "你好，帮我总结一下我最近的风险情况"
+}
+```
+
+### 说明
+
+- 纯聊天接口，不调用任何 tool。
+- 服务端将每个用户当前会话上下文存入 Redis 缓存，不做持久化落库。
+- 响应为 SSE 流式输出：`content` 分片返回，最后返回 `done`。
+- Redis 上下文键：`chat:context:<user_id>`。
+- 上下文缓存过期时间：5 分钟；每次新请求会刷新 TTL 为 5 分钟。
+- 若缓存过期，下一次请求将视为新对话。
+- 聊天模型配置读取：`chat_system/config/config.json`（需正确配置 `api_key`、`base_url`、`chat_model`）。
+- Redis 配置同样读取 `chat_system/config/config.json`（`redis_addr`、`redis_password`、`redis_db`）。
+
+### 响应事件
+
+- `content`：AI 回复内容片段
+  ```json
+  {"type": "content", "content": "你好，"}
+  ```
+- `tool_call`：模型触发工具调用通知
+  ```json
+  {"type": "tool_call", "tool": "chat_query_user_info", "id": "call_xxx", "arguments": "{}"}
+  ```
+- `tool_result`：工具执行结果
+  ```json
+  {"type": "tool_result", "tool": "chat_query_user_info", "id": "call_xxx", "result": {"user": {...}}}
+  ```
+- `done`：当前轮结束
+  ```json
+  {"type": "done", "reason": "stop"}
+  ```
+
+### SSE 返回格式示例（原始）
+
+```text
+event: event
+data:{"type":"content","content":"你好，"}
+
+event: event
+data:{"type":"content","content":"我可以帮你..."}
+
+event: event
+data:{"type":"done","reason":"stop"}
+```
+
+> 前端应按 SSE 事件逐条解析并拼接 `content`。注意 `data:` 后可能没有空格，建议使用 `slice(5).trim()` 或类似方式解析。
+
+### 常见失败响应
+
+- `400` 请求参数错误或 message 为空
+- `401` 未认证
+- `500` 配置加载失败 / Redis 上下文加载失败 / 调用模型失败 / Redis 上下文写入失败
+
+---
+
+## 12) 获取当前对话上下文（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/chat/context`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 返回当前用户 Redis 中缓存的会话上下文与剩余有效期。
+- `messages` 中会保留完整对话轨迹字段：
+  - 普通消息：`role` + `content`
+  - 工具调用消息（assistant）：额外包含 `tool_calls`（`id/name/arguments`）
+  - 工具结果消息（tool）：额外包含 `tool_call_id`
+- 可用于前端判断是否为新对话：
+  - `has_context = false` 或 `messages` 为空，表示当前没有上下文（新对话）。
+  - `has_context = true` 且 `ttl_seconds > 0`，表示存在正在进行中的会话。
+
+### 成功响应（200）
+
+```json
+{
+  "user_id": "1",
+  "has_context": true,
+  "ttl_seconds": 286,
+  "messages": [
+    {
+      "role": "user",
+      "content": "帮我看下我的账号风险情况"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "chatcmpl-tool-9948fb773791ad7c",
+          "name": "chat_query_user_info",
+          "arguments": "{}"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "chatcmpl-tool-9948fb773791ad7c",
+      "content": "{\"user\":{\"account_status\":\"active\",\"age\":28,\"completed_case_count\":1,\"historical_risk\":\"低\",\"pending_task_count\":0,\"risk_case_count\":{\"中\":0,\"低\":1,\"高\":0},\"user_id\":\"1\",\"user_name\":\"用户1\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "您好，用户1！您的账户状态正常，历史风险等级为低。"
+    }
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证
+- `500` 配置加载失败 / Redis 查询失败
+
+---
+
+## 13) 刷新对话上下文（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/chat/refresh`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 立即清除当前用户 Redis 对话上下文，不等待 TTL 过期。
+- 刷新后下一次 `POST /api/chat` 将视为新对话。
+
+### 成功响应（200）
+
+```json
+{
+  "user_id": "1",
+  "message": "对话上下文已刷新"
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证
+- `500` 配置加载失败 / Redis 清理失败
+
+---
+
+## 14) 测试页面
 
 - **Method**: `GET`
 - **Path**: `/test-login`
@@ -383,7 +533,10 @@
 7. `GET /api/scam/multimodal/tasks`
 8. `GET /api/scam/multimodal/history`
 9. `GET /api/scam/multimodal/tasks/:taskId`
-10. `DELETE /api/user`
+10. `POST /api/chat`
+11. `GET /api/chat/context`
+12. `POST /api/chat/refresh`
+13. `DELETE /api/user`
 
 ---
 
@@ -468,5 +621,31 @@ curl -X GET "http://localhost:8081/api/scam/multimodal/tasks/<TASK_ID>" \
 
 ```bash
 curl -X GET "http://localhost:8081/api/scam/multimodal/history" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 聊天对话（SSE）
+
+```bash
+curl -N -X POST "http://localhost:8081/api/chat" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "message": "你好，帮我总结一下我最近的风险情况"
+  }'
+```
+
+### 刷新对话上下文
+
+```bash
+curl -X POST "http://localhost:8081/api/chat/refresh" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 获取当前对话上下文
+
+```bash
+curl -X GET "http://localhost:8081/api/chat/context" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```

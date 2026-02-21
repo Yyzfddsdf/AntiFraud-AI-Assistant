@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/sashabaranov/go-openai"
@@ -41,4 +42,21 @@ func ParseCaseSearchInput(arguments string) (CaseSearchInput, error) {
 	var input CaseSearchInput
 	err := json.Unmarshal([]byte(arguments), &input)
 	return input, err
+}
+
+type CaseSearchHandler struct{}
+
+func (h *CaseSearchHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	input, err := ParseCaseSearchInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": err.Error()}}, nil
+	}
+	cases, err := SearchSimilarCases(input.Query)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"query": input.Query, "error": err.Error(), "cases": []string{}}}, nil
+	}
+	return ToolResponse{
+		Payload:       map[string]interface{}{"query": input.Query, "cases": cases},
+		SetCaseSearch: true,
+	}, nil
 }
