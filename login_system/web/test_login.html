@@ -61,6 +61,7 @@
     </div>
     <div class="row">
       <input id="userAge" type="number" min="1" max="150" placeholder="年龄（1-150）" value="28" />
+      <input id="userRole" placeholder="用户身份" readonly style="background:#f0f0f0; color:#666;" />
       <button onclick="updateUserAge()">更新年龄</button>
     </div>
   </div>
@@ -233,7 +234,11 @@
 
     async function getCurrentUser() {
       const token = document.getElementById('token').value.trim();
-      await request('/api/user', 'GET', null, token);
+      const result = await request('/api/user', 'GET', null, token);
+      if (result.status === 200 && result.data) {
+        if (result.data.age) document.getElementById('userAge').value = result.data.age;
+        if (result.data.role) document.getElementById('userRole').value = result.data.role;
+      }
     }
 
     async function deleteCurrentUser() {
