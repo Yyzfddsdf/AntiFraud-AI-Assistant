@@ -248,25 +248,7 @@ func UpgradeUserHandle(c *gin.Context) {
 // GetAllUsersHandle 获取所有用户列表（仅管理员可用）。
 // 支持通过 ?query=xxx 搜索用户名或邮箱。
 func GetAllUsersHandle(c *gin.Context) {
-	// 1. 验证管理员权限
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
-		return
-	}
-
-	var currentUser models.User
-	if err := database.DB.Where("id = ?", userID).First(&currentUser).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
-		return
-	}
-
-	if currentUser.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "需要管理员权限"})
-		return
-	}
-
-	// 2. 处理搜索参数
+	// 1. 处理搜索参数
 	query := c.Query("query")
 	var users []models.User
 	db := database.DB.Model(&models.User{})
@@ -275,13 +257,13 @@ func GetAllUsersHandle(c *gin.Context) {
 		db = db.Where("username LIKE ? OR email LIKE ?", "%"+query+"%", "%"+query+"%")
 	}
 
-	// 3. 查询数据库
+	// 2. 查询数据库
 	if err := db.Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取用户列表失败"})
 		return
 	}
 
-	// 4. 构建响应（过滤敏感信息）
+	// 3. 构建响应（过滤敏感信息）
 	var userResponses []models.UserResponse
 	for _, user := range users {
 		userResponses = append(userResponses, models.UserResponse{

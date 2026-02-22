@@ -55,7 +55,33 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims.UserID)
-		c.Set("user", models.UserResponse{ID: user.ID, Username: user.Username, Email: user.Email, Age: user.Age, Role: user.Role})
+		c.Next()
+	}
+}
+
+// AdminMiddleware 确保用户拥有管理员权限
+func AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+			c.Abort()
+			return
+		}
+
+		var user models.User
+		if err := database.DB.Select("role").Where("id = ?", userID).First(&user).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+			c.Abort()
+			return
+		}
+
+		if user.Role != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "需要管理员权限"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }
