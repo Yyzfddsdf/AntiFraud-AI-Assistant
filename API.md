@@ -68,7 +68,8 @@
 {
   "id": 1,
   "username": "test_user",
-  "email": "test_user@example.com"
+  "email": "test_user@example.com",
+  "role": "user"
 }
 ```
 
@@ -107,7 +108,9 @@
   "user": {
     "id": 1,
     "username": "test_user",
-    "email": "test_user@example.com"
+    "email": "test_user@example.com",
+    "role": "user",
+    "age": 28
   }
 }
 ```
@@ -130,7 +133,9 @@
 {
   "id": 1,
   "username": "test_user",
-  "email": "test_user@example.com"
+  "email": "test_user@example.com",
+  "role": "user",
+  "age": 28
 }
 ```
 
@@ -514,7 +519,131 @@ data:{"type":"done","reason":"stop"}
 
 ---
 
-## 14) 测试页面
+## 14) 账户升级（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/upgrade`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "invite_code": "Secret_Admin_Invite_Code_2026"
+}
+```
+
+### 说明
+
+- `invite_code`：管理员邀请码，硬编码或通过环境变量 `INVITE_CODE_ADMIN` 配置。
+- 成功后用户角色将变更为 `admin`。
+
+### 成功响应（200）
+
+```json
+{
+  "message": "账户已升级为管理员",
+  "user": {
+    "id": 1,
+    "username": "test_user",
+    "email": "test_user@example.com",
+    "role": "admin",
+    "age": 28
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` 请求参数错误
+- `401` 未认证
+- `403` 无效的邀请码
+- `500` 升级失败
+
+---
+
+## 15) 获取用户列表（仅管理员）
+
+### 15.1 获取所有用户
+
+- **Method**: `GET`
+- **Path**: `/api/users`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+**请求示例**：
+```http
+GET /api/users
+```
+
+**成功响应（200）**:
+
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "role": "admin",
+      "age": 28
+    },
+    {
+      "id": 2,
+      "username": "test_user",
+      "email": "test@example.com",
+      "role": "user",
+      "age": 25
+    }
+  ],
+  "count": 2
+}
+```
+
+### 15.2 搜索特定用户
+
+- **Method**: `GET`
+- **Path**: `/api/users`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+- **Query参数**:
+  - `query`: 搜索关键词（模糊匹配用户名或邮箱）
+
+**请求示例**：
+```http
+GET /api/users?query=admin
+```
+
+**成功响应（200）**:
+
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "role": "admin",
+      "age": 28
+    }
+  ],
+  "count": 1
+}
+```
+
+### 常见失败响应
+
+- `401` 用户未认证
+- `403` 权限不足（非管理员）
+
+---
+
+## 16) 测试页面
 
 - **Method**: `GET`
 - **Path**: `/test-login`
@@ -579,6 +708,20 @@ curl -X POST "http://localhost:8081/api/auth/login" \
 
 ```bash
 curl -X GET "http://localhost:8081/api/user" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 获取所有用户列表（仅管理员）
+
+```bash
+curl -X GET "http://localhost:8081/api/users" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 搜索特定用户（仅管理员）
+
+```bash
+curl -X GET "http://localhost:8081/api/users?query=admin" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 

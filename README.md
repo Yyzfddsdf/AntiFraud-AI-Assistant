@@ -88,6 +88,17 @@ go run .
 - `POST /api/auth/login`
 - `GET /api/user`
 - `DELETE /api/user`
+- `POST /api/upgrade`
+
+用户管理（管理员）：
+
+- `GET /api/users` (获取用户列表/搜索)
+
+对话相关（需鉴权）：
+
+- `POST /api/chat`
+- `GET /api/chat/context`
+- `POST /api/chat/refresh`
 
 多模态相关（需鉴权）：
 
