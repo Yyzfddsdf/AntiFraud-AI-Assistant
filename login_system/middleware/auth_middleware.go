@@ -55,7 +55,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims.UserID)
-		c.Set("user", models.UserResponse{ID: user.ID, Username: user.Username, Email: user.Email, Age: user.Age})
+		c.Set("user", models.UserResponse{ID: user.ID, Username: user.Username, Email: user.Email, Age: user.Age, Role: user.Role})
 		c.Next()
 	}
 }

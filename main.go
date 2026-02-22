@@ -51,6 +51,8 @@ func main() {
 	{
 		api.GET("/user", controllers.GetCurrentUserHandle)
 		api.DELETE("/user", controllers.DeleteCurrentUserHandle)
+		api.GET("/users", controllers.GetAllUsersHandle)
+		api.POST("/upgrade", controllers.UpgradeUserHandle)
 		api.POST("/chat", chatapi.ChatHandle)
 		api.GET("/chat/context", chatapi.GetChatContextHandle)
 		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)

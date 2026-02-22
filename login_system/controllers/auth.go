@@ -2,30 +2,19 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
-	"os"
-	"regexp"
-	"time"
-
 	"image_recognition/login_system/database"
 	"image_recognition/login_system/models"
 	"image_recognition/login_system/settings"
+	"net/http"
+	"regexp"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(getJWTSecretFromEnv())
-
-// getJWTSecretFromEnv 读取 JWT 密钥；未配置时使用默认值（开发环境）。
-func getJWTSecretFromEnv() string {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		return "change_me_to_a_strong_secret_in_production"
-	}
-	return secret
-}
+var jwtSecret = []byte(settings.GetJWTSecret())
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`
@@ -85,6 +74,7 @@ func RegisterHandle(c *gin.Context) {
 		Username: payload.Username,
 		Email:    payload.Email,
 		Password: string(hashedPassword),
+		Role:     "user",
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
@@ -96,6 +86,7 @@ func RegisterHandle(c *gin.Context) {
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
+		Role:     user.Role,
 	})
 }
 
@@ -136,6 +127,7 @@ func LoginHandle(c *gin.Context) {
 			ID:       user.ID,
 			Username: user.Username,
 			Email:    user.Email,
+			Role:     user.Role,
 		},
 	})
 }
@@ -167,6 +159,7 @@ func queryCurrentUserResponse(userID interface{}) (models.UserResponse, error) {
 		Username: user.Username,
 		Email:    user.Email,
 		Age:      user.Age,
+		Role:     user.Role,
 	}, nil
 }
 
@@ -210,4 +203,98 @@ func validatePasswordComplexity(password string) error {
 		return errors.New("密码必须包含至少一个符号")
 	}
 	return nil
+}
+
+// UpgradeUserHandle 处理用户升级请求。
+func UpgradeUserHandle(c *gin.Context) {
+	var payload models.UpgradePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
+		return
+	}
+
+	inviteCode := settings.GetAdminInviteCode()
+
+	if payload.InviteCode != inviteCode {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无效的邀请码"})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+		return
+	}
+
+	// 更新用户角色为 admin
+	if err := database.DB.Model(&models.User{}).Where("id = ?", userID).Update("role", "admin").Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "升级失败"})
+		return
+	}
+
+	// 重新获取用户信息以返回
+	userResp, err := queryCurrentUserResponse(userID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"message": "升级成功，但获取最新信息失败", "role": "admin"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "账户已升级为管理员",
+		"user":    userResp,
+	})
+}
+
+// GetAllUsersHandle 获取所有用户列表（仅管理员可用）。
+// 支持通过 ?query=xxx 搜索用户名或邮箱。
+func GetAllUsersHandle(c *gin.Context) {
+	// 1. 验证管理员权限
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+		return
+	}
+
+	var currentUser models.User
+	if err := database.DB.Where("id = ?", userID).First(&currentUser).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+		return
+	}
+
+	if currentUser.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "需要管理员权限"})
+		return
+	}
+
+	// 2. 处理搜索参数
+	query := c.Query("query")
+	var users []models.User
+	db := database.DB.Model(&models.User{})
+
+	if query != "" {
+		db = db.Where("username LIKE ? OR email LIKE ?", "%"+query+"%", "%"+query+"%")
+	}
+
+	// 3. 查询数据库
+	if err := db.Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取用户列表失败"})
+		return
+	}
+
+	// 4. 构建响应（过滤敏感信息）
+	var userResponses []models.UserResponse
+	for _, user := range users {
+		userResponses = append(userResponses, models.UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+			Role:     user.Role,
+			Age:      user.Age,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"users": userResponses,
+		"count": len(userResponses),
+	})
 }
