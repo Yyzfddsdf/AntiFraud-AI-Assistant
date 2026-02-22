@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -87,9 +86,7 @@ var FinalReportTool = openai.Tool{
 }
 
 func ParseFinalReportPayload(arguments string) (FinalReportPayload, error) {
-	var payload FinalReportPayload
-	err := json.Unmarshal([]byte(arguments), &payload)
-	return payload, err
+	return ParseArgs[FinalReportPayload](arguments)
 }
 
 func FormatFinalReport(payload FinalReportPayload) string {
@@ -158,8 +155,7 @@ func (h *FinalReportHandler) Handle(ctx context.Context, args string) (ToolRespo
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("parse final report tool payload failed: %v", err)}}, nil
 	}
 	return ToolResponse{
-		Payload:            map[string]interface{}{"status": "accepted", "message": "final report received, please call write_user_history_case to persist user case history"},
-		SetFinalReport:     true,
-		FinalReportPayload: &payload,
+		Payload:        map[string]interface{}{"status": "success", "message": "final report submitted successfully"},
+		FinalResultStr: FormatFinalReport(payload),
 	}, nil
 }

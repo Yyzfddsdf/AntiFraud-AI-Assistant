@@ -21,37 +21,29 @@ const mainAgentSystemPrompt = `你是一位多模态风控总分析专家。你�
 3) 视频子智能体分析结果；
 4) 音频子智能体分析结果。
 
-你的任务是：先完成检索与用户信息补全，提交结构化最终报告，并在报告后补充写入用户案件历史。
+你的任务必须严格按照以下阶段顺序执行，**禁止跳跃或回退阶段**：
 
-【强制工具调用规则】
-1. 第一阶段（必须）：
-	- 必须先调用 search_similar_cases。
-	- query 必须是完整案件描述，不得过短，需包含：可疑行为、话术特征、关键实体（金额/联系方式/平台名/账号）、场景线索。
-2. 第二阶段（按需但强烈建议）：
-	- 优先调用：
-	  a) query_user_info
-	  b) query_user_history_cases
-	- 这三个用户相关工具均不需要输入 user_id，user_id 由服务端 HTTP 上下文自动获取（当前为占位实现）。
-3. 第三阶段（必须）：
-	- 在调用 submit_final_report 之后，必须调用 write_user_history_case 写入案件摘要（补充用户案件历史）。
-4. 结束阶段（必须最后一步）：
-	- 只能在完成至少一次 search_similar_cases 后，调用 submit_final_report。
-	- submit_final_report 后必须再调用 write_user_history_case，完成写入后流程才结束。
-	- 禁止在 submit_final_report 之前直接给自然语言结论。
+【第一阶段：信息收集与补全】（按需）
+- 必须先评估是否需要更多信息。
+- 如需检索相似案件，调用 search_similar_cases。
+- 如需用户画像，调用 query_user_info 和 query_user_history_cases。
+- 此阶段可进行多轮，直到你认为信息充足。
 
-【输出约束】
-- 仅输出中文；
-- 你不应直接输出正文报告，最终必须通过 submit_final_report 返回；
-- 不得编造未出现的事实；
-- 若某模态未提供，相关字段应明确“未提供该模态数据”。
+【第二阶段：最终报告生成】（必须）
+- 当信息收集完成后，**必须**调用 submit_final_report 提交最终分析报告。
+- submit_final_report 是生成报告的唯一方式。
+- **一旦进入此阶段，禁止再调用第一阶段的工具。**
 
-【submit_final_report字段要求】
-- summary: 综合摘要
-- text_finding/image_finding/video_finding/audio_finding: 各模态关键发现
-- risk_signals: 风险信号清单（数组）
-- risk_level: 低/中/高
-- risk_reason: 风险等级理由
-- next_actions: 建议的下一步核查动作（数组）`
+【第三阶段：历史归档与结束】（必须）
+- 在调用 submit_final_report 成功后，**必须紧接着**调用 write_user_history_case 将本案归档。
+- **调用完 write_user_history_case 后，你的任务立即结束。**
+- **严禁**在归档后继续调用任何工具。
+- **严禁**重复提交报告或重复归档。
+
+【工具使用注意】
+- search_similar_cases 的 query 应包含：可疑行为、话术特征、关键实体（金额/联系方式/平台名/账号）、场景线索。
+- 所有工具均不需要输入 user_id 和 task_id，由系统自动处理。
+- **每个工具在整个对话过程中仅允许被调用一次**（search_similar_cases 除外，可根据不同关键词调用多次，但建议一次查完）。`
 
 type modalityResult struct {
 	Text          string
@@ -226,11 +218,13 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 	}
 
 	const maxRounds = 8
-	hasCaseSearch := false
-	var finalReportPayload *tool.FinalReportPayload
-	hasHistoryWriteAfterFinal := false
+	var finalResult string
+	finalReportSubmitted := false
+	historyCaseWritten := false
+
 	for round := 0; round < maxRounds; round++ {
 		fmt.Printf("[MainAgent][Round %d] 开始请求模型\n", round+1)
+
 		action := fmt.Sprintf("create chat completion round %d", round+1)
 		resp, err := callWithRetry[openai.ChatCompletionResponse]("MainAgent", action, func() (openai.ChatCompletionResponse, error) {
 			return client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
@@ -264,21 +258,20 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 		})
 
 		if len(msg.ToolCalls) == 0 {
-			if finalReportPayload != nil && !hasHistoryWriteAfterFinal {
-				return "", fmt.Errorf("final report already submitted, but write_user_history_case was not called after report")
+			if finalReportSubmitted && historyCaseWritten && finalResult != "" {
+				fmt.Printf("[MainAgent][Round %d] 核心任务（报告+归档）已完成，强制结束。\n", round+1)
+				return finalResult, nil
 			}
-			fallback := tool.FinalReportPayload{
-				Summary:      strings.TrimSpace(msg.Content),
-				TextFinding:  "未提供结构化结果",
-				ImageFinding: "未提供结构化结果",
-				VideoFinding: "未提供结构化结果",
-				AudioFinding: "未提供结构化结果",
-				RiskSignals:  []string{"模型未返回工具调用，已降级为文本输出"},
-				RiskLevel:    "中",
-				RiskReason:   "返回格式不符合工具约束",
-				NextActions:  []string{"重试请求并检查模型工具调用兼容性"},
+
+			if finalResult != "" {
+				return finalResult, nil
 			}
-			return tool.FormatFinalReport(fallback), nil
+			// 如果没有工具调用且没有缓存结果，说明模型只是想聊天或出错了
+			// 这里做一个兜底：如果有文本回复就返回文本，否则返回错误
+			if msg.Content != "" {
+				return msg.Content, nil
+			}
+			return "", fmt.Errorf("model returned no tool calls and no content")
 		}
 
 		toolResponseAdded := false
@@ -294,19 +287,18 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 		}
 		for _, call := range msg.ToolCalls {
 			fmt.Printf("[MainAgent][Round %d] 调用工具: %s, 参数: %s\n", round+1, call.Function.Name, truncateForLog(call.Function.Arguments, 240))
+
+			if call.Function.Name == "submit_final_report" {
+				finalReportSubmitted = true
+			}
+			if call.Function.Name == "write_user_history_case" {
+				historyCaseWritten = true
+			}
+
 			handler := tool.GetToolHandler(call.Function.Name)
 			if handler == nil {
 				appendToolResponse(call.ID, map[string]interface{}{"error": "unsupported tool"})
 				fmt.Printf("[MainAgent][Round %d] 未支持工具: %s\n", round+1, call.Function.Name)
-				continue
-			}
-
-			// 特殊检查 for final report
-			if call.Function.Name == tool.FinalReportToolName && !hasCaseSearch {
-				appendToolResponse(call.ID, map[string]interface{}{
-					"error": "必须先调用 search_similar_cases 再调用 submit_final_report",
-				})
-				fmt.Printf("[MainAgent][Round %d] 拦截最终报告: 尚未完成案件检索\n", round+1)
 				continue
 			}
 
@@ -318,32 +310,38 @@ func generateMainReport(ctx context.Context, cfg *config.Config, finalInput stri
 
 			appendToolResponse(call.ID, response.Payload)
 
-			// 处理标志
-			if response.SetCaseSearch {
-				hasCaseSearch = true
-			}
-			if response.SetFinalReport {
-				finalReportPayload = response.FinalReportPayload
-				ctx = tool.BindFinalReport(ctx, tool.FormatFinalReport(*response.FinalReportPayload))
-				hasHistoryWriteAfterFinal = false
-				fmt.Printf("[MainAgent][Round %d] 收到最终报告工具，等待写入用户历史后结束\n", round+1)
-			}
-			if response.SetHistoryWriteAfterFinal {
-				hasHistoryWriteAfterFinal = true
-				fmt.Printf("[MainAgent][Round %d] 已在最终报告后完成历史写入，流程可结束\n", round+1)
+			// 捕获最终结果
+			if response.FinalResultStr != "" {
+				finalResult = response.FinalResultStr
+				// 恢复上下文传递：将标准报告绑定到Context，供后续 write_user_history_case 工具使用
+				ctx = tool.BindFinalReport(ctx, finalResult)
+				fmt.Printf("[MainAgent][Round %d] 收到最终结果，已缓存至上下文，流程继续\n", round+1)
 			}
 		}
 
 		if !toolResponseAdded {
 			return "", fmt.Errorf("tool calls returned but no tool response was added")
 		}
-		if finalReportPayload != nil && hasHistoryWriteAfterFinal {
-			return tool.FormatFinalReport(*finalReportPayload), nil
+
+		if finalReportSubmitted && historyCaseWritten && finalResult != "" {
+			fmt.Printf("[MainAgent][Round %d] 核心任务（报告+归档）已完成，强制结束。\n", round+1)
+			return finalResult, nil
 		}
+
+		if finalResult != "" {
+			// 如果已经拿到最终结果，且当前轮次没有新的工具调用（逻辑上不太可能，因为上面是遍历工具调用）
+			// 但如果在循环结束后检查到有结果，应该返回。
+			// 这里我们允许流程继续跑，直到模型自己停下来（len(msg.ToolCalls) == 0）
+			// 或者达到最大轮数
+		}
+
 		fmt.Printf("[MainAgent][Round %d] 工具结果已回填，进入下一轮\n", round+1)
 	}
 
-	return "", fmt.Errorf("main agent exceeded max tool rounds (%d) without final report", maxRounds)
+	if finalResult != "" {
+		return finalResult, nil
+	}
+	return "", fmt.Errorf("main agent exceeded max tool rounds (%d) without final result", maxRounds)
 }
 
 func truncateForLog(input string, maxLen int) string {

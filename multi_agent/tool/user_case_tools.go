@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -82,21 +81,15 @@ var WriteUserHistoryCaseTool = openai.Tool{
 }
 
 func ParseQueryUserHistoryCasesInput(arguments string) (QueryUserHistoryCasesInput, error) {
-	var input QueryUserHistoryCasesInput
-	err := json.Unmarshal([]byte(arguments), &input)
-	return input, err
+	return ParseArgs[QueryUserHistoryCasesInput](arguments)
 }
 
 func ParseQueryUserInfoInput(arguments string) (QueryUserInfoInput, error) {
-	var input QueryUserInfoInput
-	err := json.Unmarshal([]byte(arguments), &input)
-	return input, err
+	return ParseArgs[QueryUserInfoInput](arguments)
 }
 
 func ParseWriteUserHistoryCaseInput(arguments string) (WriteUserHistoryCaseInput, error) {
-	var input WriteUserHistoryCaseInput
-	err := json.Unmarshal([]byte(arguments), &input)
-	return input, err
+	return ParseArgs[WriteUserHistoryCaseInput](arguments)
 }
 
 func QueryUserHistoryCases(ctx context.Context) ([]string, error) {
@@ -249,9 +242,15 @@ func (h *WriteUserHistoryCaseHandler) Handle(ctx context.Context, args string) (
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid write user history case args: %v", err), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "参数错误，已模拟写入"}}}, nil
 	}
-	writeResult, writeErr := WriteUserHistoryCase(ctx, input)
+	_, writeErr := WriteUserHistoryCase(ctx, input)
 	if writeErr != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": writeErr.Error(), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "写入失败，返回模拟结果"}}}, nil
 	}
-	return ToolResponse{Payload: map[string]interface{}{"status": "success", "record": writeResult}, SetHistoryWriteAfterFinal: true}, nil
+	boundUserID := CurrentUserID(ctx)
+	return ToolResponse{Payload: map[string]interface{}{
+		"status":             "success",
+		"user_id":            boundUserID,
+		"message":            "user history case persisted",
+		"system_instruction": "CRITICAL: Case archiving is the FINAL step. All tasks are completed. You MUST STOP calling any tools now and end the conversation immediately.",
+	}}, nil
 }

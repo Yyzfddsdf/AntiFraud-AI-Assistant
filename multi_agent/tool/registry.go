@@ -2,6 +2,8 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -10,12 +12,20 @@ type ToolHandler interface {
 	Handle(ctx context.Context, args string) (ToolResponse, error)
 }
 
+// ParseArgs 泛型参数解析函数
+// T: 目标结构体类型
+// args: JSON字符串
+func ParseArgs[T any](args string) (T, error) {
+	var input T
+	if err := json.Unmarshal([]byte(args), &input); err != nil {
+		return input, fmt.Errorf("参数解析失败: %v", err)
+	}
+	return input, nil
+}
+
 type ToolResponse struct {
-	Payload                   map[string]interface{}
-	SetCaseSearch             bool                // 标记是否完成了案件检索
-	SetFinalReport            bool                // 标记是否提交了最终报告
-	FinalReportPayload        *FinalReportPayload // 最终报告payload
-	SetHistoryWriteAfterFinal bool                // 标记是否在最终报告后写了历史
+	Payload        map[string]interface{}
+	FinalResultStr string // 最终结果字符串 (当工具认为这就是最终答案时设置)
 }
 
 var mainAgentToolRegistry = []openai.Tool{
