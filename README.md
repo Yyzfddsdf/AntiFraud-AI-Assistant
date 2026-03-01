@@ -1,11 +1,11 @@
-# Agent 多模态风控服务
+# AntiFraud AI Assistant
 
-本项目是一个基于 Go 的多模态风控分析服务，包含两部分能力：
+一个基于 Go 的反诈智能助手服务，包含两条核心能力：
 
-- 登录与鉴权系统（验证码、注册、登录、JWT、限流）
-- 多模态诈骗分析任务系统（文本/视频/音频/图像，异步队列执行，任务与历史可查询）
+1. 登录与鉴权系统（验证码、注册、登录、JWT、限流、管理员能力）
+2. 多模态反诈分析系统（文本/图像/视频/音频，异步任务执行，历史归档查询）
 
-服务默认端口：`8081`
+默认服务端口：`8081`
 
 ---
 
@@ -13,11 +13,10 @@
 
 - Go 1.25
 - Web 框架：Gin
-- ORM/数据库：GORM + SQLite
+- ORM / 数据库：GORM + SQLite
 - 鉴权：JWT
-- 多模态与主分析：`go-openai` 兼容接口调用
-
-依赖见 `go.mod`。
+- 会话上下文：Redis（聊天上下文）
+- 模型调用：OpenAI 兼容接口（已统一到自定义 `llm` 客户端）
 
 ---
 
@@ -29,59 +28,104 @@
 go mod tidy
 ```
 
-### 2.2 启动服务
+### 2.2 运行服务
 
 ```bash
 go run .
 ```
 
-服务启动后：
+启动后可访问：
 
-- API 基址：`http://localhost:8081/api`
-- 测试页面：`http://localhost:8081/test-login`
+- API 基地址：`http://localhost:8081/api`
+- 登录测试页：`http://localhost:8081/test-login`
 
 ---
 
 ## 3. 环境变量
 
 - `PORT`：服务端口，默认 `8081`
-- `JWT_SECRET`：JWT 密钥（生产必须设置）
-- `DB_PATH`：登录库路径，默认 `DB/auth_system.db`
+- `JWT_SECRET`：JWT 密钥（生产环境必须设置）
+- `DB_PATH`：登录数据库路径，默认 `DB/auth_system.db`
 
 ---
 
 ## 4. 配置文件
 
-主分析配置默认从 `config/config.json` 读取，字段包括：
+主配置文件：`config/config.json`
 
-- `api_key`
-- `base_url`
-- `image_model`
-- `audio_model`
-- `main_model`
+当前为统一配置结构（按智能体拆分）：
 
-路径解析支持相对路径兜底（见 `config/config.go`）。
+- `agents.main.{model, api_key, base_url, max_tokens, top_p, temperature}`
+- `agents.image.{model, api_key, base_url, max_tokens, top_p, temperature}`
+- `agents.video.{model, api_key, base_url, max_tokens, top_p, temperature}`
+- `agents.audio.{model, api_key, base_url, max_tokens, top_p, temperature}`
+- `prompts.{main, image, video, audio}`
+- `retry.{max_retries, retry_delay_ms}`
 
----
+配置加载逻辑见 `config/config.go`，包含：
 
-## 5. 目录结构（核心）
-
-- `main.go`：服务入口、路由注册
-- `login_system/`：验证码/注册/登录/JWT/中间件
-- `multi_agent/`：多模态分析、主智能体、工具调用、状态存储
-  - `httpapi/`：多模态任务相关 HTTP 接口
-  - `queue/`：异步任务队列 worker
-  - `state/`：任务与历史状态持久化（`DB/multi_agent_state.json`）
-  - `tool/`：主智能体工具定义与实现
-- `config/`：模型配置
-- `DB/`：本地 SQLite 与状态文件
-- `API.md`：接口文档（详细）
+- 路径兜底解析（相对路径 + 项目根目录）
+- 字段标准化（trim）
+- 完整性校验（模型参数、提示词、重试参数）
 
 ---
 
-## 6. 主要 API
+## 5. 项目结构（核心模块）
 
-鉴权相关：
+- `main.go`
+  - 服务启动入口
+  - 路由注册（auth/chat/multimodal）
+  - 全局 CORS 与限流中间件
+
+- `login_system/`
+  - 认证与用户管理
+  - `controllers/`：注册/登录/用户查询/升级等接口
+  - `middleware/`：JWT 鉴权、管理员校验、限流
+  - `database/`：SQLite 初始化与迁移
+
+- `chat_system/`
+  - 聊天能力（工具调用 + Redis 上下文）
+  - `httpapi/`：聊天接口与上下文接口
+  - `service/`：工具调用闭环 + 流式回复 + 上下文持久化
+  - `tool/`：聊天工具（用户信息、历史案件）
+
+- `multi_agent/`
+  - 多模态分析主流程
+  - `main_agent.go`：主智能体编排与工具循环
+  - `image.go / video.go / ali_asr.go`：子智能体分析
+  - `queue/`：异步入队与后台处理
+  - `state/`：任务状态与历史归档持久化（两张表）
+  - `tool/`：主智能体工具定义与处理逻辑
+  - `httpapi/`：多模态任务接口
+
+- `llm/`
+  - OpenAI 兼容自定义客户端与协议结构
+
+---
+
+## 6. 关键业务流程
+
+### 6.1 多模态任务流程
+
+1. `POST /api/scam/multimodal/analyze` 提交任务
+2. 任务写入 `pending_tasks`，后台 goroutine 启动处理
+3. 并行执行图像/视频/音频子智能体分析
+4. 主智能体聚合结果并走工具调用流程
+5. 提交 `submit_final_report` 后，调用 `write_user_history_case`
+6. 任务从进行中迁移到 `history_cases`
+
+### 6.2 聊天流程
+
+1. 加载 Redis 会话上下文
+2. 必要时触发工具调用（用户画像/历史）
+3. 流式返回回答内容（SSE）
+4. 将本轮消息写回 Redis，并刷新 TTL
+
+---
+
+## 7. 主要 API
+
+### 7.1 鉴权相关
 
 - `GET /api/auth/captcha`
 - `POST /api/auth/register`
@@ -89,54 +133,34 @@ go run .
 - `GET /api/user`
 - `DELETE /api/user`
 - `POST /api/upgrade`
+- `GET /api/users`（管理员）
 
-用户管理（管理员）：
-
-- `GET /api/users` (获取用户列表/搜索)
-
-对话相关（需鉴权）：
+### 7.2 对话相关（需鉴权）
 
 - `POST /api/chat`
 - `GET /api/chat/context`
 - `POST /api/chat/refresh`
 
-多模态相关（需鉴权）：
+### 7.3 多模态相关（需鉴权）
 
 - `PUT /api/scam/multimodal/user/age`
 - `POST /api/scam/multimodal/analyze`
 - `GET /api/scam/multimodal/tasks`
 - `GET /api/scam/multimodal/tasks/:taskId`
 - `GET /api/scam/multimodal/history`
+- `DELETE /api/scam/multimodal/history/:recordId`
 
-完整请求/响应示例见 `API.md`。
-
----
-
-## 7. 数据落盘说明
-
-- 登录用户信息：SQLite（默认 `DB/auth_system.db`）
-- 多模态任务状态：JSON（`DB/multi_agent_state.json`）
-  - `pending`：排队/处理中任务
-  - `history`：历史案件
-
-任务 payload 除原始模态数据外，还会保存函数级解读内容：
-
-- `video_insights`
-- `audio_insights`
-- `image_insights`
-
-这些解读来自子函数分析结果，不依赖主模型生成。
+更完整的请求/响应样例见 `API.md`。
 
 ---
 
-## 8. 主智能体工具机制
+## 8. 持久化说明
 
-当前采用“最小必要参数 + 服务端上下文补全”策略：
-
-- 模型只传业务必要参数（例如标题、摘要、风险等级）
-- `user_id`、`task_id`、原始多模态输入、函数解读等由后端上下文绑定
-
-这样可以减少模型侧参数复杂度，避免越权/伪造内部字段。
+- 登录与用户信息：`DB/auth_system.db`（SQLite）
+- 多模态任务状态：
+  - `pending_tasks`：进行中任务
+  - `history_cases`：历史案件归档
+- 聊天上下文：Redis（按用户维度，带 TTL）
 
 ---
 
@@ -148,10 +172,18 @@ go run .
 go test ./...
 ```
 
-- 若需调试接口，优先使用 `/test-login` 页面走完整流程。
+- 本地联调建议：
+  1. 先走 `test-login` 页面获取 token
+  2. 再调用多模态任务接口并轮询任务状态
+  3. 最后查看历史归档与聊天工具返回是否一致
 
 ---
 
 ## 10. 备注
 
-本仓库当前同时包含登录系统与多模态分析能力，后续如需扩展（例如向量化检索、外部向量库）建议在 `multi_agent/` 下按模块增量演进。
+当前仓库处于持续重构阶段（统一配置、统一工具调用、统一客户端协议）。  
+如需继续扩展新模型或新子智能体，建议优先沿用现有的：
+
+- `CommonAgent / SubAgentBase` 继承结构
+- `config/config.json` 按模型独立配置
+- `tool` 注册中心 + handler 映射

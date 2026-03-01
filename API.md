@@ -271,6 +271,38 @@
 
 ---
 
+## 删除当前用户历史案件（需鉴权）
+
+- **Method**: `DELETE`
+- **Path**: `/api/scam/multimodal/history/:recordId`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 参数说明
+
+- `recordId`：历史案件 ID，可从 `GET /api/scam/multimodal/history` 返回的 `record_id` 获取。
+- 仅允许删除当前登录用户自己的历史案件。
+
+### 成功响应（200）
+
+```json
+{
+  "user_id": "1",
+  "record_id": "TASK-123456",
+  "message": "历史案件删除成功"
+}
+```
+
+### 常见失败响应
+
+- `400` `recordId` 为空
+- `401` 未认证
+- `404` 历史案件不存在或不属于当前用户
+- `500` 删除失败
+
+---
+
 ## 9) 更新当前用户年龄（需鉴权）
 
 - **Method**: `PUT`
@@ -319,7 +351,7 @@
   - `Authorization: Bearer <JWT_TOKEN>`
   - `Accept: application/json`
 
-### 成功响应（200）
+### 成功响应（200）- 单文件示例（单模态 1 条数据）
 
 ```json
 {
@@ -329,27 +361,163 @@
     "title": "TED学术演讲视频风险核查",
     "status": "completed",
     "created_at": "2026-02-20T23:57:30+08:00",
-    "updated_at": "2026-02-20T23:57:30+08:00",
+    "updated_at": "2026-02-20T23:57:45+08:00",
     "payload": {
       "text": "",
-      "videos": ["<video_base64>"],
+      "videos": ["<video_base64_1>"],
       "audios": [],
       "images": [],
       "video_insights": [
-        "【整体视觉感受（主观特征）】\n视频为高质量的学术演讲录屏..."
+        "【整体视觉感受】\n画面为公开视频演讲场景，未见明显诱导操作。\n\n【关键信息提取】\n未出现“转账”“验证码”“下载指定 App”等指令。\n\n【可疑点清单】\n- 未发现明显可疑信号"
       ],
       "audio_insights": [],
       "image_insights": []
     },
-    "report": "1. 综合摘要\n该视频为Beau Lotto在TED平台进行的学术演讲录屏..."
+    "report": "1. 综合摘要\n该内容以公开演讲为主，未发现直接诈骗指令。\n\n2. 多模态关键发现\n- 文本: 未提供文本输入\n- 图像: 未提供图像输入\n- 视频: 画面与语义一致，未见明显诈骗套路\n- 音频: 未提供音频输入\n\n3. 风险信号\n- 未发现明确风险信号\n\n4. 风险等级与理由\n- 风险等级: 低\n- 理由: 未出现诱导转账、索要敏感信息等关键风险特征\n\n5. 建议的下一步动作\n- 保留原始素材与上下文供后续复核"
   }
 }
 ```
 
-### 说明
+### 成功响应（200）- 多文件示例（同一模态多条数据）
 
-- `taskId` 统一使用：`TASK-...`
-- `payload` 中包含输入的多模态数据及各模态的初步分析洞察（`*_insights`）。
+```json
+{
+  "task": {
+    "task_id": "TASK-9C4D2F71A0B3",
+    "user_id": "5",
+    "title": "批量视频线索核查",
+    "status": "completed",
+    "created_at": "2026-02-21T10:00:00+08:00",
+    "updated_at": "2026-02-21T10:00:24+08:00",
+    "payload": {
+      "text": "",
+      "videos": ["<video_base64_1>", "<video_base64_2>", "<video_base64_3>"],
+      "audios": [],
+      "images": [],
+      "video_insights": [
+        "【整体视觉感受】\n画面为交易聊天演示，存在催促动作。\n\n【关键信息提取】\n出现“立即转账”“私下联系”等指令型文案。\n\n【可疑点清单】\n1. 存在私下转账引导。\n2. 存在规避平台担保交易提示。",
+        "【整体视觉感受】\n画面含账户切换和收款二维码展示。\n\n【关键信息提取】\n出现新的收款主体，与上下文不一致。\n\n【可疑点清单】\n1. 收款主体与既有信息不一致。",
+        "Error: video 3: no content returned"
+      ],
+      "audio_insights": [],
+      "image_insights": []
+    },
+    "report": "1. 综合摘要\n3 条视频中有 1-2 条出现明显风险信号，需人工复核。\n\n2. 多模态关键发现\n- 文本: 未提供文本输入\n- 图像: 未提供图像输入\n- 视频: 存在私下转账引导与收款主体不一致线索\n- 音频: 未提供音频输入\n\n3. 风险信号\n- 私下转账引导\n- 收款主体异常切换\n\n4. 风险等级与理由\n- 风险等级: 中\n- 理由: 存在关键风险特征，但仍需补充上下文证据\n\n5. 建议的下一步动作\n- 对风险片段进行人工复核\n- 交叉核验聊天记录、付款凭证与账户信息"
+  }
+}
+```
+
+### 成功响应（200）- 处理中示例（报告尚未生成）
+
+```json
+{
+  "task": {
+    "task_id": "TASK-1F20AB3C9D8E",
+    "user_id": "5",
+    "title": "多模态线索核查",
+    "status": "processing",
+    "created_at": "2026-02-21T11:00:00+08:00",
+    "updated_at": "2026-02-21T11:00:05+08:00",
+    "payload": {
+      "text": "请判断是否诈骗",
+      "videos": ["<video_base64_1>"],
+      "audios": [],
+      "images": [],
+      "video_insights": [],
+      "audio_insights": [],
+      "image_insights": []
+    },
+    "report": ""
+  }
+}
+```
+
+### `video_insights` 真实格式（单条元素）
+
+`video_insights` 数组中的每个元素是字符串，而不是 JSON 对象。单条元素通常是 3 段文本：
+
+```text
+【整体视觉感受】
+{visual_impression}
+
+【关键信息提取】
+{key_content}
+
+【可疑点清单】
+1. {point_1}
+2. {point_2}
+...
+```
+
+兼容性说明：
+
+- 不同实现的标题可能略有差异（如 `【整体视觉感受】` 或 `【整体视觉感受（主观特征）】`）。
+- 可疑点为空时，第三段可能返回 `- 未发现明显可疑信号` 或 `- 未发现明显视觉异常`。
+- 单条分析失败时，对应元素会是 `Error: ...` 文本。
+
+前端建议解析流程：
+
+1. 先判断是否以 `Error:` 开头；若是，按失败文本处理。
+2. 按标题 `【...】` 或双换行分段。
+3. 第 1 段映射 `visual_impression`，第 2 段映射 `key_content`。
+4. 第 3 段按 `^\d+\.` 或 `^-` 提取为 `suspicious_points[]`。
+
+### `report` 报告详细格式（固定模板）
+
+`report` 为纯文本，由 `submit_final_report` 的结构化字段格式化生成，字段来源如下：
+
+```json
+{
+  "summary": "string",
+  "text_finding": "string",
+  "image_finding": "string",
+  "video_finding": "string",
+  "audio_finding": "string",
+  "risk_signals": ["string"],
+  "risk_level": "低|中|高",
+  "risk_reason": "string",
+  "next_actions": ["string"]
+}
+```
+
+渲染后的 `report` 通常为：
+
+```text
+1. 综合摘要
+{summary}
+
+2. 多模态关键发现
+- 文本: {text_finding}
+- 图像: {image_finding}
+- 视频: {video_finding}
+- 音频: {audio_finding}
+
+3. 风险信号
+- {risk_signal_1}
+- {risk_signal_2}
+...
+
+4. 风险等级与理由
+- 风险等级: 低 | 中 | 高
+- 理由: {risk_reason}
+
+5. 建议的下一步动作
+- {next_action_1}
+- {next_action_2}
+...
+```
+
+### 字段与返回规则
+
+- `taskId` 统一使用 `TASK-...`。
+- `payload` 包含原始输入（`text/videos/audios/images`）与各模态分析结果（`*_insights`）。
+- `*_insights` 始终是字符串数组：
+  - 单文件时，长度通常为 `1`。
+  - 多文件时，长度通常与输入文件数量一致，按输入顺序对应。
+  - 某条失败时，该元素为 `Error: ...`。
+  - 未提供某模态时，返回空数组 `[]`。
+- `report` 仅在任务完成后返回完整文本；`pending/processing` 可能为空字符串。
+- `error`、`history_ref` 属于可选扩展字段，可能返回也可能省略（不同实现略有差异）。
 
 ### 常见失败响应
 
