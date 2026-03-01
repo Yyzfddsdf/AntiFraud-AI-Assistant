@@ -1,5 +1,0 @@
-{
-  "api_key": "your_api_key_here",
-  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "audio_model": "qwen3-omni-flash-2025-12-01"
-}
