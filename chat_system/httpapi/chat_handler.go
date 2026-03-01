@@ -15,6 +15,7 @@ type ChatRequest struct {
 	Message string `json:"message" binding:"required"`
 }
 
+// ChatContextResponse 返回当前用户的会话上下文快照。
 type ChatContextResponse struct {
 	UserID     string                            `json:"user_id"`
 	HasContext bool                              `json:"has_context"`
@@ -22,6 +23,11 @@ type ChatContextResponse struct {
 	Messages   []chatservice.ConversationMessage `json:"messages"`
 }
 
+// ChatHandle 处理聊天请求，内部流程为：
+// 1) 解析请求；
+// 2) 组装上下文；
+// 3) 调用模型流式输出；
+// 4) 持久化本轮会话到 Redis。
 func ChatHandle(c *gin.Context) {
 	var req ChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -72,6 +78,7 @@ func ChatHandle(c *gin.Context) {
 	_ = assistantReply
 }
 
+// RefreshChatContextHandle 清空当前用户在 Redis 中的会话上下文。
 func RefreshChatContextHandle(c *gin.Context) {
 	cfg, err := chatcfg.LoadConfig("chat_system/config/config.json")
 	if err != nil {
@@ -91,6 +98,7 @@ func RefreshChatContextHandle(c *gin.Context) {
 	})
 }
 
+// GetChatContextHandle 读取当前用户会话上下文和剩余 TTL。
 func GetChatContextHandle(c *gin.Context) {
 	cfg, err := chatcfg.LoadConfig("chat_system/config/config.json")
 	if err != nil {
@@ -113,6 +121,7 @@ func GetChatContextHandle(c *gin.Context) {
 	})
 }
 
+// getCurrentUserID 从鉴权上下文提取用户 ID，未命中时回退 demo-user。
 func getCurrentUserID(c *gin.Context) string {
 	userIDValue, exists := c.Get("userID")
 	if !exists {

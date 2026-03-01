@@ -13,18 +13,20 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const conversationTTL = 5 * time.Minute
-const chatSystemPrompt = "你是一个简洁、友好的中文聊天助手。必要时可调用工具查询用户信息或用户案件历史后再回答。"
+const chatSystemPrompt = "You are a concise and friendly Chinese assistant. Use tools when needed before answering."
 
+// ConversationToolCall 是对工具调用的持久化表示。
 type ConversationToolCall struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 }
 
+// ConversationMessage 是会话上下文在 Redis 中的序列化结构。
 type ConversationMessage struct {
 	Role       string                 `json:"role"`
 	Content    string                 `json:"content"`
@@ -32,11 +34,13 @@ type ConversationMessage struct {
 	ToolCalls  []ConversationToolCall `json:"tool_calls,omitempty"`
 }
 
+// ChatService 封装聊天模型客户端与模型 ID。
 type ChatService struct {
 	client *openai.Client
 	model  string
 }
 
+// NewChatService 根据聊天配置创建服务实例。
 func NewChatService(cfg *chatcfg.Config) *ChatService {
 	openaiCfg := openai.DefaultConfig(cfg.APIKey)
 	openaiCfg.BaseURL = cfg.BaseURL
@@ -52,6 +56,8 @@ func NewChatService(cfg *chatcfg.Config) *ChatService {
 	}
 }
 
+// BuildMessagesForUser 组装最终请求消息：
+// 系统提示词 + Redis 历史上下文 + 当前用户输入。
 func BuildMessagesForUser(cfg *chatcfg.Config, userID string, currentUserInput string) ([]openai.ChatCompletionMessage, error) {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
@@ -109,6 +115,7 @@ func BuildMessagesForUser(cfg *chatcfg.Config, userID string, currentUserInput s
 	return messages, nil
 }
 
+// StreamReply 先完成工具调用，再进入纯文本流式回复。
 func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (string, []ConversationMessage, error) {
 	finalMessages, toolMessages, err := s.resolveToolCalls(ctx, userID, messages, emit)
 	if err != nil {
@@ -175,6 +182,7 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 	return finalReply, turnMessages, nil
 }
 
+// resolveToolCalls 通过非流式轮询，执行模型触发的工具调用并回填 tool 消息。
 func (s *ChatService) resolveToolCalls(ctx context.Context, userID string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) ([]openai.ChatCompletionMessage, []ConversationMessage, error) {
 	resolved := append([]openai.ChatCompletionMessage{}, messages...)
 	recorded := make([]ConversationMessage, 0)
@@ -265,6 +273,7 @@ func (s *ChatService) resolveToolCalls(ctx context.Context, userID string, messa
 	}
 }
 
+// PersistConversation 将本轮新增消息追加写入 Redis，并重置 TTL。
 func PersistConversation(cfg *chatcfg.Config, userID string, newMessages []ConversationMessage) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
@@ -308,6 +317,7 @@ func PersistConversation(cfg *chatcfg.Config, userID string, newMessages []Conve
 	return nil
 }
 
+// ClearConversation 清空指定用户会话上下文。
 func ClearConversation(cfg *chatcfg.Config, userID string) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
@@ -330,6 +340,7 @@ func ClearConversation(cfg *chatcfg.Config, userID string) error {
 	return nil
 }
 
+// GetConversationContext 查询上下文、剩余 TTL 和上下文是否存在。
 func GetConversationContext(cfg *chatcfg.Config, userID string) ([]ConversationMessage, int64, bool, error) {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
@@ -374,10 +385,12 @@ func GetConversationContext(cfg *chatcfg.Config, userID string) ([]ConversationM
 	return history, ttlSeconds, true, nil
 }
 
+// conversationKey 生成用户会话在 Redis 中的 key。
 func conversationKey(userID string) string {
 	return "chat:context:" + strings.TrimSpace(userID)
 }
 
+// sanitizeConversationMessages 过滤非法角色并裁剪内容。
 func sanitizeConversationMessages(items []ConversationMessage) []ConversationMessage {
 	result := make([]ConversationMessage, 0, len(items))
 	for _, item := range items {
@@ -396,6 +409,7 @@ func sanitizeConversationMessages(items []ConversationMessage) []ConversationMes
 	return result
 }
 
+// openAIToolCallsToConversation 将 SDK 工具调用结构转换为持久化结构。
 func openAIToolCallsToConversation(items []openai.ToolCall) []ConversationToolCall {
 	result := make([]ConversationToolCall, 0, len(items))
 	for _, item := range items {
@@ -416,6 +430,7 @@ func openAIToolCallsToConversation(items []openai.ToolCall) []ConversationToolCa
 	return result
 }
 
+// conversationToolCallsToOpenAI 将持久化结构转换回 SDK 工具调用结构。
 func conversationToolCallsToOpenAI(items []ConversationToolCall) []openai.ToolCall {
 	result := make([]openai.ToolCall, 0, len(items))
 	for _, item := range items {
@@ -436,6 +451,7 @@ func conversationToolCallsToOpenAI(items []ConversationToolCall) []openai.ToolCa
 	return result
 }
 
+// conversationToOpenAIMessage 把会话记录恢复为模型请求消息。
 func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletionMessage, bool) {
 	role := strings.TrimSpace(item.Role)
 	switch role {
@@ -457,6 +473,7 @@ func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletio
 	}
 }
 
+// EncodeEvent 将 SSE 事件负载编码为 JSON 字符串。
 func EncodeEvent(event map[string]interface{}) string {
 	data, _ := json.Marshal(event)
 	return string(data)

@@ -3,7 +3,7 @@ package tool
 import (
 	"context"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 type ChatToolHandler interface {

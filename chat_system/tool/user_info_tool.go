@@ -11,7 +11,7 @@ import (
 	"image_recognition/login_system/models"
 	"image_recognition/multi_agent/state"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const ChatQueryUserInfoToolName = "chat_query_user_info"
@@ -22,7 +22,7 @@ var ChatQueryUserInfoTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        ChatQueryUserInfoToolName,
-		Description: "查询当前登录用户基础信息与风险画像",
+		Description: "查询当前登录用户的画像信息与风险摘要。",
 		Parameters: map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
@@ -54,37 +54,32 @@ func QueryUserInfo(userID string) (map[string]interface{}, error) {
 		}
 	}
 
-	risk := "低"
-	riskCaseCount := map[string]int{"低": 0, "中": 0, "高": 0}
+	risk := "\u4f4e"
+	riskCaseCount := map[string]int{
+		"\u4f4e": 0,
+		"\u4e2d": 0,
+		"\u9ad8": 0,
+	}
+
 	for _, item := range view.History {
-		itemRisk := strings.TrimSpace(item.RiskLevel)
-		if itemRisk == "" {
-			switch {
-			case strings.Contains(item.Report, "风险等级：高"):
-				itemRisk = "高"
-			case strings.Contains(item.Report, "风险等级：中"):
-				itemRisk = "中"
-			default:
-				itemRisk = "低"
-			}
-		}
+		itemRisk := normalizeRiskLevel(strings.TrimSpace(item.RiskLevel))
 
 		if _, ok := riskCaseCount[itemRisk]; ok {
 			riskCaseCount[itemRisk]++
 		}
 
-		if itemRisk == "高" {
-			risk = "高"
+		if itemRisk == "\u9ad8" {
+			risk = "\u9ad8"
 			break
 		}
-		if risk != "高" && itemRisk == "中" {
-			risk = "中"
+		if risk != "\u9ad8" && itemRisk == "\u4e2d" {
+			risk = "\u4e2d"
 		}
 	}
 
 	return map[string]interface{}{
 		"user_id":              view.UserID,
-		"user_name":            fmt.Sprintf("用户%s", view.UserID),
+		"user_name":            fmt.Sprintf("user-%s", view.UserID),
 		"age":                  age,
 		"account_status":       "active",
 		"pending_task_count":   len(view.Pending),
@@ -92,6 +87,17 @@ func QueryUserInfo(userID string) (map[string]interface{}, error) {
 		"historical_risk":      risk,
 		"risk_case_count":      riskCaseCount,
 	}, nil
+}
+
+func normalizeRiskLevel(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "\u9ad8":
+		return "\u9ad8"
+	case "\u4f4e":
+		return "\u4f4e"
+	default:
+		return "\u4e2d"
+	}
 }
 
 type ChatQueryUserInfoHandler struct{}

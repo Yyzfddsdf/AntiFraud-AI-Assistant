@@ -8,7 +8,7 @@ import (
 
 	"image_recognition/multi_agent/state"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const ChatQueryUserCaseHistoryToolName = "chat_query_user_case_history"
@@ -19,7 +19,7 @@ var ChatQueryUserCaseHistoryTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        ChatQueryUserCaseHistoryToolName,
-		Description: "查询当前登录用户历史案件摘要列表",
+		Description: "查询当前登录用户的历史案件摘要列表。",
 		Parameters: map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
