@@ -11,11 +11,12 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
 
-// ConnectDB 初始化 SQLite 连接、连接池和模型迁移。
+// ConnectDB 初始化 SQLite 连接、连接池参数和用户表迁移。
 func ConnectDB() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
@@ -25,31 +26,35 @@ func ConnectDB() {
 	dbDir := filepath.Dir(dbPath)
 	if dbDir != "." && dbDir != "" {
 		if err := os.MkdirAll(dbDir, 0755); err != nil {
-			log.Fatal("创建数据库目录失败: ", err)
+			log.Fatal("create database directory failed: ", err)
 		}
 	}
 
 	var err error
-	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+		// 仅打印错误日志，避免慢 SQL 和未命中查询刷屏。
+		Logger: logger.Default.LogMode(logger.Error),
+	})
 	if err != nil {
-		log.Fatal("连接数据库失败: ", err)
+		log.Fatal("connect database failed: ", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatal("获取数据库连接池失败: ", err)
+		log.Fatal("get sql db handle failed: ", err)
 	}
 
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// 登录模块当前只依赖用户表，启动时自动迁移。
 	if err = DB.AutoMigrate(&models.User{}); err != nil {
-		log.Fatal("自动迁移模型失败: ", err)
+		log.Fatal("auto migrate failed: ", err)
 	}
 }
 
-// defaultDBPath 解析默认数据库路径（优先项目根目录下 DB/auth_system.db）。
+// defaultDBPath 在未配置 DB_PATH 时给出默认数据库路径。
 func defaultDBPath() string {
 	_, currentFile, _, ok := runtime.Caller(0)
 	if ok {

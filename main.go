@@ -13,16 +13,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// main 启动登录系统 HTTP 服务，完成数据库初始化、路由挂载和中间件注册。
+// main 是整个服务的启动入口：
+// 1) 初始化数据库；
+// 2) 注册全局中间件；
+// 3) 挂载认证、对话、多模态相关路由；
+// 4) 启动 HTTP 服务。
 func main() {
 	database.ConnectDB()
 
 	r := gin.Default()
 
-	// 禁用代理信任警告：在开发环境中，如果你不使用反向代理（如 Nginx），设置为 nil 即可。
-	// 这表示不信任任何代理服务器发送的头部信息（如 X-Forwarded-For）。
+	// 不信任任何反向代理头，避免在本地开发时出现代理来源误判。
 	r.SetTrustedProxies(nil)
 
+	// 全局 CORS：前端测试页面与本地调试接口都走同一套跨域策略。
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -35,10 +39,13 @@ func main() {
 		c.Next()
 	})
 
+	// 全局限流，防止暴力请求压垮服务。
 	r.Use(middleware.RateLimitMiddleware())
 	r.StaticFile("/test-login", "login_system/web/test_login.html")
 	r.StaticFile("/", "login_system/web/index.html")
+	r.Static("/assets", "login_system/web/assets")
 
+	// 登录与注册相关接口（无需 JWT）。
 	authRoutes := r.Group("/api/auth")
 	{
 		authRoutes.GET("/captcha", controllers.GetCaptchaHandle)
@@ -46,6 +53,7 @@ func main() {
 		authRoutes.POST("/login", controllers.LoginHandle)
 	}
 
+	// 业务接口（需 JWT）。
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
@@ -60,6 +68,7 @@ func main() {
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)
 		api.GET("/scam/multimodal/history", httpapi.GetMultimodalHistoryHandle)
+		api.DELETE("/scam/multimodal/history/:recordId", httpapi.DeleteMultimodalHistoryHandle)
 		api.GET("/scam/multimodal/tasks/:taskId", httpapi.GetMultimodalTaskDetailHandle)
 	}
 

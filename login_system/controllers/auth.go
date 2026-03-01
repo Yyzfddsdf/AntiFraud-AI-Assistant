@@ -86,6 +86,7 @@ func RegisterHandle(c *gin.Context) {
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
+		Age:      user.Age,
 		Role:     user.Role,
 	})
 }
@@ -127,6 +128,7 @@ func LoginHandle(c *gin.Context) {
 			ID:       user.ID,
 			Username: user.Username,
 			Email:    user.Email,
+			Age:      user.Age,
 			Role:     user.Role,
 		},
 	})
