@@ -93,6 +93,32 @@ func GetMultimodalHistoryHandle(c *gin.Context) {
 	})
 }
 
+// DeleteMultimodalHistoryHandle 删除当前用户指定历史案件。
+func DeleteMultimodalHistoryHandle(c *gin.Context) {
+	userID := getCurrentUserID(c)
+	recordID := strings.TrimSpace(c.Param("recordId"))
+	if recordID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "recordId 不能为空"})
+		return
+	}
+
+	deleted, err := state.DeleteCaseHistory(userID, recordID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除历史案件失败: " + err.Error()})
+		return
+	}
+	if !deleted {
+		c.JSON(http.StatusNotFound, gin.H{"error": "历史案件不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, DeleteMultimodalHistoryResponse{
+		UserID:   userID,
+		RecordID: recordID,
+		Message:  "历史案件删除成功",
+	})
+}
+
 // GetMultimodalTaskDetailHandle 查询当前用户指定任务详情。
 func GetMultimodalTaskDetailHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
@@ -137,6 +163,7 @@ func UpdateUserAgeHandle(c *gin.Context) {
 	})
 }
 
+// toTaskItem 将内部任务结构转换为 API 任务详情结构。
 func toTaskItem(task state.TaskRecord) MultimodalTaskItem {
 	return MultimodalTaskItem{
 		TaskID:    task.TaskID,
@@ -160,6 +187,7 @@ func toTaskItem(task state.TaskRecord) MultimodalTaskItem {
 	}
 }
 
+// toTaskListItem 将内部任务结构转换为任务列表项结构。
 func toTaskListItem(task state.TaskRecord) MultimodalTaskListItem {
 	return MultimodalTaskListItem{
 		TaskID:    task.TaskID,
@@ -171,6 +199,7 @@ func toTaskListItem(task state.TaskRecord) MultimodalTaskListItem {
 	}
 }
 
+// getCurrentUserID 从鉴权上下文读取用户 ID，缺省回退到 demo-user。
 func getCurrentUserID(c *gin.Context) string {
 	userIDValue, exists := c.Get("userID")
 	if !exists {

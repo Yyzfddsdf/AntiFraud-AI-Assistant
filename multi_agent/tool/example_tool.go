@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const ExampleToolName = "example_tool"
@@ -19,17 +19,17 @@ var ExampleTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        ExampleToolName,
-		Description: "示例工具：处理消息并返回重复结果",
+		Description: "示例工具：按次数重复一段消息。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"message": map[string]interface{}{
 					"type":        "string",
-					"description": "要处理的字符串消息",
+					"description": "需要重复的消息内容。",
 				},
 				"count": map[string]interface{}{
 					"type":        "integer",
-					"description": "重复次数",
+					"description": "重复次数。",
 				},
 			},
 			"required": []string{"message", "count"},

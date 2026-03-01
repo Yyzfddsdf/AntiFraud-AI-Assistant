@@ -2,15 +2,18 @@ package state
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"image_recognition/login_system/database"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -18,9 +21,9 @@ const (
 	TaskStatusProcessing = "processing"
 	TaskStatusCompleted  = "completed"
 	TaskStatusFailed     = "failed"
-	stateFilePath        = "DB/multi_agent_state.json"
 )
 
+// TaskPayload 保存任务原始输入和各子模态解读结果。
 type TaskPayload struct {
 	Text          string   `json:"text"`
 	Videos        []string `json:"videos"`
@@ -31,6 +34,7 @@ type TaskPayload struct {
 	ImageInsights []string `json:"image_insights,omitempty"`
 }
 
+// TaskRecord 表示进行中任务的完整状态。
 type TaskRecord struct {
 	TaskID     string      `json:"task_id"`
 	UserID     string      `json:"user_id"`
@@ -44,6 +48,7 @@ type TaskRecord struct {
 	HistoryRef string      `json:"history_ref,omitempty"`
 }
 
+// CaseHistoryRecord 表示归档后的历史案件记录。
 type CaseHistoryRecord struct {
 	RecordID    string      `json:"record_id"`
 	UserID      string      `json:"user_id"`
@@ -55,39 +60,81 @@ type CaseHistoryRecord struct {
 	Report      string      `json:"report,omitempty"`
 }
 
+// UserStateView 聚合用户进行中任务与历史记录，供接口直接返回。
 type UserStateView struct {
 	UserID  string                `json:"user_id"`
 	Pending map[string]TaskRecord `json:"pending"`
 	History []CaseHistoryRecord   `json:"history"`
 }
 
-type userState struct {
-	pending map[string]*TaskRecord
-	history []CaseHistoryRecord
+type pendingTaskEntity struct {
+	TaskID string `gorm:"primaryKey;size:64"`
+	UserID string `gorm:"index;not null"`
+	Title  string `gorm:"size:255;not null"`
+	Status string `gorm:"size:32;index;not null"`
+
+	PayloadText          string `gorm:"type:text"`
+	PayloadVideos        string `gorm:"type:text"`
+	PayloadAudios        string `gorm:"type:text"`
+	PayloadImages        string `gorm:"type:text"`
+	PayloadVideoInsights string `gorm:"type:text"`
+	PayloadAudioInsights string `gorm:"type:text"`
+	PayloadImageInsights string `gorm:"type:text"`
+
+	Report     string `gorm:"type:text"`
+	Error      string `gorm:"type:text"`
+	HistoryRef string `gorm:"size:64"`
+
+	CreatedAt time.Time `gorm:"index;not null"`
+	UpdatedAt time.Time `gorm:"index;not null"`
 }
 
-type diskUserState struct {
-	Pending map[string]TaskRecord `json:"pending"`
-	History []CaseHistoryRecord   `json:"history"`
+func (pendingTaskEntity) TableName() string {
+	return "pending_tasks"
 }
 
-type diskState struct {
-	UpdatedAt time.Time                `json:"updated_at"`
-	Users     map[string]diskUserState `json:"users"`
+type historyCaseEntity struct {
+	RecordID    string `gorm:"primaryKey;size:64"`
+	UserID      string `gorm:"index;not null"`
+	Title       string `gorm:"size:255;not null"`
+	CaseSummary string `gorm:"type:text"`
+	Status      string `gorm:"size:32;index;not null"`
+	RiskLevel   string `gorm:"size:32;index"`
+
+	PayloadText          string `gorm:"type:text"`
+	PayloadVideos        string `gorm:"type:text"`
+	PayloadAudios        string `gorm:"type:text"`
+	PayloadImages        string `gorm:"type:text"`
+	PayloadVideoInsights string `gorm:"type:text"`
+	PayloadAudioInsights string `gorm:"type:text"`
+	PayloadImageInsights string `gorm:"type:text"`
+
+	Report string `gorm:"type:text"`
+
+	CreatedAt time.Time `gorm:"index;not null"`
+	UpdatedAt time.Time `gorm:"index;not null"`
 }
 
-var (
-	storeMu  sync.Mutex
-	users    = map[string]*userState{}
-	loadOnce sync.Once
-)
-
-func StateFilePath() string {
-	return stateFilePath
+func (historyCaseEntity) TableName() string {
+	return "history_cases"
 }
 
+var stateSchemaOnce sync.Once
+
+// ensureStateSchema 确保状态相关表结构存在。
+func ensureStateSchema(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	stateSchemaOnce.Do(func() {
+		if err := db.AutoMigrate(&pendingTaskEntity{}, &historyCaseEntity{}); err != nil {
+			log.Printf("[state] auto migrate state tables failed: %v", err)
+		}
+	})
+}
+
+// CreateTask 创建任务并落库到 pending_tasks。
 func CreateTask(userID string, payload TaskPayload) TaskRecord {
-	ensureLoaded()
 	uid := normalizeUserID(userID)
 	now := time.Now()
 	task := TaskRecord{
@@ -97,164 +144,339 @@ func CreateTask(userID string, payload TaskPayload) TaskRecord {
 		Status:    TaskStatusPending,
 		CreatedAt: now,
 		UpdatedAt: now,
-		Payload:   payload,
+		Payload: TaskPayload{
+			Text:          strings.TrimSpace(payload.Text),
+			Videos:        append([]string{}, payload.Videos...),
+			Audios:        append([]string{}, payload.Audios...),
+			Images:        append([]string{}, payload.Images...),
+			VideoInsights: append([]string{}, payload.VideoInsights...),
+			AudioInsights: append([]string{}, payload.AudioInsights...),
+			ImageInsights: append([]string{}, payload.ImageInsights...),
+		},
 	}
 
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	state.pending[task.TaskID] = cloneTask(task)
-	persistLocked()
+	db := database.DB
+	if db == nil {
+		log.Printf("[state] create task skipped: db not initialized")
+		return task
+	}
+	ensureStateSchema(db)
+
+	entity := pendingEntityFromTask(task)
+	if err := db.Create(&entity).Error; err != nil {
+		log.Printf("[state] create pending task failed: user=%s task=%s err=%v", uid, task.TaskID, err)
+	}
+
 	return task
 }
 
+// MarkTaskProcessing 将任务状态更新为 processing。
 func MarkTaskProcessing(userID, taskID string) {
-	ensureLoaded()
-	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	task, exists := state.pending[taskID]
-	if !exists {
+	db := database.DB
+	if db == nil {
 		return
 	}
-	task.Status = TaskStatusProcessing
-	task.UpdatedAt = time.Now()
-	persistLocked()
-}
+	ensureStateSchema(db)
 
-func MarkTaskCompleted(userID, taskID, report string) {
-	ensureLoaded()
-	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	task, exists := state.pending[taskID]
-	if !exists {
-		return
-	}
-	task.Status = TaskStatusCompleted
-	task.Report = strings.TrimSpace(report)
-	task.UpdatedAt = time.Now()
-	delete(state.pending, taskID)
-	persistLocked()
-}
-
-func UpdateTaskInsights(userID, taskID string, videoInsights []string, audioInsights []string, imageInsights []string) {
-	ensureLoaded()
 	uid := normalizeUserID(userID)
 	tid := strings.TrimSpace(taskID)
 	if tid == "" {
 		return
 	}
 
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	task, exists := state.pending[tid]
-	if !exists {
-		return
+	if err := db.Model(&pendingTaskEntity{}).
+		Where("task_id = ? AND user_id = ?", tid, uid).
+		Updates(map[string]interface{}{
+			"status":     TaskStatusProcessing,
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+		log.Printf("[state] mark processing failed: user=%s task=%s err=%v", uid, tid, err)
 	}
-	task.Payload.VideoInsights = append([]string{}, videoInsights...)
-	task.Payload.AudioInsights = append([]string{}, audioInsights...)
-	task.Payload.ImageInsights = append([]string{}, imageInsights...)
-	task.UpdatedAt = time.Now()
-	persistLocked()
 }
 
+// MarkTaskCompleted 将任务从 pending 迁移到 history，并写入最终报告。
+func MarkTaskCompleted(userID, taskID, report string) {
+	db := database.DB
+	if db == nil {
+		return
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	tid := strings.TrimSpace(taskID)
+	if tid == "" {
+		return
+	}
+	trimmedReport := strings.TrimSpace(report)
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var pending pendingTaskEntity
+		if err := tx.Where("task_id = ? AND user_id = ?", tid, uid).First(&pending).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+
+		var existing historyCaseEntity
+		historyErr := tx.Where("record_id = ? AND user_id = ?", tid, uid).First(&existing).Error
+		if historyErr != nil {
+			if !errors.Is(historyErr, gorm.ErrRecordNotFound) {
+				return historyErr
+			}
+
+			summary := trimmedReport
+			if summary == "" {
+				summary = strings.TrimSpace(pending.Report)
+			}
+			if summary == "" {
+				summary = "task completed"
+			}
+
+			history := historyCaseEntity{
+				RecordID:             tid,
+				UserID:               uid,
+				Title:                normalizeCaseTitle(pending.Title, summary),
+				CaseSummary:          summary,
+				Status:               TaskStatusCompleted,
+				RiskLevel:            normalizeRiskLevel(""),
+				PayloadText:          pending.PayloadText,
+				PayloadVideos:        pending.PayloadVideos,
+				PayloadAudios:        pending.PayloadAudios,
+				PayloadImages:        pending.PayloadImages,
+				PayloadVideoInsights: pending.PayloadVideoInsights,
+				PayloadAudioInsights: pending.PayloadAudioInsights,
+				PayloadImageInsights: pending.PayloadImageInsights,
+				Report:               firstNonEmpty(trimmedReport, pending.Report),
+				CreatedAt:            pending.CreatedAt,
+				UpdatedAt:            time.Now(),
+			}
+
+			if err := tx.Create(&history).Error; err != nil {
+				return err
+			}
+		} else if trimmedReport != "" {
+			if err := tx.Model(&historyCaseEntity{}).
+				Where("record_id = ? AND user_id = ?", tid, uid).
+				Updates(map[string]interface{}{"report": trimmedReport, "updated_at": time.Now()}).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Where("task_id = ? AND user_id = ?", tid, uid).Delete(&pendingTaskEntity{}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("[state] mark completed failed: user=%s task=%s err=%v", uid, tid, err)
+	}
+}
+
+// UpdateTaskInsights 更新任务的子模态解读摘要。
+func UpdateTaskInsights(userID, taskID string, videoInsights []string, audioInsights []string, imageInsights []string) {
+	db := database.DB
+	if db == nil {
+		return
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	tid := strings.TrimSpace(taskID)
+	if tid == "" {
+		return
+	}
+
+	if err := db.Model(&pendingTaskEntity{}).
+		Where("task_id = ? AND user_id = ?", tid, uid).
+		Updates(map[string]interface{}{
+			"payload_video_insights": encodeStringList(videoInsights),
+			"payload_audio_insights": encodeStringList(audioInsights),
+			"payload_image_insights": encodeStringList(imageInsights),
+			"updated_at":             time.Now(),
+		}).Error; err != nil {
+		log.Printf("[state] update insights failed: user=%s task=%s err=%v", uid, tid, err)
+	}
+}
+
+// MarkTaskFailed 将失败任务写入历史并从 pending 删除。
 func MarkTaskFailed(userID, taskID, errMsg string) {
-	ensureLoaded()
-	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	task, exists := state.pending[taskID]
-	if !exists {
+	db := database.DB
+	if db == nil {
 		return
 	}
-	task.Status = TaskStatusFailed
-	task.Error = strings.TrimSpace(errMsg)
-	task.UpdatedAt = time.Now()
-	state.history = append([]CaseHistoryRecord{newFailedHistoryRecord(uid, *task)}, state.history...)
-	delete(state.pending, taskID)
-	persistLocked()
-}
+	ensureStateSchema(db)
 
-func GetTask(userID, taskID string) (TaskRecord, bool) {
-	ensureLoaded()
 	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	if task, exists := state.pending[taskID]; exists {
-		return *cloneTaskPtr(task), true
+	tid := strings.TrimSpace(taskID)
+	if tid == "" {
+		return
 	}
-	return TaskRecord{}, false
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var pending pendingTaskEntity
+		if err := tx.Where("task_id = ? AND user_id = ?", tid, uid).First(&pending).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+
+		reason := strings.TrimSpace(errMsg)
+		if reason == "" {
+			reason = "task execution failed"
+		}
+
+		history := historyCaseEntity{
+			RecordID:             tid,
+			UserID:               uid,
+			Title:                normalizeCaseTitle(pending.Title, reason),
+			CaseSummary:          reason,
+			Status:               TaskStatusFailed,
+			RiskLevel:            normalizeRiskLevel("中"),
+			PayloadText:          pending.PayloadText,
+			PayloadVideos:        pending.PayloadVideos,
+			PayloadAudios:        pending.PayloadAudios,
+			PayloadImages:        pending.PayloadImages,
+			PayloadVideoInsights: pending.PayloadVideoInsights,
+			PayloadAudioInsights: pending.PayloadAudioInsights,
+			PayloadImageInsights: pending.PayloadImageInsights,
+			Report:               reason,
+			CreatedAt:            time.Now(),
+			UpdatedAt:            time.Now(),
+		}
+
+		if err := tx.Where("record_id = ? AND user_id = ?", tid, uid).Delete(&historyCaseEntity{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&history).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("task_id = ? AND user_id = ?", tid, uid).Delete(&pendingTaskEntity{}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("[state] mark failed failed: user=%s task=%s err=%v", uid, tid, err)
+	}
 }
 
+// GetTask 查询进行中任务。
+func GetTask(userID, taskID string) (TaskRecord, bool) {
+	db := database.DB
+	if db == nil {
+		return TaskRecord{}, false
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	tid := strings.TrimSpace(taskID)
+	if tid == "" {
+		return TaskRecord{}, false
+	}
+
+	var entity pendingTaskEntity
+	query := db.Where("task_id = ? AND user_id = ?", tid, uid).Limit(1).Find(&entity)
+	if query.Error != nil {
+		return TaskRecord{}, false
+	}
+	if query.RowsAffected == 0 {
+		return TaskRecord{}, false
+	}
+	return taskFromPendingEntity(entity), true
+}
+
+// GetTaskDetailByID 优先查 pending，再查 history，统一返回任务详情。
 func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
-	ensureLoaded()
+	db := database.DB
+	if db == nil {
+		return TaskRecord{}, false
+	}
+	ensureStateSchema(db)
+
 	uid := normalizeUserID(userID)
 	targetID := strings.TrimSpace(id)
 	if targetID == "" {
 		return TaskRecord{}, false
 	}
 
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-
-	if pendingTask, exists := state.pending[targetID]; exists {
-		return *cloneTaskPtr(pendingTask), true
+	var pending pendingTaskEntity
+	pendingQuery := db.Where("task_id = ? AND user_id = ?", targetID, uid).Limit(1).Find(&pending)
+	if pendingQuery.Error != nil {
+		return TaskRecord{}, false
+	}
+	if pendingQuery.RowsAffected > 0 {
+		return taskFromPendingEntity(pending), true
 	}
 
-	for _, history := range state.history {
-		if strings.TrimSpace(history.RecordID) != targetID {
-			continue
-		}
-
-		report := strings.TrimSpace(history.Report)
-		if report == "" {
-			report = strings.TrimSpace(history.CaseSummary)
-		}
-
-		return TaskRecord{
-			TaskID:    history.RecordID,
-			UserID:    history.UserID,
-			Title:     history.Title,
-			Status:    TaskStatusCompleted,
-			CreatedAt: history.CreatedAt,
-			UpdatedAt: history.CreatedAt,
-			Payload: TaskPayload{
-				Text:          history.Payload.Text,
-				Videos:        append([]string{}, history.Payload.Videos...),
-				Audios:        append([]string{}, history.Payload.Audios...),
-				Images:        append([]string{}, history.Payload.Images...),
-				VideoInsights: append([]string{}, history.Payload.VideoInsights...),
-				AudioInsights: append([]string{}, history.Payload.AudioInsights...),
-				ImageInsights: append([]string{}, history.Payload.ImageInsights...),
-			},
-			Report: report,
-		}, true
+	var history historyCaseEntity
+	historyQuery := db.Where("record_id = ? AND user_id = ?", targetID, uid).Limit(1).Find(&history)
+	if historyQuery.Error != nil {
+		return TaskRecord{}, false
+	}
+	if historyQuery.RowsAffected == 0 {
+		return TaskRecord{}, false
 	}
 
-	return TaskRecord{}, false
+	report := strings.TrimSpace(history.Report)
+	if report == "" {
+		report = strings.TrimSpace(history.CaseSummary)
+	}
+	status := strings.TrimSpace(history.Status)
+	if status == "" {
+		status = TaskStatusCompleted
+	}
+
+	return TaskRecord{
+		TaskID:    history.RecordID,
+		UserID:    history.UserID,
+		Title:     history.Title,
+		Status:    status,
+		CreatedAt: history.CreatedAt,
+		UpdatedAt: history.UpdatedAt,
+		Payload: TaskPayload{
+			Text:          history.PayloadText,
+			Videos:        decodeStringList(history.PayloadVideos),
+			Audios:        decodeStringList(history.PayloadAudios),
+			Images:        decodeStringList(history.PayloadImages),
+			VideoInsights: decodeStringList(history.PayloadVideoInsights),
+			AudioInsights: decodeStringList(history.PayloadAudioInsights),
+			ImageInsights: decodeStringList(history.PayloadImageInsights),
+		},
+		Report: report,
+	}, true
 }
 
+// GetUserStateView 返回用户任务总览（进行中 + 历史）。
 func GetUserStateView(userID string) UserStateView {
-	ensureLoaded()
+	db := database.DB
 	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
+	if db == nil {
+		return UserStateView{UserID: uid, Pending: map[string]TaskRecord{}, History: []CaseHistoryRecord{}}
+	}
+	ensureStateSchema(db)
 
-	pending := map[string]TaskRecord{}
-	for key, task := range state.pending {
-		pending[key] = *cloneTaskPtr(task)
+	pendingRows := make([]pendingTaskEntity, 0)
+	if err := db.Where("user_id = ?", uid).Find(&pendingRows).Error; err != nil {
+		log.Printf("[state] query pending failed: user=%s err=%v", uid, err)
 	}
 
-	history := make([]CaseHistoryRecord, len(state.history))
-	copy(history, state.history)
+	historyRows := make([]historyCaseEntity, 0)
+	if err := db.Where("user_id = ?", uid).Order("created_at desc").Find(&historyRows).Error; err != nil {
+		log.Printf("[state] query history failed: user=%s err=%v", uid, err)
+	}
+
+	pending := make(map[string]TaskRecord, len(pendingRows))
+	for _, row := range pendingRows {
+		record := taskFromPendingEntity(row)
+		pending[record.TaskID] = record
+	}
+
+	history := make([]CaseHistoryRecord, 0, len(historyRows))
+	for _, row := range historyRows {
+		history = append(history, historyFromEntity(row))
+	}
 
 	return UserStateView{
 		UserID:  uid,
@@ -263,14 +485,15 @@ func GetUserStateView(userID string) UserStateView {
 	}
 }
 
+// AddCaseHistory 直接写入历史记录（用于工具显式归档场景）。
 func AddCaseHistory(userID, taskID, title, summary, riskLevel string, payload TaskPayload, report string) CaseHistoryRecord {
-	ensureLoaded()
 	uid := normalizeUserID(userID)
 	now := time.Now()
 	recordID := strings.TrimSpace(taskID)
 	if recordID == "" {
 		recordID = newID("TASK")
 	}
+
 	record := CaseHistoryRecord{
 		RecordID:    recordID,
 		UserID:      uid,
@@ -290,157 +513,202 @@ func AddCaseHistory(userID, taskID, title, summary, riskLevel string, payload Ta
 		Report: strings.TrimSpace(report),
 	}
 
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	state.history = append([]CaseHistoryRecord{record}, state.history...)
-	persistLocked()
-	return record
-}
+	db := database.DB
+	if db == nil {
+		return record
+	}
+	ensureStateSchema(db)
 
-func GetCaseHistory(userID string) []CaseHistoryRecord {
-	ensureLoaded()
-	uid := normalizeUserID(userID)
-	storeMu.Lock()
-	defer storeMu.Unlock()
-	state := ensureUserState(uid)
-	history := make([]CaseHistoryRecord, len(state.history))
-	copy(history, state.history)
-	return history
-}
-
-func ensureLoaded() {
-	loadOnce.Do(func() {
-		storeMu.Lock()
-		defer storeMu.Unlock()
-		if err := loadFromDiskLocked(); err != nil {
-			log.Printf("[state] load state file failed: %v", err)
+	entity := historyEntityFromRecord(record, TaskStatusCompleted)
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("record_id = ? AND user_id = ?", entity.RecordID, entity.UserID).Delete(&historyCaseEntity{}).Error; err != nil {
+			return err
 		}
+		return tx.Create(&entity).Error
 	})
-}
-
-func loadFromDiskLocked() error {
-	users = map[string]*userState{}
-	if _, err := os.Stat(stateFilePath); err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	data, err := os.ReadFile(stateFilePath)
 	if err != nil {
-		return err
-	}
-	if len(strings.TrimSpace(string(data))) == 0 {
-		return nil
+		log.Printf("[state] add case history failed: user=%s record=%s err=%v", uid, recordID, err)
 	}
 
-	var snapshot diskState
-	if err := json.Unmarshal(data, &snapshot); err != nil {
-		return err
-	}
-
-	for userID, userSnapshot := range snapshot.Users {
-		state := ensureUserState(userID)
-		for taskID, task := range userSnapshot.Pending {
-			state.pending[taskID] = cloneTask(task)
-		}
-		state.history = append([]CaseHistoryRecord{}, userSnapshot.History...)
-	}
-
-	return nil
+	return historyFromEntity(entity)
 }
 
-func persistLocked() {
-	snapshot := diskState{
-		UpdatedAt: time.Now(),
-		Users:     map[string]diskUserState{},
+// GetCaseHistory 查询用户历史案件列表。
+func GetCaseHistory(userID string) []CaseHistoryRecord {
+	db := database.DB
+	if db == nil {
+		return []CaseHistoryRecord{}
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	rows := make([]historyCaseEntity, 0)
+	if err := db.Where("user_id = ?", uid).Order("created_at desc").Find(&rows).Error; err != nil {
+		log.Printf("[state] get case history failed: user=%s err=%v", uid, err)
+		return []CaseHistoryRecord{}
 	}
 
-	for userID, user := range users {
-		pending := map[string]TaskRecord{}
-		for taskID, task := range user.pending {
-			pending[taskID] = *cloneTaskPtr(task)
-		}
+	result := make([]CaseHistoryRecord, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, historyFromEntity(row))
+	}
+	return result
+}
 
-		history := append([]CaseHistoryRecord{}, user.history...)
-		snapshot.Users[userID] = diskUserState{
-			Pending: pending,
-			History: history,
-		}
+// DeleteCaseHistory 按记录 ID 删除当前用户的一条历史案件。
+func DeleteCaseHistory(userID, recordID string) (bool, error) {
+	db := database.DB
+	if db == nil {
+		return false, nil
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	rid := strings.TrimSpace(recordID)
+	if rid == "" {
+		return false, nil
 	}
 
-	data, err := json.MarshalIndent(snapshot, "", "  ")
-	if err != nil {
-		log.Printf("[state] marshal snapshot failed: %v", err)
-		return
+	result := db.Where("record_id = ? AND user_id = ?", rid, uid).Delete(&historyCaseEntity{})
+	if result.Error != nil {
+		return false, result.Error
 	}
+	return result.RowsAffected > 0, nil
+}
 
-	if err := os.MkdirAll(filepath.Dir(stateFilePath), 0755); err != nil {
-		log.Printf("[state] create dir failed: %v", err)
-		return
-	}
-
-	tmp := stateFilePath + ".tmp"
-
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
-		log.Printf("[state] write tmp file failed: %v", err)
-		return
-	}
-	if err := os.Rename(tmp, stateFilePath); err != nil {
-		if removeErr := os.Remove(stateFilePath); removeErr == nil || os.IsNotExist(removeErr) {
-			if retryErr := os.Rename(tmp, stateFilePath); retryErr == nil {
-				return
-			} else {
-				log.Printf("[state] rename state file retry failed: %v", retryErr)
-			}
-		} else {
-			log.Printf("[state] remove old state file failed: %v", removeErr)
-		}
-		log.Printf("[state] rename state file failed: %v", err)
+func pendingEntityFromTask(task TaskRecord) pendingTaskEntity {
+	return pendingTaskEntity{
+		TaskID:               strings.TrimSpace(task.TaskID),
+		UserID:               normalizeUserID(task.UserID),
+		Title:                strings.TrimSpace(task.Title),
+		Status:               strings.TrimSpace(task.Status),
+		PayloadText:          strings.TrimSpace(task.Payload.Text),
+		PayloadVideos:        encodeStringList(task.Payload.Videos),
+		PayloadAudios:        encodeStringList(task.Payload.Audios),
+		PayloadImages:        encodeStringList(task.Payload.Images),
+		PayloadVideoInsights: encodeStringList(task.Payload.VideoInsights),
+		PayloadAudioInsights: encodeStringList(task.Payload.AudioInsights),
+		PayloadImageInsights: encodeStringList(task.Payload.ImageInsights),
+		Report:               strings.TrimSpace(task.Report),
+		Error:                strings.TrimSpace(task.Error),
+		HistoryRef:           strings.TrimSpace(task.HistoryRef),
+		CreatedAt:            task.CreatedAt,
+		UpdatedAt:            task.UpdatedAt,
 	}
 }
 
-func newFailedHistoryRecord(userID string, task TaskRecord) CaseHistoryRecord {
-	reason := strings.TrimSpace(task.Error)
-	if reason == "" {
-		reason = "任务执行失败"
-	}
-	now := task.UpdatedAt
-	if now.IsZero() {
-		now = time.Now()
-	}
-	return CaseHistoryRecord{
-		RecordID:    task.TaskID,
-		UserID:      normalizeUserID(userID),
-		Title:       normalizeCaseTitle(task.Title, reason),
-		CaseSummary: reason,
-		RiskLevel:   "中",
-		CreatedAt:   now,
+func taskFromPendingEntity(entity pendingTaskEntity) TaskRecord {
+	return TaskRecord{
+		TaskID:     strings.TrimSpace(entity.TaskID),
+		UserID:     normalizeUserID(entity.UserID),
+		Title:      strings.TrimSpace(entity.Title),
+		Status:     strings.TrimSpace(entity.Status),
+		CreatedAt:  entity.CreatedAt,
+		UpdatedAt:  entity.UpdatedAt,
+		Report:     strings.TrimSpace(entity.Report),
+		Error:      strings.TrimSpace(entity.Error),
+		HistoryRef: strings.TrimSpace(entity.HistoryRef),
 		Payload: TaskPayload{
-			Text:          task.Payload.Text,
-			Videos:        append([]string{}, task.Payload.Videos...),
-			Audios:        append([]string{}, task.Payload.Audios...),
-			Images:        append([]string{}, task.Payload.Images...),
-			VideoInsights: append([]string{}, task.Payload.VideoInsights...),
-			AudioInsights: append([]string{}, task.Payload.AudioInsights...),
-			ImageInsights: append([]string{}, task.Payload.ImageInsights...),
+			Text:          strings.TrimSpace(entity.PayloadText),
+			Videos:        decodeStringList(entity.PayloadVideos),
+			Audios:        decodeStringList(entity.PayloadAudios),
+			Images:        decodeStringList(entity.PayloadImages),
+			VideoInsights: decodeStringList(entity.PayloadVideoInsights),
+			AudioInsights: decodeStringList(entity.PayloadAudioInsights),
+			ImageInsights: decodeStringList(entity.PayloadImageInsights),
 		},
-		Report: reason,
 	}
 }
 
-func ensureUserState(userID string) *userState {
-	state, exists := users[userID]
-	if !exists {
-		state = &userState{
-			pending: map[string]*TaskRecord{},
-			history: []CaseHistoryRecord{},
-		}
-		users[userID] = state
+func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCaseEntity {
+	return historyCaseEntity{
+		RecordID:             strings.TrimSpace(record.RecordID),
+		UserID:               normalizeUserID(record.UserID),
+		Title:                strings.TrimSpace(record.Title),
+		CaseSummary:          strings.TrimSpace(record.CaseSummary),
+		Status:               strings.TrimSpace(status),
+		RiskLevel:            normalizeRiskLevel(record.RiskLevel),
+		PayloadText:          strings.TrimSpace(record.Payload.Text),
+		PayloadVideos:        encodeStringList(record.Payload.Videos),
+		PayloadAudios:        encodeStringList(record.Payload.Audios),
+		PayloadImages:        encodeStringList(record.Payload.Images),
+		PayloadVideoInsights: encodeStringList(record.Payload.VideoInsights),
+		PayloadAudioInsights: encodeStringList(record.Payload.AudioInsights),
+		PayloadImageInsights: encodeStringList(record.Payload.ImageInsights),
+		Report:               strings.TrimSpace(record.Report),
+		CreatedAt:            record.CreatedAt,
+		UpdatedAt:            time.Now(),
 	}
-	return state
+}
+
+func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
+	return CaseHistoryRecord{
+		RecordID:    strings.TrimSpace(entity.RecordID),
+		UserID:      normalizeUserID(entity.UserID),
+		Title:       strings.TrimSpace(entity.Title),
+		CaseSummary: strings.TrimSpace(entity.CaseSummary),
+		RiskLevel:   normalizeRiskLevel(entity.RiskLevel),
+		CreatedAt:   entity.CreatedAt,
+		Report:      strings.TrimSpace(entity.Report),
+		Payload: TaskPayload{
+			Text:          strings.TrimSpace(entity.PayloadText),
+			Videos:        decodeStringList(entity.PayloadVideos),
+			Audios:        decodeStringList(entity.PayloadAudios),
+			Images:        decodeStringList(entity.PayloadImages),
+			VideoInsights: decodeStringList(entity.PayloadVideoInsights),
+			AudioInsights: decodeStringList(entity.PayloadAudioInsights),
+			ImageInsights: decodeStringList(entity.PayloadImageInsights),
+		},
+	}
+}
+
+func encodeStringList(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	encoded := make([]string, 0, len(items))
+	for _, item := range items {
+		raw := []byte(strings.TrimSpace(item))
+		if len(raw) == 0 {
+			continue
+		}
+		encoded = append(encoded, base64.StdEncoding.EncodeToString(raw))
+	}
+	return strings.Join(encoded, ",")
+}
+
+func decodeStringList(value string) []string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(trimmed, ",")
+	result := make([]string, 0, len(parts))
+	for _, item := range parts {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		decoded, err := base64.StdEncoding.DecodeString(item)
+		if err != nil {
+			// Forward compatible fallback for any legacy plain-text rows.
+			result = append(result, item)
+			continue
+		}
+		result = append(result, string(decoded))
+	}
+	return result
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func normalizeUserID(userID string) string {
@@ -452,11 +720,14 @@ func normalizeUserID(userID string) string {
 }
 
 func normalizeRiskLevel(level string) string {
-	trimmed := strings.TrimSpace(level)
-	if trimmed == "" {
-		return "中"
+	switch strings.TrimSpace(level) {
+	case "\u9ad8":
+		return "\u9ad8"
+	case "\u4f4e":
+		return "\u4f4e"
+	default:
+		return "\u4e2d"
 	}
-	return trimmed
 }
 
 func normalizeCaseTitle(title, summary string) string {
@@ -466,25 +737,25 @@ func normalizeCaseTitle(title, summary string) string {
 	}
 	s := strings.TrimSpace(summary)
 	if s == "" {
-		return "未命名案件"
+		return "untitled case"
 	}
 	runes := []rune(s)
-	if len(runes) <= 20 {
+	if len(runes) <= 48 {
 		return s
 	}
-	return string(runes[:20]) + "..."
+	return string(runes[:48]) + "..."
 }
 
 func normalizeTaskTitle(payload TaskPayload) string {
 	text := strings.TrimSpace(payload.Text)
 	if text != "" {
 		runes := []rune(text)
-		if len(runes) <= 24 {
+		if len(runes) <= 48 {
 			return text
 		}
-		return string(runes[:24]) + "..."
+		return string(runes[:48]) + "..."
 	}
-	return fmt.Sprintf("多模态任务(V%d/A%d/I%d)", len(payload.Videos), len(payload.Audios), len(payload.Images))
+	return fmt.Sprintf("multimodal task (V%d/A%d/I%d)", len(payload.Videos), len(payload.Audios), len(payload.Images))
 }
 
 func newID(prefix string) string {
@@ -494,22 +765,4 @@ func newID(prefix string) string {
 		return fmt.Sprintf("%s-%d", prefix, now)
 	}
 	return fmt.Sprintf("%s-%s", prefix, strings.ToUpper(hex.EncodeToString(bytes)))
-}
-
-func cloneTask(task TaskRecord) *TaskRecord {
-	copyTask := task
-	copyTask.Payload.Videos = append([]string{}, task.Payload.Videos...)
-	copyTask.Payload.Audios = append([]string{}, task.Payload.Audios...)
-	copyTask.Payload.Images = append([]string{}, task.Payload.Images...)
-	copyTask.Payload.VideoInsights = append([]string{}, task.Payload.VideoInsights...)
-	copyTask.Payload.AudioInsights = append([]string{}, task.Payload.AudioInsights...)
-	copyTask.Payload.ImageInsights = append([]string{}, task.Payload.ImageInsights...)
-	return &copyTask
-}
-
-func cloneTaskPtr(task *TaskRecord) *TaskRecord {
-	if task == nil {
-		return nil
-	}
-	return cloneTask(*task)
 }

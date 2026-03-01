@@ -5,27 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 type ToolHandler interface {
 	Handle(ctx context.Context, args string) (ToolResponse, error)
 }
 
-// ParseArgs 泛型参数解析函数
-// T: 目标结构体类型
-// args: JSON字符串
+// ParseArgs 将 JSON 参数字符串解析为指定类型的输入结构体。
+// T: 目标输入结构体类型。
+// args: JSON 参数载荷。
 func ParseArgs[T any](args string) (T, error) {
 	var input T
 	if err := json.Unmarshal([]byte(args), &input); err != nil {
-		return input, fmt.Errorf("参数解析失败: %v", err)
+		return input, fmt.Errorf("parse arguments failed: %v", err)
 	}
 	return input, nil
 }
 
 type ToolResponse struct {
 	Payload        map[string]interface{}
-	FinalResultStr string // 最终结果字符串 (当工具认为这就是最终答案时设置)
+	FinalResultStr string // 当工具输出为终态时，这里携带最终报告文本。
 }
 
 var mainAgentToolRegistry = []openai.Tool{
@@ -50,7 +50,7 @@ var mainAgentToolHandlers = map[string]ToolHandler{
 	ExampleToolName:               &ExampleHandler{},
 }
 
-// MainAgentTools 自动挂载主智能体可用工具。
+// MainAgentTools 返回主智能体可用工具列表（已过滤黑名单）。
 func MainAgentTools() []openai.Tool {
 	tools := make([]openai.Tool, 0, len(mainAgentToolRegistry))
 	for _, registeredTool := range mainAgentToolRegistry {

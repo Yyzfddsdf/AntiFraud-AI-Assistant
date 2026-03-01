@@ -71,6 +71,13 @@ type MultimodalHistoryResponse struct {
 	History []MultimodalHistoryItem `json:"history"`
 }
 
+// DeleteMultimodalHistoryResponse 删除历史案件响应体。
+type DeleteMultimodalHistoryResponse struct {
+	UserID   string `json:"user_id"`
+	RecordID string `json:"record_id"`
+	Message  string `json:"message"`
+}
+
 // MultimodalTaskDetailResponse 单任务查询响应。
 type MultimodalTaskDetailResponse struct {
 	Task MultimodalTaskItem `json:"task"`

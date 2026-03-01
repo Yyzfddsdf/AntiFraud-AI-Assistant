@@ -3,7 +3,7 @@ package tool
 import (
 	"context"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const CaseSearchToolName = "search_similar_cases"
@@ -16,13 +16,13 @@ var CaseSearchTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        CaseSearchToolName,
-		Description: "根据输入的案件描述查询数据库中的相似案件，query 由模型自行生成",
+		Description: "根据模型生成的查询语句检索相似历史案件。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"query": map[string]interface{}{
 					"type":        "string",
-					"description": "用于检索相似案件的查询描述，应包含案件核心特征、话术、关键实体和风险线索",
+					"description": "用于检索的案件查询语句，需包含关键词、实体和风险线索。",
 				},
 			},
 			"required": []string{"query"},
@@ -30,8 +30,7 @@ var CaseSearchTool = openai.Tool{
 	},
 }
 
-// SearchSimilarCases 预留数据库检索逻辑。
-// TODO: 接入案件数据库检索。
+// SearchSimilarCases 当前为占位实现，后续可接入数据库检索。
 func SearchSimilarCases(query string) ([]string, error) {
 	_ = query
 	return nil, nil
@@ -52,7 +51,5 @@ func (h *CaseSearchHandler) Handle(ctx context.Context, args string) (ToolRespon
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{"query": input.Query, "error": err.Error(), "cases": []string{}}}, nil
 	}
-	return ToolResponse{
-		Payload: map[string]interface{}{"query": input.Query, "cases": cases},
-	}, nil
+	return ToolResponse{Payload: map[string]interface{}{"query": input.Query, "cases": cases}}, nil
 }

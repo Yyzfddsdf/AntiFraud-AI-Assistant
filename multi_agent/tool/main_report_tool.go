@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sashabaranov/go-openai"
+	openai "image_recognition/llm"
 )
 
 const FinalReportToolName = "submit_final_report"
@@ -26,48 +26,48 @@ var FinalReportTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        FinalReportToolName,
-		Description: "提交最终完整报告的结构化字段",
+		Description: "提交最终结构化反诈分析报告。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"summary": map[string]interface{}{
 					"type":        "string",
-					"description": "综合摘要",
+					"description": "综合摘要。",
 				},
 				"text_finding": map[string]interface{}{
 					"type":        "string",
-					"description": "文本维度关键发现",
+					"description": "文本模态关键发现。",
 				},
 				"image_finding": map[string]interface{}{
 					"type":        "string",
-					"description": "图像维度关键发现",
+					"description": "图像模态关键发现。",
 				},
 				"video_finding": map[string]interface{}{
 					"type":        "string",
-					"description": "视频维度关键发现",
+					"description": "视频模态关键发现。",
 				},
 				"audio_finding": map[string]interface{}{
 					"type":        "string",
-					"description": "音频维度关键发现",
+					"description": "音频模态关键发现。",
 				},
 				"risk_signals": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "风险信号清单",
+					"description": "风险信号列表。",
 				},
 				"risk_level": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"低", "中", "高"},
-					"description": "初步风险等级",
+					"description": "整体风险等级，仅允许：低/中/高。",
 				},
 				"risk_reason": map[string]interface{}{
 					"type":        "string",
-					"description": "风险等级理由",
+					"description": "风险等级判定理由。",
 				},
 				"next_actions": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "建议的下一步核查动作",
+					"description": "建议的下一步核查动作。",
 				},
 			},
 			"required": []string{
@@ -90,27 +90,24 @@ func ParseFinalReportPayload(arguments string) (FinalReportPayload, error) {
 }
 
 func FormatFinalReport(payload FinalReportPayload) string {
-	riskLevel := strings.TrimSpace(payload.RiskLevel)
-	if riskLevel != "低" && riskLevel != "中" && riskLevel != "高" {
-		riskLevel = "中"
-	}
+	riskLevel := normalizeFinalReportRiskLevel(payload.RiskLevel)
 
 	var report strings.Builder
 	report.WriteString("1. 综合摘要\n")
 	report.WriteString(strings.TrimSpace(payload.Summary))
 	report.WriteString("\n\n2. 多模态关键发现\n")
-	report.WriteString("- 文本：")
+	report.WriteString("- 文本: ")
 	report.WriteString(strings.TrimSpace(payload.TextFinding))
-	report.WriteString("\n- 图像：")
+	report.WriteString("\n- 图像: ")
 	report.WriteString(strings.TrimSpace(payload.ImageFinding))
-	report.WriteString("\n- 视频：")
+	report.WriteString("\n- 视频: ")
 	report.WriteString(strings.TrimSpace(payload.VideoFinding))
-	report.WriteString("\n- 音频：")
+	report.WriteString("\n- 音频: ")
 	report.WriteString(strings.TrimSpace(payload.AudioFinding))
 
-	report.WriteString("\n\n3. 风险信号清单\n")
+	report.WriteString("\n\n3. 风险信号\n")
 	if len(payload.RiskSignals) == 0 {
-		report.WriteString("- 未识别到明确风险信号\n")
+		report.WriteString("- 未发现明确风险信号\n")
 	} else {
 		for _, signal := range payload.RiskSignals {
 			signal = strings.TrimSpace(signal)
@@ -123,15 +120,15 @@ func FormatFinalReport(payload FinalReportPayload) string {
 		}
 	}
 
-	report.WriteString("\n4. 初步风险等级与理由\n")
-	report.WriteString("- 风险等级：")
+	report.WriteString("\n4. 风险等级与理由\n")
+	report.WriteString("- 风险等级: ")
 	report.WriteString(riskLevel)
-	report.WriteString("\n- 理由：")
+	report.WriteString("\n- 理由: ")
 	report.WriteString(strings.TrimSpace(payload.RiskReason))
 
-	report.WriteString("\n\n5. 建议的下一步核查动作\n")
+	report.WriteString("\n\n5. 建议的下一步动作\n")
 	if len(payload.NextActions) == 0 {
-		report.WriteString("- 建议补充更多上下文后复核\n")
+		report.WriteString("- 补充上下文信息后再次核验\n")
 	} else {
 		for _, action := range payload.NextActions {
 			action = strings.TrimSpace(action)
@@ -147,6 +144,17 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	return strings.TrimSpace(report.String())
 }
 
+func normalizeFinalReportRiskLevel(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "高":
+		return "高"
+	case "低":
+		return "低"
+	default:
+		return "中"
+	}
+}
+
 type FinalReportHandler struct{}
 
 func (h *FinalReportHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
@@ -155,7 +163,7 @@ func (h *FinalReportHandler) Handle(ctx context.Context, args string) (ToolRespo
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("parse final report tool payload failed: %v", err)}}, nil
 	}
 	return ToolResponse{
-		Payload:        map[string]interface{}{"status": "success", "message": "final report submitted successfully"},
+		Payload:        map[string]interface{}{"status": "success", "message": "最终报告已提交"},
 		FinalResultStr: FormatFinalReport(payload),
 	}, nil
 }
