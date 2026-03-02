@@ -1,4 +1,4 @@
-const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch } = Vue;
+﻿const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch } = Vue;
 
 createApp({
     setup() {
@@ -17,6 +17,20 @@ createApp({
         const tasks = ref([]);
         const history = ref([]);
         const users = ref([]);
+        const caseLibrary = ref([]); // Admin Case Library
+        const selectedCase = ref(null); // For admin view details
+        const showCaseModal = ref(false);
+        const submittingCase = ref(false);
+        const caseForm = reactive({
+            title: '',
+            target_group: '',
+            risk_level: '',
+            case_description: '',
+            typical_scripts_raw: '',
+            keywords_raw: '',
+            violated_law: '',
+            suggestion: ''
+        });
         const deletingHistory = reactive({});
         const selectedTask = ref(null);
         const userSearch = ref('');
@@ -246,7 +260,7 @@ createApp({
                 const res = await request(`/scam/multimodal/history/${encodeURIComponent(item.record_id)}`, 'DELETE');
                 if (!res) return;
 
-                history.value = history.value.filter(h => h.record_id !== item.record_id);
+                fetchHistory();
                 if (selectedTask.value && selectedTask.value.task_id === item.record_id) {
                     selectedTask.value = null;
                 }
@@ -271,6 +285,169 @@ createApp({
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(fetchUsers, 300);
         };
+
+        // Case Library Management
+        const fetchCaseLibrary = async () => {
+            if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
+            const res = await request('/scam/case-library/cases');
+            if (res && res.cases) {
+                caseLibrary.value = res.cases;
+            }
+        };
+
+        const openCaseModal = () => {
+            Object.assign(caseForm, {
+                title: '',
+                target_group: '',
+                risk_level: '',
+                case_description: '',
+                typical_scripts_raw: '',
+                keywords_raw: '',
+                violated_law: '',
+                suggestion: ''
+            });
+            showCaseModal.value = true;
+        };
+
+        const minCaseDescriptionRunes = 12;
+        const maxCaseDescriptionRunes = 400;
+        const randomLikeAlnumChunkLimit = 16;
+
+        const validateCaseDescriptionQualityClient = (description) => {
+            const normalized = String(description || '').trim().replace(/\s+/g, ' ');
+            const runes = Array.from(normalized);
+
+            if (!normalized) {
+                return { ok: false, message: '案件描述不能为空' };
+            }
+            if (runes.length < minCaseDescriptionRunes) {
+                return { ok: false, message: `案件描述过短，至少 ${minCaseDescriptionRunes} 个字符` };
+            }
+
+            if (runes.length > maxCaseDescriptionRunes) {
+                return { ok: false, message: `案件描述过长，最多 ${maxCaseDescriptionRunes} 个字符` };
+            }
+
+            const uniqueChars = new Set(runes);
+            if (uniqueChars.size <= 2) {
+                return { ok: false, message: '案件描述疑似无效，请填写有语义的内容' };
+            }
+
+            const hasHan = /[\u4e00-\u9fff]/.test(normalized);
+            const hasSeparator = /[^A-Za-z0-9]/.test(normalized);
+
+            let maxAlnumChunk = 0;
+            let currentAlnumChunk = 0;
+            let alnumCount = 0;
+            let digitCount = 0;
+
+            for (const ch of runes) {
+                if (/[A-Za-z0-9]/.test(ch)) {
+                    currentAlnumChunk += 1;
+                    alnumCount += 1;
+                    if (/[0-9]/.test(ch)) {
+                        digitCount += 1;
+                    }
+                } else {
+                    currentAlnumChunk = 0;
+                }
+
+                if (currentAlnumChunk > maxAlnumChunk) {
+                    maxAlnumChunk = currentAlnumChunk;
+                }
+            }
+
+            if (!hasHan && !hasSeparator && maxAlnumChunk >= randomLikeAlnumChunkLimit) {
+                return { ok: false, message: '案件描述疑似随机字符串，请补充有效描述' };
+            }
+
+            if (!hasHan && alnumCount >= minCaseDescriptionRunes) {
+                const digitRatio = digitCount / alnumCount;
+                if (maxAlnumChunk >= minCaseDescriptionRunes && digitRatio > 0.35) {
+                    return { ok: false, message: '案件描述疑似随机字符串，请补充有效描述' };
+                }
+            }
+
+            return { ok: true, message: '' };
+        };
+
+        const submitCase = async () => {
+            if (!String(caseForm.title || '').trim()) {
+                showToast('案件标题不能为空', 'error');
+                return;
+            }
+            if (!String(caseForm.target_group || '').trim()) {
+                showToast('目标人群不能为空', 'error');
+                return;
+            }
+            if (!String(caseForm.risk_level || '').trim()) {
+                showToast('风险等级不能为空', 'error');
+                return;
+            }
+
+            const descriptionValidation = validateCaseDescriptionQualityClient(caseForm.case_description);
+            if (!descriptionValidation.ok) {
+                showToast(descriptionValidation.message, 'error');
+                return;
+            }
+
+            submittingCase.value = true;
+            try {
+                const payload = {
+                    title: String(caseForm.title || '').trim(),
+                    target_group: String(caseForm.target_group || '').trim(),
+                    risk_level: String(caseForm.risk_level || '').trim(),
+                    case_description: String(caseForm.case_description || '').trim(),
+                    typical_scripts: caseForm.typical_scripts_raw.split('\n').filter(s => s.trim()),
+                    keywords: caseForm.keywords_raw.split(/[,，]/).map(s => s.trim()).filter(s => s),
+                    violated_law: String(caseForm.violated_law || '').trim(),
+                    suggestion: String(caseForm.suggestion || '').trim()
+                };
+
+                const res = await request('/scam/case-library/cases', 'POST', payload);
+                if (res) {
+                    showToast('案件录入成功');
+                    showCaseModal.value = false;
+                    fetchCaseLibrary();
+                }
+            } catch (e) {
+                showToast('录入失败: ' + e.message, 'error');
+            } finally {
+                submittingCase.value = false;
+            }
+        };
+
+        const viewCaseDetail = async (caseId) => {
+            const res = await request(`/scam/case-library/cases/${caseId}`);
+            if (res && res.case) {
+                selectedCase.value = res.case;
+            }
+        };
+
+        const deleteCase = async (item) => {
+             if (!item || !item.case_id) return;
+             if (!confirm(`确定删除案件 ${item.title} 吗？此操作不可恢复。`)) return;
+
+             try {
+                 const res = await request(`/scam/case-library/cases/${item.case_id}`, 'DELETE');
+                 if (res) {
+                     showToast(res.message || '案件已删除');
+                     fetchCaseLibrary();
+                     if (selectedCase.value && selectedCase.value.case_id === item.case_id) {
+                         selectedCase.value = null;
+                     }
+                 }
+             } catch (e) {
+                 showToast('删除失败: ' + e.message, 'error');
+             }
+        };
+
+        watch(activeTab, (newTab) => {
+            if (newTab === 'case_library') fetchCaseLibrary();
+            if (newTab === 'users') fetchUsers();
+            if (newTab === 'history') fetchHistory();
+            if (newTab === 'tasks') fetchTasks();
+        });
 
         // Polling
         let pollInterval;
@@ -410,7 +587,7 @@ createApp({
         // Chat State
         const showChat = ref(false);
         const chatMessages = ref([
-            { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险，解答疑问，或者总结最近的安全状况。' }
+            { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
         ]);
         const chatInput = ref('');
         const isChatting = ref(false);
@@ -523,16 +700,14 @@ createApp({
         const parseInsight = (text) => {
             if (!text) return [];
             const sections = [];
-            // Regex to match titles like 【整体视觉感受】 or [关键信息提取] or 图片分析 #1
+            // Regex to match titles like 【整体视觉感受】 or [关键信息提取]
             const regex = /^[【\[](.+?)[】\]]\s*(.*)$/; 
             const lines = text.split('\n');
             let currentSection = null;
-
-            // Check if the text starts with a header that we might be missing
-            // For example "图片分析 #1" which is not in brackets
             
             for (const line of lines) {
-                const match = line.trim().match(regex);
+                const trimmedLine = line.trim();
+                const match = trimmedLine.match(regex);
                 if (match) {
                     if (currentSection) {
                         currentSection.content = currentSection.content.trim();
@@ -544,7 +719,7 @@ createApp({
                     };
                 } else if (currentSection) {
                     currentSection.content += line + '\n';
-                } else if (line.trim()) {
+                } else if (trimmedLine) {
                     // Handle content before the first title (if any) as a general introduction
                     // If we already have "概述" section, append to it
                     if (sections.length > 0 && sections[0].title === '概述') {
@@ -692,7 +867,7 @@ createApp({
                 chatHistoryLoaded.value = true;
                 showToast('对话历史已重置');
             } catch (e) {
-                showToast('清除历史失败', 'error');
+                showToast('娓呴櫎鍘嗗彶澶辫触', 'error');
             }
         };
 
@@ -777,7 +952,8 @@ createApp({
             showChat, chatMessages, chatInput, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
-            parseReport, parseInsight
+            parseReport, parseInsight,
+            caseLibrary, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase
         };
     }
 }).mount('#app');

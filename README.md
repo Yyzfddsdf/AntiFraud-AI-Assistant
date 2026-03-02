@@ -1,9 +1,9 @@
 # AntiFraud AI Assistant
 
-一个基于 Go 的反诈智能助手服务，包含两条核心能力：
+一个基于 Go 的反诈智能助手服务，覆盖两条主线能力：
 
-1. 登录与鉴权系统（验证码、注册、登录、JWT、限流、管理员能力）
-2. 多模态反诈分析系统（文本/图像/视频/音频，异步任务执行，历史归档查询）
+- 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
+- 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档、相似案件检索）
 
 默认服务端口：`8081`
 
@@ -11,12 +11,11 @@
 
 ## 1. 技术栈
 
-- Go 1.25
-- Web 框架：Gin
-- ORM / 数据库：GORM + SQLite
-- 鉴权：JWT
-- 会话上下文：Redis（聊天上下文）
-- 模型调用：OpenAI 兼容接口（已统一到自定义 `llm` 客户端）
+- 语言与框架：Go `1.25`、Gin
+- ORM 与数据库：GORM + SQLite
+- 缓存：Redis（聊天上下文）
+- 鉴权：JWT（`github.com/golang-jwt/jwt/v5`）
+- 模型接口：OpenAI 兼容协议（项目内自定义 `llm` 客户端）
 
 ---
 
@@ -37,7 +36,7 @@ go run .
 启动后可访问：
 
 - API 基地址：`http://localhost:8081/api`
-- 登录测试页：`http://localhost:8081/test-login`
+- 测试页面：`http://localhost:8081/test-login`
 
 ---
 
@@ -45,7 +44,9 @@ go run .
 
 - `PORT`：服务端口，默认 `8081`
 - `JWT_SECRET`：JWT 密钥（生产环境必须设置）
-- `DB_PATH`：登录数据库路径，默认 `DB/auth_system.db`
+- `INVITE_CODE_ADMIN`：管理员升级邀请码（默认值仅供开发）
+- `DB_PATH`：主业务库路径（默认 `DB/auth_system.db`）
+- `HISTORICAL_CASE_DB_PATH`：历史案件库路径（默认 `DB/historical_case_library.db`）
 
 ---
 
@@ -53,137 +54,261 @@ go run .
 
 主配置文件：`config/config.json`
 
-当前为统一配置结构（按智能体拆分）：
+包含配置：
 
-- `agents.main.{model, api_key, base_url, max_tokens, top_p, temperature}`
-- `agents.image.{model, api_key, base_url, max_tokens, top_p, temperature}`
-- `agents.video.{model, api_key, base_url, max_tokens, top_p, temperature}`
-- `agents.audio.{model, api_key, base_url, max_tokens, top_p, temperature}`
-- `prompts.{main, image, video, audio}`
-- `retry.{max_retries, retry_delay_ms}`
+- `agents.main / image / video / audio`：各智能体模型参数
+- `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
+- `prompts.main / image / video / audio`：提示词
+- `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
-配置加载逻辑见 `config/config.go`，包含：
-
-- 路径兜底解析（相对路径 + 项目根目录）
-- 字段标准化（trim）
-- 完整性校验（模型参数、提示词、重试参数）
+聊天模块单独读取：`chat_system/config/config.json`
 
 ---
 
-## 5. 项目结构（核心模块）
+## 5. 项目结构（核心目录）
 
-- `main.go`
-  - 服务启动入口
-  - 路由注册（auth/chat/multimodal）
-  - 全局 CORS 与限流中间件
-
-- `login_system/`
-  - 认证与用户管理
-  - `controllers/`：注册/登录/用户查询/升级等接口
-  - `middleware/`：JWT 鉴权、管理员校验、限流
-  - `database/`：SQLite 初始化与迁移
-
-- `chat_system/`
-  - 聊天能力（工具调用 + Redis 上下文）
-  - `httpapi/`：聊天接口与上下文接口
-  - `service/`：工具调用闭环 + 流式回复 + 上下文持久化
-  - `tool/`：聊天工具（用户信息、历史案件）
-
-- `multi_agent/`
-  - 多模态分析主流程
-  - `main_agent.go`：主智能体编排与工具循环
-  - `image.go / video.go / ali_asr.go`：子智能体分析
-  - `queue/`：异步入队与后台处理
-  - `state/`：任务状态与历史归档持久化（两张表）
-  - `tool/`：主智能体工具定义与处理逻辑
-  - `httpapi/`：多模态任务接口
-
-- `llm/`
-  - OpenAI 兼容自定义客户端与协议结构
+- `main.go`：服务入口、路由挂载、中间件注册
+- `login_system/`：注册登录、用户管理、JWT 中间件、限流
+- `chat_system/`：聊天 SSE、工具调用、Redis 上下文
+- `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
+- `multi_agent/case_library/`：历史案件库、embedding 入库、向量检索与缓存
+- `llm/`：OpenAI 兼容客户端（聊天、流式、embedding）
 
 ---
 
-## 6. 关键业务流程
+## 6. 数据库设计与优化（重点）
 
-### 6.1 多模态任务流程
+### 6.1 多库隔离
 
-1. `POST /api/scam/multimodal/analyze` 提交任务
-2. 任务写入 `pending_tasks`，后台 goroutine 启动处理
-3. 并行执行图像/视频/音频子智能体分析
-4. 主智能体聚合结果并走工具调用流程
-5. 提交 `submit_final_report` 后，调用 `write_user_history_case`
-6. 任务从进行中迁移到 `history_cases`
+项目使用两个独立 SQLite 文件：
 
-### 6.2 聊天流程
+- `DB/auth_system.db`：用户体系 + 多模态任务状态与归档
+- `DB/historical_case_library.db`：历史案件知识库 + embedding 向量
 
-1. 加载 Redis 会话上下文
-2. 必要时触发工具调用（用户画像/历史）
-3. 流式返回回答内容（SSE）
-4. 将本轮消息写回 Redis，并刷新 TTL
+这样做的好处：
+
+- 权限边界清晰（业务数据与向量知识库隔离）
+- 迁移和备份更灵活
+- 向量检索迭代不会影响主业务库稳定性
+
+### 6.2 主业务库（`auth_system.db`）
+
+主要表：
+
+- `users`
+- `pending_tasks`
+- `history_cases`
+
+关键实现与优化：
+
+- 启动自动迁移：`users` 在登录模块启动时迁移；`pending_tasks/history_cases` 在首次状态写入时迁移
+- 索引策略：按 `user_id`、`status`、时间字段建立索引，覆盖常见查询路径
+- 两阶段任务状态：
+  - 先写 `pending_tasks`（支持处理中查询与预览）
+  - 完成后迁移到 `history_cases`（历史归档）
+- 事务保证：`MarkTaskCompleted`/`MarkTaskFailed` 使用事务确保“写历史 + 删 pending”原子性
+- 兼容性序列化：
+  - 任务中的数组字段（视频/音频/图片/insights）使用 Base64 逗号串存储
+  - 读取时对历史明文做兼容回退，避免旧数据读失败
+- 任务详情查询统一：`GetTaskDetailByID` 先查 pending，再查 history，前端一个接口覆盖“未完成+已完成”
+
+### 6.3 历史案件库（`historical_case_library.db`）
+
+核心表：`historical_case_library`
+
+关键字段：
+
+- 结构化字段：`title`、`target_group`、`risk_level`、`case_description`、`typical_scripts`、`keywords`、`violated_law`、`suggestion`
+- 向量字段：`embedding_vector`、`embedding_model`、`embedding_dimension`
+
+关键实现与优化：
+
+- 独立连接单例：`sync.Once` 打开数据库并迁移，避免重复初始化
+- 输入规范化与校验：
+  - 人群、风险等级强枚举
+  - 列表字段去空、去重
+  - 必填字段统一验证并返回结构化错误
+  - 案件描述质量门禁（描述过短或疑似随机字符串直接拒绝入库）
+- embedding 自动化：上传案件后自动拼接结构化文本并调用 embedding 模型
+- 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `config/config.json` 读取
+- 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
+
+### 6.4 向量检索优化（当前实现）
+
+`search_similar_cases` 工具已经接入真实数据库检索链路：
+
+- 查询流程：`query -> embedding -> 向量相似度排序 -> topK 返回`
+- 算法细节：
+  - `L2` 归一化（query 与 case 向量）
+  - 清洗 `NaN/Inf`
+  - 维度不一致按最短维度计算余弦相似度
+  - 相似度数值夹逼到 `[-1, 1]`
+- `top_k` 规格化：默认 `5`，最大 `20`
+- 排序规则：相似度降序；同分按创建时间降序
+
+### 内存驻留优化
+
+为避免每次检索全量扫库，已实现“懒加载 + 增量刷新”：
+
+- 首次检索时全量加载到内存缓存
+- 后续检索直接读取内存快照
+- 新增案件后增量 `upsert` 缓存
+- 删除案件后增量 `remove` 缓存
+- 冷启动并发保护：若首次加载与写入并发，使用 `pendingUpserts/pendingDeletes` 合并，避免丢更新
+
+### 6.5 输入质量与一致性优化（新增）
+
+- 必填字段收敛：历史案件上传仅要求 `title`、`target_group`、`risk_level`、`case_description`。
+- 可选字段容错：`typical_scripts`、`keywords`、`violated_law`、`suggestion` 允许不传。
+- 空值清洗策略：
+  - 字符串字段统一 `TrimSpace`，空字符串视为未提供。
+  - 数组字段逐项去空白、去重，仅保留有效项。
+  - 可选字段若最终为空，不作为有效语义参与 embedding 拼接。
+- 描述质量门禁（前后端一致）：
+  - 最小长度：`12` 字符；
+  - 最大长度：`400` 字符；
+  - 疑似随机串/无语义文本拒绝入库。
+- 前后端双重校验：
+  - 前端提交前先拦截，减少无效请求；
+  - 后端强校验兜底，防止绕过前端直接调用 API 写入脏数据。
+- 检索工具输出统一：
+  - `search_similar_cases` 中可选文本字段统一走空值兜底函数（空值返回 `none`）。
+  - 描述字段不再做截断，返回原始描述（仅空值兜底），避免信息损失。
 
 ---
 
-## 7. 主要 API
+## 7. 智能体编排与优化（重点）
 
-### 7.1 鉴权相关
+### 7.1 多智能体分工
+
+- 子智能体：`ImageAgent`、`VideoAgent`、`AudioAgent`
+- 主智能体：`MainAgent`
+- 队列调度：`queue/processTask`
+
+流程：
+
+1. API 入队创建任务
+2. 后台 goroutine 标记 `processing`
+3. 子智能体并发分析各模态
+4. 主智能体聚合并进入工具调用循环
+5. 生成最终报告并归档历史
+
+### 7.2 子智能体侧优化
+
+- 通用基类 `SubAgentBase`：统一请求构造、重试、工具结果解析
+- 并发处理：`AnalyzeBatchInParallel` 按输入并行，减少总时延
+- 统一结构化输出：子智能体强制通过 `submit_analysis_result` 工具返回，输出格式稳定
+- 模态兼容：
+  - 图像 `image_url`
+  - 视频 `video_url`
+  - 音频 `input_audio`（附加 `modalities` 请求字段）
+
+### 7.3 主智能体侧优化
+
+- 工具驱动闭环：`ToolChoice = required`，强制模型通过工具写关键状态
+- 上下文绑定：`user_id`、`task_id`、原始 payload、insights、final_report 全部通过 `ctx` 传递给工具
+- 终态控制：仅当“最终报告已提交 + 历史归档已写入”才结束流程
+- 防失控机制：最大工具轮次限制（`maxRounds=8`）
+- 失败隔离：单工具失败不会导致整个轮次崩溃，错误回填到 tool message
+
+### 7.4 重试与稳定性
+
+- `CommonAgent.Retry` 线性退避重试
+- 统一日志打点：轮次、工具调用、工具返回、最终输出长度
+- 子模态失败兼容：单模态失败会产出错误文本，主流程继续执行
+
+### 7.5 Chat 智能体侧能力
+
+- SSE 流式输出
+- 工具调用（`chat_query_user_info`、`chat_query_user_case_history`）
+- Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟
+- 会话可刷新：`POST /api/chat/refresh`
+
+---
+
+## 8. 安全与权限
+
+- JWT 鉴权：校验 token 后会二次校验用户是否存在、用户名/邮箱是否匹配
+- 管理员权限：
+  - `GET /api/users`
+  - 历史案件库上传/查询/删除接口
+- 全局限流：按 IP + 时间窗口限制请求速率
+- 注册安全策略：
+  - 密码复杂度校验（大写+小写+符号）
+  - 注册时年龄默认 `28`，不接受注册请求中直接传 `age`
+
+---
+
+## 9. LLM 客户端能力（`llm/`）
+
+自定义客户端并非简单 DTO，做了协议兼容扩展：
+
+- Chat 与 Embedding 双接口
+- SSE 流式读取封装
+- 多模态消息结构（文本、图像、视频、音频）
+- 工具调用结构（tool calls/tool result）
+- 请求扩展字段机制：`SetField` / `ExtraFields`
+  - 可透传 provider 私有字段（等价于常见 SDK 的 `extra_body` 场景）
+
+---
+
+## 10. 核心 API（摘要）
+
+鉴权：
 
 - `GET /api/auth/captcha`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `GET /api/user`
-- `DELETE /api/user`
 - `POST /api/upgrade`
-- `GET /api/users`（管理员）
+- `GET /api/users`（admin）
 
-### 7.2 对话相关（需鉴权）
+多模态任务：
 
-- `POST /api/chat`
-- `GET /api/chat/context`
-- `POST /api/chat/refresh`
-
-### 7.3 多模态相关（需鉴权）
-
-- `PUT /api/scam/multimodal/user/age`
 - `POST /api/scam/multimodal/analyze`
 - `GET /api/scam/multimodal/tasks`
 - `GET /api/scam/multimodal/tasks/:taskId`
 - `GET /api/scam/multimodal/history`
 - `DELETE /api/scam/multimodal/history/:recordId`
 
-更完整的请求/响应样例见 `API.md`。
+历史案件库（admin）：
+
+- `POST /api/scam/case-library/cases`
+- `GET /api/scam/case-library/cases`
+- `GET /api/scam/case-library/cases/:caseId`
+- `DELETE /api/scam/case-library/cases/:caseId`
+
+聊天：
+
+- `POST /api/chat`
+- `GET /api/chat/context`
+- `POST /api/chat/refresh`
+
+完整接口说明见：`API.md`
+
+数据库表结构见：`DB_SCHEMA_DEMO.md`
 
 ---
 
-## 8. 持久化说明
+## 11. 开发与测试
 
-- 登录与用户信息：`DB/auth_system.db`（SQLite）
-- 多模态任务状态：
-  - `pending_tasks`：进行中任务
-  - `history_cases`：历史案件归档
-- 聊天上下文：Redis（按用户维度，带 TTL）
-
----
-
-## 9. 开发建议
-
-- 提交前执行：
+推荐命令：
 
 ```bash
 go test ./...
 ```
 
-- 本地联调建议：
-  1. 先走 `test-login` 页面获取 token
-  2. 再调用多模态任务接口并轮询任务状态
-  3. 最后查看历史归档与聊天工具返回是否一致
+本地联调建议：
+
+1. 先注册/登录拿 JWT
+2. 提交多模态任务并轮询详情
+3. 检查历史归档、风险等级、report 一致性
+4. 使用管理员账号上传历史案件并验证相似检索结果
 
 ---
 
-## 10. 备注
+## 12. 可继续优化方向
 
-当前仓库处于持续重构阶段（统一配置、统一工具调用、统一客户端协议）。  
-如需继续扩展新模型或新子智能体，建议优先沿用现有的：
-
-- `CommonAgent / SubAgentBase` 继承结构
-- `config/config.json` 按模型独立配置
-- `tool` 注册中心 + handler 映射
+- 向量检索可升级为 ANN 索引（当前为内存全量余弦）
+- `historical_case_library` 可引入按字段加权重排
+- 任务队列可引入 worker 池和持久队列（当前为进程内 goroutine）
+- 增加数据库观测指标（QPS、慢查询、缓存命中率）

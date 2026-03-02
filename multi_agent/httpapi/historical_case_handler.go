@@ -1,0 +1,151 @@
+package httpapi
+
+import (
+	"net/http"
+	"strings"
+	"time"
+
+	"image_recognition/multi_agent/case_library"
+
+	"github.com/gin-gonic/gin"
+)
+
+// CreateHistoricalCaseHandle 上传历史案件并自动生成 embedding 向量后入库。
+// 数据会写入独立的 historical_case_library.db，不占用现有业务数据库文件。
+func CreateHistoricalCaseHandle(c *gin.Context) {
+	var payload CreateHistoricalCaseRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
+		return
+	}
+
+	record, err := case_library.CreateHistoricalCase(c.Request.Context(), getCurrentUserID(c), case_library.CreateHistoricalCaseInput{
+		Title:           payload.Title,
+		TargetGroup:     payload.TargetGroup,
+		RiskLevel:       payload.RiskLevel,
+		CaseDescription: payload.CaseDescription,
+		TypicalScripts:  payload.TypicalScripts,
+		Keywords:        payload.Keywords,
+		ViolatedLaw:     payload.ViolatedLaw,
+		Suggestion:      payload.Suggestion,
+	})
+	if err != nil {
+		if case_library.IsValidationError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":                 err.Error(),
+				"allowed_target_groups": append([]string{}, case_library.FixedTargetGroups...),
+				"allowed_risk_levels":   append([]string{}, case_library.FixedRiskLevels...),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件入库失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, CreateHistoricalCaseResponse{
+		Message: "historical case stored",
+		Case: HistoricalCaseItem{
+			CaseID:             record.CaseID,
+			CreatedBy:          strings.TrimSpace(record.CreatedBy),
+			Title:              record.Title,
+			TargetGroup:        record.TargetGroup,
+			RiskLevel:          record.RiskLevel,
+			CaseDescription:    record.CaseDescription,
+			TypicalScripts:     append([]string{}, record.TypicalScripts...),
+			Keywords:           append([]string{}, record.Keywords...),
+			ViolatedLaw:        record.ViolatedLaw,
+			Suggestion:         record.Suggestion,
+			EmbeddingModel:     record.EmbeddingModel,
+			EmbeddingDimension: record.EmbeddingDimension,
+			CreatedAt:          record.CreatedAt.Format(time.RFC3339),
+		},
+	})
+}
+
+// GetHistoricalCasePreviewHandle 返回历史案件预览列表。
+// 仅包含标题、目标人群、风险等级以及 case_id（便于前端点详情）。
+func GetHistoricalCasePreviewHandle(c *gin.Context) {
+	previews, err := case_library.ListHistoricalCasePreviews()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件预览查询失败: " + err.Error()})
+		return
+	}
+
+	items := make([]HistoricalCasePreviewItem, 0, len(previews))
+	for _, preview := range previews {
+		items = append(items, HistoricalCasePreviewItem{
+			CaseID:      preview.CaseID,
+			Title:       preview.Title,
+			TargetGroup: preview.TargetGroup,
+			RiskLevel:   preview.RiskLevel,
+		})
+	}
+
+	c.JSON(http.StatusOK, HistoricalCasePreviewResponse{
+		Total: len(items),
+		Cases: items,
+	})
+}
+
+// GetHistoricalCaseDetailHandle 返回指定 case_id 的完整历史案件详情（包含 embedding 向量）。
+func GetHistoricalCaseDetailHandle(c *gin.Context) {
+	caseID := strings.TrimSpace(c.Param("caseId"))
+	if caseID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "caseId 不能为空"})
+		return
+	}
+
+	record, exists, err := case_library.GetHistoricalCaseByID(caseID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件详情查询失败: " + err.Error()})
+		return
+	}
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "历史案件不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, HistoricalCaseDetailResponse{
+		Case: HistoricalCaseDetailItem{
+			CaseID:             record.CaseID,
+			CreatedBy:          strings.TrimSpace(record.CreatedBy),
+			Title:              record.Title,
+			TargetGroup:        record.TargetGroup,
+			RiskLevel:          record.RiskLevel,
+			CaseDescription:    record.CaseDescription,
+			TypicalScripts:     append([]string{}, record.TypicalScripts...),
+			Keywords:           append([]string{}, record.Keywords...),
+			ViolatedLaw:        record.ViolatedLaw,
+			Suggestion:         record.Suggestion,
+			EmbeddingVector:    append([]float64{}, record.EmbeddingVector...),
+			EmbeddingModel:     record.EmbeddingModel,
+			EmbeddingDimension: record.EmbeddingDimension,
+			CreatedAt:          record.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:          record.UpdatedAt.Format(time.RFC3339),
+		},
+	})
+}
+
+// DeleteHistoricalCaseHandle 删除指定 case_id 的历史案件。
+func DeleteHistoricalCaseHandle(c *gin.Context) {
+	caseID := strings.TrimSpace(c.Param("caseId"))
+	if caseID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "caseId 不能为空"})
+		return
+	}
+
+	deleted, err := case_library.DeleteHistoricalCaseByID(caseID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件删除失败: " + err.Error()})
+		return
+	}
+	if !deleted {
+		c.JSON(http.StatusNotFound, gin.H{"error": "历史案件不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, DeleteHistoricalCaseResponse{
+		CaseID:  caseID,
+		Message: "historical case deleted",
+	})
+}

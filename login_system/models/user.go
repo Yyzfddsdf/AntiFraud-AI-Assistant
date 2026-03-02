@@ -7,7 +7,7 @@ type User struct {
 	gorm.Model
 	Username string `gorm:"unique;not null" json:"username"`
 	Email    string `gorm:"unique;not null" json:"email"`
-	Age      *int   `json:"age"`
+	Age      *int   `gorm:"default:28" json:"age"`
 	Password string `gorm:"not null" json:"-"`
 	Role     string `gorm:"default:'user'" json:"role"` // 用户身份，默认为 "user"
 }

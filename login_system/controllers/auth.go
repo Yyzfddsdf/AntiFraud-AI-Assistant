@@ -70,9 +70,11 @@ func RegisterHandle(c *gin.Context) {
 		return
 	}
 
+	defaultAge := 28
 	user := models.User{
 		Username: payload.Username,
 		Email:    payload.Email,
+		Age:      &defaultAge,
 		Password: string(hashedPassword),
 		Role:     "user",
 	}

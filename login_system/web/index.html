@@ -155,6 +155,12 @@
                             <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">用户权限管理</span>
                             <div v-if="isSidebarCollapsed" class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">用户管理</div>
                         </button>
+                        
+                        <button @click="activeTab = 'case_library'" :class="['w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'case_library' ? 'bg-brand-50/80 text-brand-700 shadow-sm ring-1 ring-brand-100/50' : 'text-slate-600 hover:bg-white/30 hover:text-slate-900']" :title="isSidebarCollapsed ? '案件库管理' : ''">
+                            <svg class="w-5 h-5 min-w-[20px] transition-colors" :class="activeTab === 'case_library' ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">案件库管理</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">案件库</div>
+                        </button>
                     </div>
                 </div>
 
@@ -329,9 +335,129 @@
                                     <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                                 </button>
                             </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Case Detail Modal -->
+        <div v-if="selectedCase" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in modal-overlay" @click.self="selectedCase = null">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
+                        <div class="flex items-center gap-3 mt-1">
+                             <span :class="['px-2 py-0.5 rounded-md text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
+                                {{ normalizeRiskLevelText(selectedCase.risk_level) }}风险
+                            </span>
+                            <span class="text-xs text-slate-400 font-mono">ID: {{ selectedCase.case_id }}</span>
+                        </div>
+                    </div>
+                    <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/50 custom-scrollbar">
+                    
+                    <!-- Basic Info -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
+                            <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
+                            <p class="text-slate-800 font-semibold">{{ formatTime(selectedCase.created_at) }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                            <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            案件描述
+                        </h4>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 text-slate-600 text-sm leading-relaxed">
+                            {{ selectedCase.case_description }}
+                        </div>
+                    </div>
+
+                    <!-- Scripts -->
+                    <div>
+                        <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            典型话术
+                        </h4>
+                        <div class="space-y-2">
+                            <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-indigo-900 text-sm flex gap-3">
+                                <span class="text-indigo-400 font-bold text-xs mt-0.5">0{{ idx + 1 }}</span>
+                                {{ script }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Law & Suggestion -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                违反法律
+                            </h4>
+                            <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100 text-red-800 text-sm leading-relaxed">
+                                {{ selectedCase.violated_law }}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                处置建议
+                            </h4>
+                            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
+                                {{ selectedCase.suggestion }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Keywords -->
+                    <div>
+                         <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">关键词提取</h4>
+                         <div class="flex flex-wrap gap-2">
+                             <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
+                                 # {{ kw }}
+                             </span>
+                         </div>
+                    </div>
+
+                    <!-- Debug Info (Technical) -->
+                    <div class="border-t border-slate-100 pt-6 mt-2">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            技术调试信息
+                        </h4>
+                        <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-500">Model:</span>
+                                <span class="text-emerald-400">{{ selectedCase.embedding_model }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-500">Dimension:</span>
+                                <span class="text-brand-400">{{ selectedCase.embedding_dimension }}</span>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-slate-500">Vector (First 10 dims):</span>
+                                    <span class="text-[10px] text-slate-600">Total {{ selectedCase.embedding_vector ? selectedCase.embedding_vector.length : 0 }} dims</span>
+                                </div>
+                                <div class="bg-slate-950 p-3 rounded-lg overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
+                                    [{{ selectedCase.embedding_vector ? selectedCase.embedding_vector.join(', ') : 'null' }}]
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
                 <!-- History View -->
                 <div v-if="activeTab === 'history'" class="max-w-6xl mx-auto animate-fade-in">
@@ -481,6 +607,52 @@
                                 <svg class="w-5 h-5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Case Library View (Admin Only) -->
+                <div v-if="activeTab === 'case_library' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">案件库管理</h1>
+                        <button @click="openCaseModal" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2 hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            录入新案件
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">案件ID</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">标题</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">目标人群</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="c in caseLibrary" :key="c.case_id" class="hover:bg-slate-50/80 transition-colors group">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ c.case_id.substring(0,12) }}...</td>
+                                        <td class="px-6 py-4 font-bold text-slate-900">{{ c.title }}</td>
+                                        <td class="px-6 py-4 text-slate-600">{{ c.target_group }}</td>
+                                        <td class="px-6 py-4">
+                                             <span :class="['px-2.5 py-1 rounded-full text-xs font-bold border', getRiskClass(c.risk_level)]">
+                                                {{ normalizeRiskLevelText(c.risk_level) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewCaseDetail(c.case_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-lg">查看</button>
+                                                <button @click="deleteCase(c)" class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-3 py-1.5 rounded-lg">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="caseLibrary.length === 0" class="p-12 text-center text-slate-400">暂无历史案件数据</div>
                     </div>
                 </div>
 
@@ -757,6 +929,82 @@
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Case Modal -->
+        <div v-if="showCaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" @click.self="showCaseModal = false">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up border border-white/20">
+                <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">录入新案件</h3>
+                    <button @click="showCaseModal = false" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/50">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">案件标题 <span class="text-red-500">*</span></label>
+                        <input v-model="caseForm.title" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="例如：冒充客服退款诈骗">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">目标人群 <span class="text-red-500">*</span></label>
+                            <select v-model="caseForm.target_group" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium appearance-none">
+                                <option value="">请选择</option>
+                                <option value="老人">老人</option>
+                                <option value="青年">青年</option>
+                                <option value="中年">中年</option>
+                                <option value="未成年">未成年</option>
+                                <option value="学生">学生</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">风险等级 <span class="text-red-500">*</span></label>
+                            <select v-model="caseForm.risk_level" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium appearance-none">
+                                <option value="">请选择</option>
+                                <option value="高">高风险</option>
+                                <option value="中">中风险</option>
+                                <option value="低">低风险</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">案件描述 <span class="text-red-500">*</span></label>
+                        <textarea v-model="caseForm.case_description" rows="3" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="简要描述案件经过和手法..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">典型话术 <span class="text-xs font-normal text-slate-400 ml-2">(每行一条)</span></label>
+                        <textarea v-model="caseForm.typical_scripts_raw" rows="3" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="您好，我是淘宝客服...&#10;您的账户存在异常..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">关键词 <span class="text-xs font-normal text-slate-400 ml-2">(用逗号分隔)</span></label>
+                        <input v-model="caseForm.keywords_raw" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="客服, 退款, 转账, 安全账户">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">违反法律说明</label>
+                        <input v-model="caseForm.violated_law" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="涉嫌违反《刑法》第二百六十六条...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">处置建议</label>
+                        <textarea v-model="caseForm.suggestion" rows="2" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="立即停止转账，报警..."></textarea>
+                    </div>
+                </div>
+
+                <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                    <button @click="showCaseModal = false" class="px-6 py-3 rounded-xl text-slate-600 font-bold hover:bg-slate-200/50 transition-colors">取消</button>
+                    <button @click="submitCase" :disabled="submittingCase" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-500/25 transition-all active:scale-[0.98] flex items-center gap-2">
+                        <span v-if="submittingCase" class="loader !w-4 !h-4 !border-white/30 !border-t-white"></span>
+                        {{ submittingCase ? '提交中...' : '确认录入' }}
+                    </button>
                 </div>
             </div>
         </div>

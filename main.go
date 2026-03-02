@@ -70,6 +70,15 @@ func main() {
 		api.GET("/scam/multimodal/history", httpapi.GetMultimodalHistoryHandle)
 		api.DELETE("/scam/multimodal/history/:recordId", httpapi.DeleteMultimodalHistoryHandle)
 		api.GET("/scam/multimodal/tasks/:taskId", httpapi.GetMultimodalTaskDetailHandle)
+
+		adminCaseLibrary := api.Group("/scam/case-library")
+		adminCaseLibrary.Use(middleware.AdminMiddleware())
+		{
+			adminCaseLibrary.POST("/cases", httpapi.CreateHistoricalCaseHandle)
+			adminCaseLibrary.GET("/cases", httpapi.GetHistoricalCasePreviewHandle)
+			adminCaseLibrary.GET("/cases/:caseId", httpapi.GetHistoricalCaseDetailHandle)
+			adminCaseLibrary.DELETE("/cases/:caseId", httpapi.DeleteHistoricalCaseHandle)
+		}
 	}
 
 	port := os.Getenv("PORT")

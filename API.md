@@ -61,6 +61,7 @@
   - 至少一个小写字母
   - 至少一个符号
 - `captchaId` / `captchaCode` 必填且必须匹配
+- 用户年龄在注册时默认写入 `28`（无需在请求体传入 `age`）。
 
 ### 成功响应（201）
 
@@ -69,6 +70,7 @@
   "id": 1,
   "username": "test_user",
   "email": "test_user@example.com",
+  "age": 28,
   "role": "user"
 }
 ```
@@ -958,5 +960,269 @@ curl -X POST "http://localhost:8081/api/chat/refresh" \
 
 ```bash
 curl -X GET "http://localhost:8081/api/chat/context" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
+## 17) 上传历史案件并自动向量化入库（仅管理员）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/case-library/cases`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "title": "冒充客服退款引导转账",
+  "target_group": "老人",
+  "risk_level": "高",
+  "case_description": "诈骗方冒充平台客服，以“会员自动续费”名义要求受害者将资金转入所谓安全账户。",
+  "typical_scripts": [
+    "您不开通取消会每月自动扣费。",
+    "为了资金安全，请先把钱转到监管账户。"
+  ],
+  "keywords": [
+    "客服退款",
+    "安全账户",
+    "自动续费"
+  ],
+  "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
+  "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。"
+}
+```
+
+### 字段说明
+
+- `title`: 历史案件标题，必填。
+- `target_group`: 目标人群，必填，固定枚举值：`老人`、`青年`、`中年`、`未成年`、`学生`、`其他`。
+- `risk_level`: 风险等级，必填，固定枚举值：`高`、`中`、`低`。
+- `case_description`: 案件描述，必填；长度需在 12 到 400 个字符之间，且不能是明显随机字符串（例如长连续字母数字串）。
+- `typical_scripts`: 典型话术列表，可选；传入时建议每条为非空字符串。若为空数组则按“未提供”处理。
+- `keywords`: 关键词列表，可选；传入时建议为语义关键词。若为空数组则按“未提供”处理。
+- `violated_law`: 违反法律说明，可选。空字符串会按“未提供”处理。
+- `suggestion`: 处置建议，可选。空字符串会按“未提供”处理。
+
+### 入库与向量化说明
+
+- 仅管理员可调用此接口。
+- 服务端在接收请求后，会自动拼接上述字段并调用 embedding 模型生成向量。
+- 向量与结构化字段会一起写入独立 SQLite 数据库文件：
+  - 默认路径：`DB/historical_case_library.db`
+  - 可通过环境变量覆盖：`HISTORICAL_CASE_DB_PATH`
+- 该库与现有 `auth_system.db`、多模态任务状态库分离，不共享连接。
+
+### 成功响应（201）
+
+```json
+{
+  "message": "historical case stored",
+  "case": {
+    "case_id": "HCASE-5F3C91AA12DE",
+    "created_by": "1",
+    "title": "冒充客服退款引导转账",
+    "target_group": "老人",
+    "risk_level": "高",
+    "case_description": "诈骗方冒充平台客服，以“会员自动续费”名义要求受害者将资金转入所谓安全账户。",
+    "typical_scripts": [
+      "您不开通取消会每月自动扣费。",
+      "为了资金安全，请先把钱转到监管账户。"
+    ],
+    "keywords": [
+      "客服退款",
+      "安全账户",
+      "自动续费"
+    ],
+    "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
+    "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。",
+    "embedding_model": "baai/bge-m3",
+    "embedding_dimension": 1024,
+    "created_at": "2026-03-02T20:40:31+08:00"
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` 必填字段缺失（`title`/`target_group`/`risk_level`/`case_description`） / 字段格式错误 / `target_group` 或 `risk_level` 非固定枚举值 / `case_description` 过短、过长（超过 400 字符）或疑似随机字符串。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` embedding 调用失败 / 独立数据库写入失败。
+
+### cURL 示例
+
+```bash
+curl -X POST "http://localhost:8081/api/scam/case-library/cases" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "冒充客服退款引导转账",
+    "target_group": "老人",
+    "risk_level": "高",
+    "case_description": "诈骗方冒充平台客服，以“会员自动续费”名义要求受害者将资金转入所谓安全账户。",
+    "typical_scripts": [
+      "您不开通取消会每月自动扣费。",
+      "为了资金安全，请先把钱转到监管账户。"
+    ],
+    "keywords": ["客服退款", "安全账户", "自动续费"],
+    "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
+    "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。"
+  }'
+```
+
+---
+
+## 18) 历史案件预览列表（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/cases`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 返回所有历史案件的预览信息。
+- 按 `created_at desc` 倒序返回。
+- 预览仅包含：`title`、`target_group`、`risk_level`，并附带 `case_id` 方便请求详情。
+
+### 成功响应（200）
+
+```json
+{
+  "total": 2,
+  "cases": [
+    {
+      "case_id": "HCASE-5F3C91AA12DE",
+      "title": "冒充客服退款引导转账",
+      "target_group": "老人",
+      "risk_level": "高"
+    },
+    {
+      "case_id": "HCASE-A1B2C3D4E5F6",
+      "title": "虚假投资平台拉群荐股",
+      "target_group": "青年",
+      "risk_level": "中"
+    }
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 预览查询失败。
+
+### cURL 示例
+
+```bash
+curl -X GET "http://localhost:8081/api/scam/case-library/cases" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
+## 19) 历史案件详情（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/cases/:caseId`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 按 `case_id` 返回单条历史案件完整内容。
+- 返回字段包含结构化字段和 `embedding_vector`。
+
+### 成功响应（200）
+
+```json
+{
+  "case": {
+    "case_id": "HCASE-5F3C91AA12DE",
+    "created_by": "1",
+    "title": "冒充客服退款引导转账",
+    "target_group": "老人",
+    "risk_level": "高",
+    "case_description": "诈骗方冒充平台客服，以“会员自动续费”名义要求受害者将资金转入所谓安全账户。",
+    "typical_scripts": [
+      "您不开通取消会每月自动扣费。",
+      "为了资金安全，请先把钱转到监管账户。"
+    ],
+    "keywords": [
+      "客服退款",
+      "安全账户",
+      "自动续费"
+    ],
+    "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
+    "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。",
+    "embedding_vector": [0.0123, -0.0456, 0.0034],
+    "embedding_model": "baai/bge-m3",
+    "embedding_dimension": 1024,
+    "created_at": "2026-03-02T20:40:31+08:00",
+    "updated_at": "2026-03-02T20:40:31+08:00"
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` `caseId` 为空。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `404` 指定 `caseId` 不存在。
+- `500` 详情查询失败。
+
+### cURL 示例
+
+```bash
+curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12DE" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
+## 20) 删除历史案件（仅管理员）
+
+- **Method**: `DELETE`
+- **Path**: `/api/scam/case-library/cases/:caseId`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 按 `case_id` 删除指定历史案件。
+
+### 成功响应（200）
+
+```json
+{
+  "case_id": "HCASE-5F3C91AA12DE",
+  "message": "historical case deleted"
+}
+```
+
+### 常见失败响应
+
+- `400` `caseId` 为空。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `404` 指定 `caseId` 不存在。
+- `500` 删除失败。
+
+### cURL 示例
+
+```bash
+curl -X DELETE "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12DE" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
