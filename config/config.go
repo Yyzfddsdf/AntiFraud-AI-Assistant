@@ -18,6 +18,12 @@ type ModelConfig struct {
 	Temperature float64 `json:"temperature"`
 }
 
+type EmbeddingConfig struct {
+	Model   string `json:"model"`
+	APIKey  string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+}
+
 // RetryConfig 定义通用重试策略。
 type RetryConfig struct {
 	MaxRetries   int `json:"max_retries"`
@@ -42,9 +48,10 @@ type PromptConfig struct {
 
 // Config 是项目总配置对象。
 type Config struct {
-	Agents  AgentModelConfig `json:"agents"`
-	Prompts PromptConfig     `json:"prompts"`
-	Retry   RetryConfig      `json:"retry"`
+	Agents    AgentModelConfig `json:"agents"`
+	Embedding EmbeddingConfig  `json:"embedding"`
+	Prompts   PromptConfig     `json:"prompts"`
+	Retry     RetryConfig      `json:"retry"`
 }
 
 // LoadConfig 负责读取、标准化并校验配置文件。
@@ -75,6 +82,7 @@ func (c *Config) normalize() {
 	c.Agents.Image = normalizeModel(c.Agents.Image)
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
+	c.Embedding = normalizeEmbedding(c.Embedding)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
@@ -87,6 +95,13 @@ func normalizeModel(modelCfg ModelConfig) ModelConfig {
 	modelCfg.BaseURL = strings.TrimSpace(modelCfg.BaseURL)
 	modelCfg.Model = strings.TrimSpace(modelCfg.Model)
 	return modelCfg
+}
+
+func normalizeEmbedding(embeddingCfg EmbeddingConfig) EmbeddingConfig {
+	embeddingCfg.APIKey = strings.TrimSpace(embeddingCfg.APIKey)
+	embeddingCfg.BaseURL = strings.TrimSpace(embeddingCfg.BaseURL)
+	embeddingCfg.Model = strings.TrimSpace(embeddingCfg.Model)
+	return embeddingCfg
 }
 
 // validate 校验整体配置完整性。
@@ -108,6 +123,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validateModel("agents.audio", c.Agents.Audio); err != nil {
+		return err
+	}
+	if err := validateEmbedding("embedding", c.Embedding); err != nil {
 		return err
 	}
 	if err := validatePrompt("prompts.main", c.Prompts.Main); err != nil {
@@ -144,6 +162,19 @@ func validateModel(name string, modelCfg ModelConfig) error {
 	}
 	if modelCfg.Temperature < 0 {
 		return fmt.Errorf("%s.temperature must be >= 0", name)
+	}
+	return nil
+}
+
+func validateEmbedding(name string, embeddingCfg EmbeddingConfig) error {
+	if embeddingCfg.Model == "" {
+		return fmt.Errorf("%s.model is required", name)
+	}
+	if embeddingCfg.APIKey == "" {
+		return fmt.Errorf("%s.api_key is required", name)
+	}
+	if embeddingCfg.BaseURL == "" {
+		return fmt.Errorf("%s.base_url is required", name)
 	}
 	return nil
 }

@@ -94,14 +94,14 @@ func NewSubAgentBase(name string, modelCfg config.ModelConfig, retryCfg config.R
 		profile.RequestFields = map[string]interface{}{}
 	}
 
-	openaiConfig := openai.DefaultConfig(modelCfg.APIKey)
-	openaiConfig.BaseURL = modelCfg.BaseURL
-
 	return SubAgentBase{
 		CommonAgent: NewCommonAgent(name, modelCfg, retryCfg),
-		client:      openai.NewClientWithConfig(openaiConfig),
-		modelID:     modelCfg.Model,
-		profile:     profile,
+		client: openai.NewClientWithConfig(openai.Config{
+			APIKey:  modelCfg.APIKey,
+			BaseURL: modelCfg.BaseURL,
+		}),
+		modelID: modelCfg.Model,
+		profile: profile,
 	}
 }
 

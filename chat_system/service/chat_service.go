@@ -42,17 +42,17 @@ type ChatService struct {
 
 // NewChatService 根据聊天配置创建服务实例。
 func NewChatService(cfg *chatcfg.Config) *ChatService {
-	openaiCfg := openai.DefaultConfig(cfg.APIKey)
-	openaiCfg.BaseURL = cfg.BaseURL
-
 	modelID := strings.TrimSpace(cfg.ChatModel)
 	if modelID == "" {
 		modelID = "qwen/qwen3.5-397b-a17b"
 	}
 
 	return &ChatService{
-		client: openai.NewClientWithConfig(openaiCfg),
-		model:  modelID,
+		client: openai.NewClientWithConfig(openai.Config{
+			APIKey:  cfg.APIKey,
+			BaseURL: cfg.BaseURL,
+		}),
+		model: modelID,
 	}
 }
 

@@ -187,6 +187,11 @@ func normalizeRiskLevelFromHistory(raw string) string {
 	}
 }
 
+// WriteUserHistoryCase 把当前任务归档到 history_cases。
+// 归档数据来源：
+// 1) 原始输入（text/videos/audios/images）来自 CurrentTaskPayload(ctx)
+// 2) 子模态洞察来自 CurrentTaskInsights(ctx)
+// 3) 最终报告来自 CurrentFinalReport(ctx)
 func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) (map[string]interface{}, error) {
 	payload := CurrentTaskPayload(ctx)
 	insights := CurrentTaskInsights(ctx)

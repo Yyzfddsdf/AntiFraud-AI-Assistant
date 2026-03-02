@@ -142,6 +142,8 @@ func AnalyzeMainReportForUser(userID string, taskID string, text string, videosB
 	}
 
 	finalInput := buildMainAgentInput(results)
+	// 外层先写入子模态洞察（insights）。
+	// generateReport 入口会继续补齐 user/task/payload，确保工具上下文完整。
 	ctx := context.Background()
 	ctx = tool.BindTaskInsights(ctx, results.VideoInsights, results.AudioInsights, results.ImageInsights)
 
@@ -201,6 +203,9 @@ func buildMainAgentInput(results modalityResult) string {
 
 // generateReport 驱动主智能体工具调用循环，直到拿到终态报告。
 func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userID string, taskID string, rawText string, rawVideos []string, rawAudios []string, rawImages []string) (string, error) {
+	// 工具执行依赖的关键上下文在这里统一绑定：
+	// - user_id / task_id：用于用户查询与任务级归档定位
+	// - 原始 payload（text/videos/audios/images）：用于落库保留原始输入
 	ctx = tool.BindUserID(ctx, userID)
 	ctx = tool.BindTaskID(ctx, taskID)
 	ctx = tool.BindTaskPayload(ctx, rawText, rawVideos, rawAudios, rawImages)
@@ -317,6 +322,8 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 			appendToolResponse(call.ID, response.Payload)
 			if response.FinalResultStr != "" {
 				finalResult = response.FinalResultStr
+				// submit_final_report 返回最终报告后，写入 ctx，
+				// 供 write_user_history_case 在归档时读取并持久化。
 				ctx = tool.BindFinalReport(ctx, finalResult)
 				fmt.Printf("[MainAgent][Round %d] final_result updated, len=%d\n", round+1, len(strings.TrimSpace(finalResult)))
 			}

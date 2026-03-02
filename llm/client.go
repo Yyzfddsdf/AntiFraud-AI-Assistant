@@ -223,6 +223,60 @@ func (r *ChatCompletionRequest) SetField(key string, value interface{}) {
 	r.ExtraFields[key] = value
 }
 
+type EmbeddingRequest struct {
+	Model          string                 `json:"model"`
+	Input          interface{}            `json:"input"`
+	EncodingFormat string                 `json:"encoding_format,omitempty"`
+	Dimensions     int                    `json:"dimensions,omitempty"`
+	User           string                 `json:"user,omitempty"`
+	ExtraFields    map[string]interface{} `json:"-"`
+}
+
+func (r EmbeddingRequest) MarshalJSON() ([]byte, error) {
+	payload := map[string]interface{}{
+		"model": r.Model,
+		"input": r.Input,
+	}
+	if strings.TrimSpace(r.EncodingFormat) != "" {
+		payload["encoding_format"] = strings.TrimSpace(r.EncodingFormat)
+	}
+	if r.Dimensions > 0 {
+		payload["dimensions"] = r.Dimensions
+	}
+	if strings.TrimSpace(r.User) != "" {
+		payload["user"] = strings.TrimSpace(r.User)
+	}
+	for key, value := range r.ExtraFields {
+		payload[key] = value
+	}
+	return json.Marshal(payload)
+}
+
+func (r *EmbeddingRequest) SetField(key string, value interface{}) {
+	if r.ExtraFields == nil {
+		r.ExtraFields = map[string]interface{}{}
+	}
+	r.ExtraFields[key] = value
+}
+
+type EmbeddingUsage struct {
+	PromptTokens int `json:"prompt_tokens"`
+	TotalTokens  int `json:"total_tokens"`
+}
+
+type EmbeddingData struct {
+	Object    string    `json:"object"`
+	Embedding []float64 `json:"embedding"`
+	Index     int       `json:"index"`
+}
+
+type EmbeddingResponse struct {
+	Object string          `json:"object"`
+	Data   []EmbeddingData `json:"data"`
+	Model  string          `json:"model"`
+	Usage  EmbeddingUsage  `json:"usage"`
+}
+
 type ChatCompletionChoice struct {
 	Message ChatCompletionMessage `json:"message"`
 }
@@ -317,6 +371,27 @@ func (c *Client) CreateChatCompletionStream(ctx context.Context, req ChatComplet
 	}, nil
 }
 
+func (c *Client) CreateEmbeddings(ctx context.Context, req EmbeddingRequest) (EmbeddingResponse, error) {
+	if strings.TrimSpace(req.Model) == "" {
+		return EmbeddingResponse{}, fmt.Errorf("embedding model is empty")
+	}
+	if req.Input == nil {
+		return EmbeddingResponse{}, fmt.Errorf("embedding input is nil")
+	}
+
+	resp, err := c.doEmbeddings(ctx, req)
+	if err != nil {
+		return EmbeddingResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	var result EmbeddingResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return EmbeddingResponse{}, fmt.Errorf("decode embedding response failed: %w", err)
+	}
+	return result, nil
+}
+
 func (c *Client) doChatCompletion(ctx context.Context, req ChatCompletionRequest) (*http.Response, error) {
 	if c.cfg.BaseURL == "" {
 		return nil, fmt.Errorf("base url is empty")
@@ -346,6 +421,40 @@ func (c *Client) doChatCompletion(ctx context.Context, req ChatCompletionRequest
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("chat completion request failed, status=%d, body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	return resp, nil
+}
+
+func (c *Client) doEmbeddings(ctx context.Context, req EmbeddingRequest) (*http.Response, error) {
+	if c.cfg.BaseURL == "" {
+		return nil, fmt.Errorf("base url is empty")
+	}
+	endpoint := c.cfg.BaseURL + "/embeddings"
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("encode embedding request failed: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, fmt.Errorf("build embedding request failed: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if c.cfg.APIKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+	}
+
+	resp, err := c.cfg.HTTPClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("send embedding request failed: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("embedding request failed, status=%d, body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
 	return resp, nil
