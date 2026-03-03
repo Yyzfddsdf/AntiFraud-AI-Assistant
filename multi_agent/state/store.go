@@ -21,6 +21,8 @@ const (
 	TaskStatusProcessing = "processing"
 	TaskStatusCompleted  = "completed"
 	TaskStatusFailed     = "failed"
+
+	pendingTaskTTL = 20 * time.Minute
 )
 
 // TaskPayload 保存任务原始输入和各子模态解读结果。
@@ -375,6 +377,7 @@ func GetTask(userID, taskID string) (TaskRecord, bool) {
 	if tid == "" {
 		return TaskRecord{}, false
 	}
+	expireStalePendingTasks(uid, tid)
 
 	var entity pendingTaskEntity
 	query := db.Where("task_id = ? AND user_id = ?", tid, uid).Limit(1).Find(&entity)
@@ -400,6 +403,7 @@ func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
 	if targetID == "" {
 		return TaskRecord{}, false
 	}
+	expireStalePendingTasks(uid, targetID)
 
 	var pending pendingTaskEntity
 	pendingQuery := db.Where("task_id = ? AND user_id = ?", targetID, uid).Limit(1).Find(&pending)
@@ -456,6 +460,7 @@ func GetUserStateView(userID string) UserStateView {
 		return UserStateView{UserID: uid, Pending: map[string]TaskRecord{}, History: []CaseHistoryRecord{}}
 	}
 	ensureStateSchema(db)
+	expireStalePendingTasks(uid, "")
 
 	pendingRows := make([]pendingTaskEntity, 0)
 	if err := db.Where("user_id = ?", uid).Find(&pendingRows).Error; err != nil {
@@ -482,6 +487,45 @@ func GetUserStateView(userID string) UserStateView {
 		UserID:  uid,
 		Pending: pending,
 		History: history,
+	}
+}
+
+func expireStalePendingTasks(userID, taskID string) {
+	db := database.DB
+	if db == nil {
+		return
+	}
+	ensureStateSchema(db)
+
+	uid := normalizeUserID(userID)
+	tid := strings.TrimSpace(taskID)
+	cutoff := time.Now().Add(-pendingTaskTTL)
+
+	query := db.Model(&pendingTaskEntity{}).
+		Where("user_id = ?", uid).
+		Where("created_at <= ?", cutoff).
+		Where("status IN ?", []string{TaskStatusPending, TaskStatusProcessing})
+	if tid != "" {
+		query = query.Where("task_id = ?", tid)
+	}
+
+	staleRows := make([]pendingTaskEntity, 0)
+	if err := query.Find(&staleRows).Error; err != nil {
+		log.Printf("[state] query stale pending failed: user=%s task=%s err=%v", uid, firstNonEmpty(tid, "<all>"), err)
+		return
+	}
+	if len(staleRows) == 0 {
+		return
+	}
+
+	for _, row := range staleRows {
+		staleTaskID := strings.TrimSpace(row.TaskID)
+		if staleTaskID == "" {
+			continue
+		}
+		if err := db.Where("task_id = ? AND user_id = ?", staleTaskID, uid).Delete(&pendingTaskEntity{}).Error; err != nil {
+			log.Printf("[state] delete stale pending failed: user=%s task=%s err=%v", uid, staleTaskID, err)
+		}
 	}
 }
 

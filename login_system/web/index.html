@@ -361,10 +361,14 @@
                 <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/50 custom-scrollbar">
                     
                     <!-- Basic Info -->
-                    <div class="grid grid-cols-2 gap-6">
+                    <div class="grid grid-cols-3 gap-6">
                         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
                             <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">诈骗类型</h4>
+                            <p class="text-slate-800 font-semibold">{{ selectedCase.scam_type || '-' }}</p>
                         </div>
                         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
@@ -629,6 +633,7 @@
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">标题</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">目标人群</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
                                     </tr>
                                 </thead>
@@ -642,6 +647,7 @@
                                                 {{ normalizeRiskLevelText(c.risk_level) }}
                                             </span>
                                         </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ c.scam_type || '-' }}</td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button @click="viewCaseDetail(c.case_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-lg">查看</button>
@@ -971,6 +977,28 @@
                                 <option value="低">低风险</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">诈骗类型 <span class="text-red-500">*</span></label>
+                        <select v-model="caseForm.scam_type" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium appearance-none">
+                            <option value="">请选择</option>
+                            <option value="冒充客服类">冒充客服类</option>
+                            <option value="冒充公检法类">冒充公检法类</option>
+                            <option value="刷单返利类">刷单返利类</option>
+                            <option value="虚假投资理财类">虚假投资理财类</option>
+                            <option value="虚假网络贷款类">虚假网络贷款类</option>
+                            <option value="虚假征信类">虚假征信类</option>
+                            <option value="冒充领导熟人类">冒充领导熟人类</option>
+                            <option value="婚恋交友类">婚恋交友类</option>
+                            <option value="博彩赌博类">博彩赌博类</option>
+                            <option value="虚假购物服务类">虚假购物服务类</option>
+                            <option value="机票退改签类">机票退改签类</option>
+                            <option value="兼职招聘类">兼职招聘类</option>
+                            <option value="网络游戏交易类">网络游戏交易类</option>
+                            <option value="直播打赏类">直播打赏类</option>
+                            <option value="其他诈骗类">其他诈骗类</option>
+                        </select>
                     </div>
 
                     <div>

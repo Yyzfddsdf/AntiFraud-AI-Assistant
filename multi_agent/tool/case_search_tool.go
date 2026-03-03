@@ -74,13 +74,14 @@ func SearchSimilarCases(query string, topK int) ([]string, int, error) {
 
 		description := noneFallback(item.CaseDescription)
 		cases = append(cases, fmt.Sprintf(
-			"TOP%d | case_id:%s | score:%.4f | title:%s | target_group:%s | risk:%s | keywords:%s | description:%s | violated_law:%s",
+			"TOP%d | case_id:%s | score:%.4f | title:%s | target_group:%s | risk:%s | scam_type:%s | keywords:%s | description:%s | violated_law:%s",
 			index+1,
 			item.CaseID,
 			item.Similarity,
 			item.Title,
 			item.TargetGroup,
 			item.RiskLevel,
+			noneFallback(item.ScamType),
 			keywordText,
 			description,
 			violatedLawText,

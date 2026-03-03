@@ -20,6 +20,7 @@ type SimilarCaseResult struct {
 	Title           string
 	TargetGroup     string
 	RiskLevel       string
+	ScamType        string
 	CaseDescription string
 	Keywords        []string
 	ViolatedLaw     string
@@ -99,6 +100,7 @@ func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarC
 			Title:           item.Title,
 			TargetGroup:     item.TargetGroup,
 			RiskLevel:       item.RiskLevel,
+			ScamType:        item.ScamType,
 			CaseDescription: item.CaseDescription,
 			Keywords:        append([]string{}, item.Keywords...),
 			ViolatedLaw:     item.ViolatedLaw,

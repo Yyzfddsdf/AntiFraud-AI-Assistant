@@ -25,6 +25,10 @@ import (
 )
 
 const historicalCaseDBPathEnv = "HISTORICAL_CASE_DB_PATH"
+const (
+	scamTypesConfigPath    = "config/scam_types.json"
+	targetGroupsConfigPath = "config/target_groups.json"
+)
 
 const (
 	minCaseDescriptionRunes   = 12
@@ -77,6 +81,7 @@ type CreateHistoricalCaseInput struct {
 	Title           string
 	TargetGroup     string
 	RiskLevel       string
+	ScamType        string
 	CaseDescription string
 	TypicalScripts  []string
 	Keywords        []string
@@ -90,6 +95,7 @@ type HistoricalCaseRecord struct {
 	Title              string
 	TargetGroup        string
 	RiskLevel          string
+	ScamType           string
 	CaseDescription    string
 	TypicalScripts     []string
 	Keywords           []string
@@ -107,6 +113,7 @@ type HistoricalCasePreview struct {
 	Title       string
 	TargetGroup string
 	RiskLevel   string
+	ScamType    string
 }
 
 type historicalCaseEntity struct {
@@ -116,6 +123,7 @@ type historicalCaseEntity struct {
 	Title              string    `gorm:"type:text;not null"`
 	TargetGroup        string    `gorm:"size:32;index;not null"`
 	RiskLevel          string    `gorm:"size:16;index;not null;default:'中'"`
+	ScamType           string    `gorm:"size:64;index;not null;default:'其他诈骗类'"`
 	CaseDescription    string    `gorm:"type:text;not null"`
 	TypicalScripts     string    `gorm:"type:text;not null"`
 	Keywords           string    `gorm:"type:text;not null"`
@@ -151,6 +159,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 		Title:              normalizedInput.Title,
 		TargetGroup:        normalizedInput.TargetGroup,
 		RiskLevel:          normalizedInput.RiskLevel,
+		ScamType:           normalizedInput.ScamType,
 		CaseDescription:    normalizedInput.CaseDescription,
 		TypicalScripts:     encodeStringList(normalizedInput.TypicalScripts),
 		Keywords:           encodeStringList(normalizedInput.Keywords),
@@ -181,7 +190,7 @@ func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
 	}
 
 	rows := make([]historicalCaseEntity, 0)
-	if err := db.Select("case_id", "title", "target_group", "risk_level", "created_at").
+	if err := db.Select("case_id", "title", "target_group", "risk_level", "scam_type", "created_at").
 		Order("created_at desc").
 		Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("query historical case previews failed: %w", err)
@@ -199,6 +208,7 @@ func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
 			Title:       strings.TrimSpace(row.Title),
 			TargetGroup: strings.TrimSpace(row.TargetGroup),
 			RiskLevel:   normalizedRiskLevel,
+			ScamType:    strings.TrimSpace(row.ScamType),
 		})
 	}
 	return previews, nil
@@ -255,6 +265,7 @@ func normalizeAndValidateInput(input CreateHistoricalCaseInput) (CreateHistorica
 		Title:           strings.TrimSpace(input.Title),
 		TargetGroup:     normalizeTargetGroup(input.TargetGroup),
 		RiskLevel:       normalizeRiskLevel(input.RiskLevel),
+		ScamType:        normalizeScamType(input.ScamType),
 		CaseDescription: strings.TrimSpace(input.CaseDescription),
 		TypicalScripts:  normalizeStringList(input.TypicalScripts),
 		Keywords:        normalizeStringList(input.Keywords),
@@ -266,10 +277,13 @@ func normalizeAndValidateInput(input CreateHistoricalCaseInput) (CreateHistorica
 		return CreateHistoricalCaseInput{}, newValidationError("title is required")
 	}
 	if normalized.TargetGroup == "" {
-		return CreateHistoricalCaseInput{}, newValidationError("target_group is invalid, allowed values: %s", strings.Join(FixedTargetGroups, ", "))
+		return CreateHistoricalCaseInput{}, newValidationError("target_group is invalid, allowed values: %s", strings.Join(ListTargetGroups(), ", "))
 	}
 	if normalized.RiskLevel == "" {
 		return CreateHistoricalCaseInput{}, newValidationError("risk_level is invalid, allowed values: %s", strings.Join(FixedRiskLevels, ", "))
+	}
+	if normalized.ScamType == "" {
+		return CreateHistoricalCaseInput{}, newValidationError("scam_type is invalid, allowed values: %s", strings.Join(ListScamTypes(), ", "))
 	}
 	if normalized.CaseDescription == "" {
 		return CreateHistoricalCaseInput{}, newValidationError("case_description is required")
@@ -350,19 +364,97 @@ func normalizeTargetGroup(raw string) string {
 	if group == "" {
 		return ""
 	}
-
-	alias := map[string]string{
-		"老人":   "老人",
-		"老年人":  "老人",
-		"老年":   "老人",
-		"青年":   "青年",
-		"中年":   "中年",
-		"未成年":  "未成年",
-		"未成年人": "未成年",
-		"学生":   "学生",
-		"其他":   "其他",
+	for _, allowed := range ListTargetGroups() {
+		if strings.TrimSpace(allowed) == group {
+			return group
+		}
 	}
-	return alias[group]
+	return ""
+}
+
+func normalizeScamType(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	for _, allowed := range ListScamTypes() {
+		if strings.TrimSpace(allowed) == value {
+			return value
+		}
+	}
+	return ""
+}
+
+// ListScamTypes 返回诈骗类型配置（动态增改依赖配置文件）。
+func ListScamTypes() []string {
+	configPath := resolveScamTypesConfigPath()
+	raw, err := os.ReadFile(configPath)
+	if err != nil {
+		log.Printf("[case_library] read scam types config failed: path=%s err=%v", configPath, err)
+		return []string{}
+	}
+
+	var wrapper struct {
+		ScamTypes []string `json:"scam_types"`
+	}
+	if err := json.Unmarshal(raw, &wrapper); err != nil {
+		var plain []string
+		if err2 := json.Unmarshal(raw, &plain); err2 != nil {
+			log.Printf("[case_library] parse scam types config failed: path=%s err=%v", configPath, err2)
+			return []string{}
+		}
+		return normalizeStringList(plain)
+	}
+	return normalizeStringList(wrapper.ScamTypes)
+}
+
+// ListTargetGroups 返回目标人群配置（动态增改依赖配置文件）。
+func ListTargetGroups() []string {
+	configPath := resolveTargetGroupsConfigPath()
+	raw, err := os.ReadFile(configPath)
+	if err != nil {
+		log.Printf("[case_library] read target groups config failed: path=%s err=%v", configPath, err)
+		return []string{}
+	}
+
+	var wrapper struct {
+		TargetGroups []string `json:"target_groups"`
+	}
+	if err := json.Unmarshal(raw, &wrapper); err != nil {
+		var plain []string
+		if err2 := json.Unmarshal(raw, &plain); err2 != nil {
+			log.Printf("[case_library] parse target groups config failed: path=%s err=%v", configPath, err2)
+			return []string{}
+		}
+		return normalizeStringList(plain)
+	}
+	return normalizeStringList(wrapper.TargetGroups)
+}
+
+func resolveTargetGroupsConfigPath() string {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if ok {
+		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
+		return filepath.Join(projectRoot, targetGroupsConfigPath)
+	}
+	abs, err := filepath.Abs(targetGroupsConfigPath)
+	if err == nil {
+		return abs
+	}
+	return targetGroupsConfigPath
+}
+
+func resolveScamTypesConfigPath() string {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if ok {
+		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
+		return filepath.Join(projectRoot, scamTypesConfigPath)
+	}
+	abs, err := filepath.Abs(scamTypesConfigPath)
+	if err == nil {
+		return abs
+	}
+	return scamTypesConfigPath
 }
 
 func normalizeRiskLevel(raw string) string {
@@ -415,6 +507,7 @@ func buildEmbeddingInput(input CreateHistoricalCaseInput) string {
 	segments = appendEmbeddingSegment(segments, "标题", input.Title)
 	segments = appendEmbeddingSegment(segments, "目标人群", input.TargetGroup)
 	segments = appendEmbeddingSegment(segments, "风险等级", input.RiskLevel)
+	segments = appendEmbeddingSegment(segments, "诈骗类型", input.ScamType)
 	segments = appendEmbeddingSegment(segments, "案件描述", input.CaseDescription)
 
 	if len(input.TypicalScripts) > 0 {
@@ -606,6 +699,7 @@ func recordFromEntity(entity historicalCaseEntity) HistoricalCaseRecord {
 		Title:              strings.TrimSpace(entity.Title),
 		TargetGroup:        strings.TrimSpace(entity.TargetGroup),
 		RiskLevel:          normalizedRiskLevel,
+		ScamType:           strings.TrimSpace(entity.ScamType),
 		CaseDescription:    strings.TrimSpace(entity.CaseDescription),
 		TypicalScripts:     decodeStringList(entity.TypicalScripts),
 		Keywords:           decodeStringList(entity.Keywords),

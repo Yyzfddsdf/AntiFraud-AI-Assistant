@@ -25,6 +25,7 @@ createApp({
             title: '',
             target_group: '',
             risk_level: '',
+            scam_type: '',
             case_description: '',
             typical_scripts_raw: '',
             keywords_raw: '',
@@ -300,6 +301,7 @@ createApp({
                 title: '',
                 target_group: '',
                 risk_level: '',
+                scam_type: '',
                 case_description: '',
                 typical_scripts_raw: '',
                 keywords_raw: '',
@@ -384,6 +386,10 @@ createApp({
                 showToast('风险等级不能为空', 'error');
                 return;
             }
+            if (!String(caseForm.scam_type || '').trim()) {
+                showToast('诈骗类型不能为空', 'error');
+                return;
+            }
 
             const descriptionValidation = validateCaseDescriptionQualityClient(caseForm.case_description);
             if (!descriptionValidation.ok) {
@@ -397,6 +403,7 @@ createApp({
                     title: String(caseForm.title || '').trim(),
                     target_group: String(caseForm.target_group || '').trim(),
                     risk_level: String(caseForm.risk_level || '').trim(),
+                    scam_type: String(caseForm.scam_type || '').trim(),
                     case_description: String(caseForm.case_description || '').trim(),
                     typical_scripts: caseForm.typical_scripts_raw.split('\n').filter(s => s.trim()),
                     keywords: caseForm.keywords_raw.split(/[,，]/).map(s => s.trim()).filter(s => s),

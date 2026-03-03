@@ -23,6 +23,7 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 		Title:           payload.Title,
 		TargetGroup:     payload.TargetGroup,
 		RiskLevel:       payload.RiskLevel,
+		ScamType:        payload.ScamType,
 		CaseDescription: payload.CaseDescription,
 		TypicalScripts:  payload.TypicalScripts,
 		Keywords:        payload.Keywords,
@@ -33,8 +34,9 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 		if case_library.IsValidationError(err) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error":                 err.Error(),
-				"allowed_target_groups": append([]string{}, case_library.FixedTargetGroups...),
+				"allowed_target_groups": append([]string{}, case_library.ListTargetGroups()...),
 				"allowed_risk_levels":   append([]string{}, case_library.FixedRiskLevels...),
+				"allowed_scam_types":    append([]string{}, case_library.ListScamTypes()...),
 			})
 			return
 		}
@@ -50,6 +52,7 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 			Title:              record.Title,
 			TargetGroup:        record.TargetGroup,
 			RiskLevel:          record.RiskLevel,
+			ScamType:           record.ScamType,
 			CaseDescription:    record.CaseDescription,
 			TypicalScripts:     append([]string{}, record.TypicalScripts...),
 			Keywords:           append([]string{}, record.Keywords...),
@@ -61,6 +64,7 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 		},
 	})
 }
+
 
 // GetHistoricalCasePreviewHandle 返回历史案件预览列表。
 // 仅包含标题、目标人群、风险等级以及 case_id（便于前端点详情）。
@@ -78,6 +82,7 @@ func GetHistoricalCasePreviewHandle(c *gin.Context) {
 			Title:       preview.Title,
 			TargetGroup: preview.TargetGroup,
 			RiskLevel:   preview.RiskLevel,
+			ScamType:    preview.ScamType,
 		})
 	}
 
@@ -112,6 +117,7 @@ func GetHistoricalCaseDetailHandle(c *gin.Context) {
 			Title:              record.Title,
 			TargetGroup:        record.TargetGroup,
 			RiskLevel:          record.RiskLevel,
+			ScamType:           record.ScamType,
 			CaseDescription:    record.CaseDescription,
 			TypicalScripts:     append([]string{}, record.TypicalScripts...),
 			Keywords:           append([]string{}, record.Keywords...),

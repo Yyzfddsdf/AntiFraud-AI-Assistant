@@ -5,6 +5,7 @@ type CreateHistoricalCaseRequest struct {
 	Title           string   `json:"title"`
 	TargetGroup     string   `json:"target_group"`
 	RiskLevel       string   `json:"risk_level"`
+	ScamType        string   `json:"scam_type"`
 	CaseDescription string   `json:"case_description"`
 	TypicalScripts  []string `json:"typical_scripts"`
 	Keywords        []string `json:"keywords"`
@@ -19,6 +20,7 @@ type HistoricalCaseItem struct {
 	Title              string   `json:"title"`
 	TargetGroup        string   `json:"target_group"`
 	RiskLevel          string   `json:"risk_level"`
+	ScamType           string   `json:"scam_type"`
 	CaseDescription    string   `json:"case_description"`
 	TypicalScripts     []string `json:"typical_scripts"`
 	Keywords           []string `json:"keywords"`
@@ -41,6 +43,7 @@ type HistoricalCasePreviewItem struct {
 	Title       string `json:"title"`
 	TargetGroup string `json:"target_group"`
 	RiskLevel   string `json:"risk_level"`
+	ScamType    string `json:"scam_type"`
 }
 
 // HistoricalCasePreviewResponse 历史案件预览列表响应体。
@@ -56,6 +59,7 @@ type HistoricalCaseDetailItem struct {
 	Title              string    `json:"title"`
 	TargetGroup        string    `json:"target_group"`
 	RiskLevel          string    `json:"risk_level"`
+	ScamType           string    `json:"scam_type"`
 	CaseDescription    string    `json:"case_description"`
 	TypicalScripts     []string  `json:"typical_scripts"`
 	Keywords           []string  `json:"keywords"`
