@@ -10,6 +10,7 @@ import (
 	"antifraud/login_system/controllers"
 	"antifraud/login_system/database"
 	"antifraud/login_system/middleware"
+	"antifraud/multi_agent/case_library"
 	"antifraud/multi_agent/httpapi"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,9 @@ func main() {
 	}
 
 	database.ConnectDB()
+	if err := case_library.InitHistoricalCaseDB(); err != nil {
+		log.Fatalf("init historical case db failed: %v", err)
+	}
 
 	r := gin.Default()
 

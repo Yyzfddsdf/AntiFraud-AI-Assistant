@@ -576,6 +576,12 @@ func generateEmbeddingVector(ctx context.Context, inputText string) ([]float64, 
 	return vector, modelName, nil
 }
 
+// InitHistoricalCaseDB 在服务启动阶段主动初始化案件库数据库连接与表结构。
+func InitHistoricalCaseDB() error {
+	_, err := getHistoricalCaseDB()
+	return err
+}
+
 func getHistoricalCaseDB() (*gorm.DB, error) {
 	caseDBOnce.Do(func() {
 		dbPath := resolveHistoricalCaseDBPath()
