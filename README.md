@@ -76,7 +76,113 @@ go run .
 
 ---
 
-## 6. 数据库设计与优化（重点）
+## 6. 系统架构图
+
+```mermaid
+flowchart LR
+    U[Web 前端<br/>login_system/web] -->|JWT + API 调用| G[Gin API 层<br/>main.go + httpapi]
+    G --> A[鉴权与账号模块<br/>login_system]
+    G --> C[聊天系统<br/>chat_system]
+    G --> M[多智能体编排<br/>multi_agent]
+    G --> L[案件库管理 API<br/>multi_agent/httpapi/historical_case_handler]
+
+    C --> R[(Redis<br/>会话上下文)]
+    C --> O[LLM 客户端<br/>llm]
+
+    M --> Q[任务队列<br/>multi_agent/queue]
+    Q --> S[任务状态存储<br/>multi_agent/state]
+    M --> T[工具层<br/>multi_agent/tool]
+    T --> CL[案件库检索<br/>multi_agent/case_library]
+    M --> O
+    T --> O
+    CL --> O
+
+    A --> DB1[(SQLite: auth_system.db)]
+    S --> DB1
+    CL --> DB2[(SQLite: historical_case_library.db)]
+    L --> CL
+
+    O --> X[OpenAI 兼容模型服务]
+```
+
+架构说明（摘要）：
+
+- API 层统一接入鉴权、聊天、多模态分析、案件库管理。
+- 多模态任务走“入队 -> 子智能体并发分析 -> 主智能体工具闭环 -> 归档”流程。
+- 数据层双库隔离：业务库（用户/任务）与案件知识库（结构化字段 + 向量）分离。
+- 聊天上下文放 Redis；模型调用统一走 `llm` 客户端，支持 Chat / Embedding / SSE。
+
+---
+
+## 7. 智能体交互图（多模态分析链路）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as API Handler
+    participant Q as Queue/processTask
+    participant S as State Store
+    participant IA as ImageAgent
+    participant VA as VideoAgent
+    participant AA as AudioAgent
+    participant MA as MainAgent
+    participant TO as Tools
+    participant DB as Case Library/History DB
+    participant LLM as OpenAI-Compatible LLM
+
+    API->>Q: EnqueueMultimodalTask(user_id, payload)
+    Q->>S: CreateTask(status=pending)
+    Q->>S: MarkTaskProcessing(status=processing)
+
+    par 子模态并发分析
+        Q->>IA: AnalyzeBatchInParallel(images)
+        IA->>LLM: ChatCompletion + submit_analysis_result
+        LLM-->>IA: 结构化图像分析
+    and
+        Q->>VA: AnalyzeBatchInParallel(videos)
+        VA->>LLM: ChatCompletion + submit_analysis_result
+        LLM-->>VA: 结构化视频分析
+    and
+        Q->>AA: AnalyzeBatchInParallel(audios)
+        AA->>LLM: ChatCompletion + submit_analysis_result
+        LLM-->>AA: 结构化音频分析
+    end
+
+    Q->>S: UpdateTaskInsights(video/audio/image insights)
+    Q->>MA: generateReport(finalInput + ctx)
+
+    loop 工具调用闭环（最多 8 轮）
+        MA->>LLM: ChatCompletion(tool_choice=required)
+        LLM-->>MA: tool call(s)
+        MA->>TO: dispatch tool handler
+        alt search_similar_cases
+            TO->>DB: 向量检索 topK
+            DB-->>TO: 相似案件列表
+        else query_user_info/query_user_history_cases
+            TO->>S: 读取用户任务与历史
+            S-->>TO: 用户画像/历史数据
+        else submit_final_report
+            TO-->>MA: final_result
+        else write_user_history_case
+            TO->>S: AddCaseHistory(归档)
+        end
+        TO-->>MA: tool payload
+    end
+
+    Q->>S: MarkTaskCompleted(report) / MarkTaskFailed(error)
+    S-->>API: tasks/history/detail 可查询
+```
+
+交互规则（关键约束）：
+
+- 子智能体只负责各自模态的结构化提取，不直接写历史归档。
+- 主智能体必须先 `submit_final_report`，再 `write_user_history_case`，完成后结束。
+- 任务状态由 `state` 统一维护：`pending -> processing -> completed/failed`。
+- 工具层负责“查询/归档动作”，模型层负责“推理与决策”。
+
+---
+
+## 8. 数据库设计与优化（重点）
 
 ### 6.1 多库隔离
 
@@ -177,7 +283,7 @@ go run .
 
 ---
 
-## 7. 智能体编排与优化（重点）
+## 9. 智能体编排与优化（重点）
 
 ### 7.1 多智能体分工
 
@@ -226,7 +332,7 @@ go run .
 
 ---
 
-## 8. 安全与权限
+## 10. 安全与权限
 
 - JWT 鉴权：校验 token 后会二次校验用户是否存在、用户名/邮箱是否匹配
 - 管理员权限：
@@ -239,7 +345,7 @@ go run .
 
 ---
 
-## 9. LLM 客户端能力（`llm/`）
+## 11. LLM 客户端能力（`llm/`）
 
 自定义客户端并非简单 DTO，做了协议兼容扩展：
 
@@ -252,7 +358,7 @@ go run .
 
 ---
 
-## 10. 核心 API（摘要）
+## 12. 核心 API（摘要）
 
 鉴权：
 
@@ -291,7 +397,7 @@ go run .
 
 ---
 
-## 11. 开发与测试
+## 13. 开发与测试
 
 推荐命令：
 
@@ -308,7 +414,7 @@ go test ./...
 
 ---
 
-## 12. 可继续优化方向
+## 14. 可继续优化方向
 
 - 向量检索可升级为 ANN 索引（当前为内存全量余弦）
 - `historical_case_library` 可引入按字段加权重排
