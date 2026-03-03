@@ -26,6 +26,11 @@ const (
 )
 
 // TaskPayload 保存任务原始输入和各子模态解读结果。
+// 用途：
+// 1) 创建任务时，承载用户提交的原始输入（Text/Videos/Audios/Images）；
+// 2) 任务处理中，承载分模态解析后的中间结论（VideoInsights/AudioInsights/ImageInsights）；
+// 3) 作为状态层统一的数据交换结构，在 pending_tasks 与 history_cases 映射转换时复用；
+// 4) 对外返回任务详情时，保证前端拿到的是统一 payload 结构，而不是数据库扁平字段。
 type TaskPayload struct {
 	Text          string   `json:"text"`
 	Videos        []string `json:"videos"`
@@ -36,7 +41,12 @@ type TaskPayload struct {
 	ImageInsights []string `json:"image_insights,omitempty"`
 }
 
-// TaskRecord 表示进行中任务的完整状态。
+// TaskRecord 表示“任务视角”的统一记录模型。
+// 用途：
+// 1) 作为进行中任务（pending）查询返回值的标准结构；
+// 2) 作为历史任务（history）详情查询时的兼容结构，减少上层分支判断；
+// 3) 向 HTTP 层输出任务核心字段（task_id/status/payload/report/error/history_ref）；
+// 4) 覆盖任务生命周期关键状态：pending -> processing -> completed/failed。
 type TaskRecord struct {
 	TaskID     string      `json:"task_id"`
 	UserID     string      `json:"user_id"`
@@ -50,7 +60,12 @@ type TaskRecord struct {
 	HistoryRef string      `json:"history_ref,omitempty"`
 }
 
-// CaseHistoryRecord 表示归档后的历史案件记录。
+// CaseHistoryRecord 表示“历史案件视角”的归档记录模型。
+// 用途：
+// 1) 承载任务完成/失败后的归档快照（标题、摘要、风险、payload、报告）；
+// 2) 用于历史列表与详情接口，作为长期可追溯数据源；
+// 3) 为聊天工具读取既往案件结论提供统一结构；
+// 4) 对应 history_cases 表的业务层对象，避免上层直接依赖 ORM 字段细节。
 type CaseHistoryRecord struct {
 	RecordID    string      `json:"record_id"`
 	UserID      string      `json:"user_id"`
@@ -62,13 +77,29 @@ type CaseHistoryRecord struct {
 	Report      string      `json:"report,omitempty"`
 }
 
-// UserStateView 聚合用户进行中任务与历史记录，供接口直接返回。
+// UserStateView 是用户维度的聚合视图模型。
+// 用途：
+// 1) 一次性聚合当前用户进行中任务（Pending）与历史案件（History）；
+// 2) 服务任务总览页面，减少前端多次请求拼装；
+// 3) 作为“用户当前状态快照”，供会话工具或业务逻辑快速读取。
+// 说明：
+// - Pending 以 task_id 为 key，便于按任务 ID 直接定位；
+// - History 按时间倒序返回，便于前端直接渲染最近记录。
 type UserStateView struct {
 	UserID  string                `json:"user_id"`
 	Pending map[string]TaskRecord `json:"pending"`
 	History []CaseHistoryRecord   `json:"history"`
 }
 
+// pendingTaskEntity 是 pending_tasks 表的 ORM 映射实体。
+// 用途：
+// 1) 持久化仍在处理中的任务，支撑异步流程中的断点查询；
+// 2) 保存任务中间态：status、payload_*_insights、error、history_ref；
+// 3) 在任务完成/失败后，迁移写入 history_cases 并从 pending_tasks 删除；
+// 4) 配合过期清理逻辑（pendingTaskTTL），自动淘汰长时间未完成任务。
+// 字段设计说明：
+// - Payload* 字段使用字符串落库（列表以编码串保存），避免建大量子表；
+// - CreatedAt/UpdatedAt 用于排序、状态追踪和过期判断。
 type pendingTaskEntity struct {
 	TaskID string `gorm:"primaryKey;size:64"`
 	UserID string `gorm:"index;not null"`
@@ -91,10 +122,20 @@ type pendingTaskEntity struct {
 	UpdatedAt time.Time `gorm:"index;not null"`
 }
 
+// TableName 指定 pendingTaskEntity 对应的数据库表名。
 func (pendingTaskEntity) TableName() string {
 	return "pending_tasks"
 }
 
+// historyCaseEntity 是 history_cases 表的 ORM 映射实体。
+// 用途：
+// 1) 保存任务终态（completed/failed）归档数据，作为历史事实库；
+// 2) 支撑历史列表、历史详情、审计回放等读取场景；
+// 3) 与 pendingTaskEntity 构成“进行中 + 已归档”的双表状态模型。
+// 字段设计说明：
+// - RecordID 与 task_id 对齐，便于从任务视角回溯历史；
+// - Status/RiskLevel 保留终态标签，避免后续再推断；
+// - Payload* + Report 保存分析上下文与最终结论，保证可追溯性。
 type historyCaseEntity struct {
 	RecordID    string `gorm:"primaryKey;size:64"`
 	UserID      string `gorm:"index;not null"`
@@ -117,6 +158,7 @@ type historyCaseEntity struct {
 	UpdatedAt time.Time `gorm:"index;not null"`
 }
 
+// TableName 指定 historyCaseEntity 对应的数据库表名。
 func (historyCaseEntity) TableName() string {
 	return "history_cases"
 }
@@ -453,6 +495,13 @@ func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
 }
 
 // GetUserStateView 返回用户任务总览（进行中 + 历史）。
+// 设计说明：
+// 1) 这是“总览读模型”，优先服务列表与统计场景，而非单任务详情；
+// 2) 函数内部对 pending/history 采用并行查询，降低总览接口等待时间；
+// 3) 查询使用部分字段（Select），只读取总览必需列，避免加载 payload/report 大字段；
+//    - pending_tasks 读取字段：task_id、user_id、title、status、created_at、updated_at
+//    - history_cases 读取字段：record_id、user_id、title、case_summary、risk_level、created_at、updated_at
+// 4) 单任务详情请使用 GetTaskDetailByID（该函数会读取完整字段）。
 func GetUserStateView(userID string) UserStateView {
 	db := database.DB
 	uid := normalizeUserID(userID)
@@ -463,14 +512,35 @@ func GetUserStateView(userID string) UserStateView {
 	expireStalePendingTasks(uid, "")
 
 	pendingRows := make([]pendingTaskEntity, 0)
-	if err := db.Where("user_id = ?", uid).Find(&pendingRows).Error; err != nil {
-		log.Printf("[state] query pending failed: user=%s err=%v", uid, err)
-	}
-
 	historyRows := make([]historyCaseEntity, 0)
-	if err := db.Where("user_id = ?", uid).Order("created_at desc").Find(&historyRows).Error; err != nil {
-		log.Printf("[state] query history failed: user=%s err=%v", uid, err)
-	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		// 总览场景仅需任务列表元信息，不加载 payload/report 等大字段。
+		if err := db.Model(&pendingTaskEntity{}).
+			Select("task_id", "user_id", "title", "status", "created_at", "updated_at").
+			Where("user_id = ?", uid).
+			Find(&pendingRows).Error; err != nil {
+			log.Printf("[state] query pending failed: user=%s err=%v", uid, err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		// 总览与风险统计仅需历史元数据，不加载 payload/report 等大字段。
+		if err := db.Model(&historyCaseEntity{}).
+			Select("record_id", "user_id", "title", "case_summary", "risk_level", "created_at", "updated_at").
+			Where("user_id = ?", uid).
+			Order("created_at desc").
+			Find(&historyRows).Error; err != nil {
+			log.Printf("[state] query history failed: user=%s err=%v", uid, err)
+		}
+	}()
+
+	wg.Wait()
 
 	pending := make(map[string]TaskRecord, len(pendingRows))
 	for _, row := range pendingRows {
@@ -490,6 +560,12 @@ func GetUserStateView(userID string) UserStateView {
 	}
 }
 
+// expireStalePendingTasks 清理超时未完成的 pending 任务。
+// 规则：
+// 1) 仅处理 created_at 早于 pendingTaskTTL 的记录；
+// 2) 仅清理 pending/processing 状态；
+// 3) 当传入 taskID 时只检查该任务，否则检查当前用户全部任务；
+// 4) 过期任务直接删除，不迁移到历史表。
 func expireStalePendingTasks(userID, taskID string) {
 	db := database.DB
 	if db == nil {
@@ -620,6 +696,11 @@ func DeleteCaseHistory(userID, recordID string) (bool, error) {
 	return result.RowsAffected > 0, nil
 }
 
+// pendingEntityFromTask 将业务层 TaskRecord 转换为 pending_tasks 表实体。
+// 说明：
+// 1) 用于 CreateTask 写入数据库时的字段映射；
+// 2) 对切片字段做编码存储，避免直接使用复杂类型落库；
+// 3) 对字符串字段统一 trim，减少脏数据。
 func pendingEntityFromTask(task TaskRecord) pendingTaskEntity {
 	return pendingTaskEntity{
 		TaskID:               strings.TrimSpace(task.TaskID),
@@ -641,6 +722,11 @@ func pendingEntityFromTask(task TaskRecord) pendingTaskEntity {
 	}
 }
 
+// taskFromPendingEntity 将 pending_tasks 表实体转换为业务层 TaskRecord。
+// 说明：
+// 1) 用于进行中任务查询返回；
+// 2) 将编码后的列表字段解码回 []string；
+// 3) 保持对外返回结构稳定，不暴露底层存储细节。
 func taskFromPendingEntity(entity pendingTaskEntity) TaskRecord {
 	return TaskRecord{
 		TaskID:     strings.TrimSpace(entity.TaskID),
@@ -664,6 +750,11 @@ func taskFromPendingEntity(entity pendingTaskEntity) TaskRecord {
 	}
 }
 
+// historyEntityFromRecord 将业务层 CaseHistoryRecord 转换为 history_cases 表实体。
+// 说明：
+// 1) 用于历史记录写入时的统一映射；
+// 2) status 由调用方显式传入，便于区分 completed/failed；
+// 3) UpdatedAt 在写入时刷新为当前时间。
 func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCaseEntity {
 	return historyCaseEntity{
 		RecordID:             strings.TrimSpace(record.RecordID),
@@ -685,6 +776,11 @@ func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCas
 	}
 }
 
+// historyFromEntity 将 history_cases 表实体转换为业务层 CaseHistoryRecord。
+// 说明：
+// 1) 用于历史列表/详情返回；
+// 2) 自动解码 payload 列表字段；
+// 3) 统一风险等级取值，保证前端展示一致。
 func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
 	return CaseHistoryRecord{
 		RecordID:    strings.TrimSpace(entity.RecordID),
@@ -706,6 +802,11 @@ func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
 	}
 }
 
+// encodeStringList 将字符串数组编码为逗号分隔的 base64 串。
+// 说明：
+// 1) 用于数据库单字段存储列表值；
+// 2) 自动忽略空字符串项；
+// 3) 返回空字符串表示空列表。
 func encodeStringList(items []string) string {
 	if len(items) == 0 {
 		return ""
@@ -721,6 +822,11 @@ func encodeStringList(items []string) string {
 	return strings.Join(encoded, ",")
 }
 
+// decodeStringList 将逗号分隔的 base64 串解码为字符串数组。
+// 说明：
+// 1) 与 encodeStringList 成对使用；
+// 2) 对历史遗留明文数据做兼容（解码失败时保留原值）；
+// 3) 空输入返回空切片，避免上层空指针分支。
 func decodeStringList(value string) []string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -745,6 +851,8 @@ func decodeStringList(value string) []string {
 	return result
 }
 
+// firstNonEmpty 返回参数列表中第一个非空（trim 后）字符串。
+// 用途：在多候选值场景下做兜底选择。
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		trimmed := strings.TrimSpace(value)
@@ -755,6 +863,8 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// normalizeUserID 标准化用户 ID。
+// 说明：当输入为空时回退为 demo-user，避免空 user_id 写入数据库。
 func normalizeUserID(userID string) string {
 	trimmed := strings.TrimSpace(userID)
 	if trimmed == "" {
@@ -763,6 +873,8 @@ func normalizeUserID(userID string) string {
 	return trimmed
 }
 
+// normalizeRiskLevel 标准化风险等级为固定三值：高/中/低。
+// 说明：非法或空值默认回退为“中”。
 func normalizeRiskLevel(level string) string {
 	switch strings.TrimSpace(level) {
 	case "\u9ad8":
@@ -774,6 +886,11 @@ func normalizeRiskLevel(level string) string {
 	}
 }
 
+// normalizeCaseTitle 生成合法案件标题。
+// 说明：
+// 1) 优先使用显式 title；
+// 2) 否则使用 summary 截断生成；
+// 3) 两者都为空时返回默认标题。
 func normalizeCaseTitle(title, summary string) string {
 	trimmed := strings.TrimSpace(title)
 	if trimmed != "" {
@@ -790,6 +907,10 @@ func normalizeCaseTitle(title, summary string) string {
 	return string(runes[:48]) + "..."
 }
 
+// normalizeTaskTitle 生成任务标题。
+// 说明：
+// 1) 优先使用文本输入前 48 个字符；
+// 2) 无文本时根据多模态输入数量生成占位标题。
 func normalizeTaskTitle(payload TaskPayload) string {
 	text := strings.TrimSpace(payload.Text)
 	if text != "" {
@@ -802,6 +923,10 @@ func normalizeTaskTitle(payload TaskPayload) string {
 	return fmt.Sprintf("multimodal task (V%d/A%d/I%d)", len(payload.Videos), len(payload.Audios), len(payload.Images))
 }
 
+// newID 生成业务 ID（格式：PREFIX-XXXXXXHEX）。
+// 说明：
+// 1) 正常路径使用加密随机数；
+// 2) 随机失败时回退为时间戳，保证可用性。
 func newID(prefix string) string {
 	bytes := make([]byte, 6)
 	if _, err := rand.Read(bytes); err != nil {

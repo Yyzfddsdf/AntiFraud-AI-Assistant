@@ -155,3 +155,21 @@ func DeleteHistoricalCaseHandle(c *gin.Context) {
 		Message: "historical case deleted",
 	})
 }
+
+// GetHistoricalCaseScamTypeOptionsHandle 返回可选诈骗类型列表（仅管理员）。
+func GetHistoricalCaseScamTypeOptionsHandle(c *gin.Context) {
+	options := case_library.ListScamTypes()
+	c.JSON(http.StatusOK, gin.H{
+		"total":   len(options),
+		"options": options,
+	})
+}
+
+// GetHistoricalCaseTargetGroupOptionsHandle 返回可选目标人群列表（仅管理员）。
+func GetHistoricalCaseTargetGroupOptionsHandle(c *gin.Context) {
+	options := case_library.ListTargetGroups()
+	c.JSON(http.StatusOK, gin.H{
+		"total":   len(options),
+		"options": options,
+	})
+}

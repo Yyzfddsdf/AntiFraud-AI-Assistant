@@ -18,6 +18,8 @@ createApp({
         const history = ref([]);
         const users = ref([]);
         const caseLibrary = ref([]); // Admin Case Library
+        const scamTypeOptions = ref([]);
+        const targetGroupOptions = ref([]);
         const selectedCase = ref(null); // For admin view details
         const showCaseModal = ref(false);
         const submittingCase = ref(false);
@@ -296,6 +298,20 @@ createApp({
             }
         };
 
+        const fetchCaseOptionLists = async () => {
+            if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
+            const [scamTypeRes, targetGroupRes] = await Promise.all([
+                request('/scam/case-library/options/scam-types'),
+                request('/scam/case-library/options/target-groups')
+            ]);
+            if (scamTypeRes && Array.isArray(scamTypeRes.options)) {
+                scamTypeOptions.value = scamTypeRes.options;
+            }
+            if (targetGroupRes && Array.isArray(targetGroupRes.options)) {
+                targetGroupOptions.value = targetGroupRes.options;
+            }
+        };
+
         const openCaseModal = () => {
             Object.assign(caseForm, {
                 title: '',
@@ -416,6 +432,7 @@ createApp({
                     showToast('案件录入成功');
                     showCaseModal.value = false;
                     fetchCaseLibrary();
+                    fetchCaseOptionLists();
                 }
             } catch (e) {
                 showToast('录入失败: ' + e.message, 'error');
@@ -450,7 +467,10 @@ createApp({
         };
 
         watch(activeTab, (newTab) => {
-            if (newTab === 'case_library') fetchCaseLibrary();
+            if (newTab === 'case_library') {
+                fetchCaseLibrary();
+                fetchCaseOptionLists();
+            }
             if (newTab === 'users') fetchUsers();
             if (newTab === 'history') fetchHistory();
             if (newTab === 'tasks') fetchTasks();
@@ -960,7 +980,7 @@ createApp({
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
             parseReport, parseInsight,
-            caseLibrary, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase
+            caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase
         };
     }
 }).mount('#app');

@@ -274,6 +274,8 @@ go run .
 
 - `POST /api/scam/case-library/cases`
 - `GET /api/scam/case-library/cases`
+- `GET /api/scam/case-library/options/scam-types`
+- `GET /api/scam/case-library/options/target-groups`
 - `GET /api/scam/case-library/cases/:caseId`
 - `DELETE /api/scam/case-library/cases/:caseId`
 

@@ -74,6 +74,8 @@ func main() {
 		{
 			adminCaseLibrary.POST("/cases", httpapi.CreateHistoricalCaseHandle)
 			adminCaseLibrary.GET("/cases", httpapi.GetHistoricalCasePreviewHandle)
+			adminCaseLibrary.GET("/options/scam-types", httpapi.GetHistoricalCaseScamTypeOptionsHandle)
+			adminCaseLibrary.GET("/options/target-groups", httpapi.GetHistoricalCaseTargetGroupOptionsHandle)
 			adminCaseLibrary.GET("/cases/:caseId", httpapi.GetHistoricalCaseDetailHandle)
 			adminCaseLibrary.DELETE("/cases/:caseId", httpapi.DeleteHistoricalCaseHandle)
 		}

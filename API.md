@@ -1134,6 +1134,72 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases" \
 
 ---
 
+## 18.1) 获取可选诈骗类型列表（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/options/scam-types`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 返回当前后端配置中可用的诈骗类型列表。
+- 前端录入历史案件时可直接使用该返回渲染下拉选项，避免硬编码。
+
+### 成功响应（200）
+
+```json
+{
+  "total": 15,
+  "options": [
+    "冒充客服类",
+    "冒充公检法类",
+    "刷单返利类"
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+
+---
+
+## 18.2) 获取可选目标人群列表（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/options/target-groups`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 返回当前后端配置中可用的目标人群列表。
+- 前端录入历史案件时可直接使用该返回渲染下拉选项，避免硬编码。
+
+### 成功响应（200）
+
+```json
+{
+  "total": 6,
+  "options": [
+    "老人",
+    "青年",
+    "中年"
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+
+---
+
 ## 19) 历史案件详情（仅管理员）
 
 - **Method**: `GET`
