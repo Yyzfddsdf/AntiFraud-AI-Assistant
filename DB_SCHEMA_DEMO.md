@@ -11,7 +11,7 @@
 
 说明：
 
-- `auth_system.db` 由 `login_system/database/setup.go` 初始化连接。
+- `auth_system.db` 由 `database/setup.go` 初始化连接。
 - `historical_case_library.db` 由 `multi_agent/case_library/store.go` 独立初始化连接。
 - 两个库连接分离，不共享 `gorm.DB`。
 
