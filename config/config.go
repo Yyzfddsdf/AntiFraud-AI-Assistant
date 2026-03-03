@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 type ModelConfig struct {
@@ -54,9 +55,26 @@ type Config struct {
 	Retry     RetryConfig      `json:"retry"`
 }
 
+var (
+	configCacheMu sync.RWMutex
+	configCache   = map[string]*Config{}
+)
+
 // LoadConfig 负责读取、标准化并校验配置文件。
+// 缓存策略：
+// 1) 以“解析后的绝对路径”作为缓存键；
+// 2) 首次读取并校验后写入缓存；
+// 3) 后续调用直接返回缓存副本，避免请求路径重复读盘与反序列化。
 func LoadConfig(path string) (*Config, error) {
 	resolvedPath := resolveConfigPath(path)
+
+	configCacheMu.RLock()
+	if cached, ok := configCache[resolvedPath]; ok {
+		configCacheMu.RUnlock()
+		return cloneConfig(cached), nil
+	}
+	configCacheMu.RUnlock()
+
 	file, err := os.Open(resolvedPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file (%s): %w", resolvedPath, err)
@@ -73,7 +91,24 @@ func LoadConfig(path string) (*Config, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
-	return &cfg, nil
+
+	configCacheMu.Lock()
+	if cached, ok := configCache[resolvedPath]; ok {
+		configCacheMu.Unlock()
+		return cloneConfig(cached), nil
+	}
+	configCache[resolvedPath] = &cfg
+	configCacheMu.Unlock()
+
+	return cloneConfig(&cfg), nil
+}
+
+func cloneConfig(cfg *Config) *Config {
+	if cfg == nil {
+		return nil
+	}
+	cloned := *cfg
+	return &cloned
 }
 
 // normalize 统一裁剪字符串空白，减少运行期参数格式问题。

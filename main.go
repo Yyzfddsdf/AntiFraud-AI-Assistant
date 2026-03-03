@@ -1,9 +1,11 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 
+	appcfg "antifraud/config"
 	chatapi "antifraud/chat_system/httpapi"
 	"antifraud/login_system/controllers"
 	"antifraud/login_system/database"
@@ -15,6 +17,11 @@ import (
 
 // main 是服务启动入口：完成数据库初始化、路由注册并启动 HTTP 服务。
 func main() {
+	// 启动时预加载主配置，避免首次分析请求触发读盘与解析。
+	if _, err := appcfg.LoadConfig("config/config.json"); err != nil {
+		log.Fatalf("load app config failed: %v", err)
+	}
+
 	database.ConnectDB()
 
 	r := gin.Default()
