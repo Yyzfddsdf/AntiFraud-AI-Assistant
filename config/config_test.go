@@ -42,6 +42,7 @@ func validConfig() Config {
 func TestConfigNormalize(t *testing.T) {
 	cfg := validConfig()
 	cfg.Agents.Main.APIKey = "  key  "
+	cfg.Agents.Video.BaseURL = "  https://video.example.com  "
 	cfg.Embedding.BaseURL = "  https://example.com/v1  "
 	cfg.Prompts.Main = "  prompt  "
 	cfg.normalize()
@@ -51,6 +52,9 @@ func TestConfigNormalize(t *testing.T) {
 	}
 	if cfg.Embedding.BaseURL != "https://example.com/v1" {
 		t.Fatalf("expected trimmed embedding base url, got %q", cfg.Embedding.BaseURL)
+	}
+	if cfg.Agents.Video.BaseURL != "https://video.example.com" {
+		t.Fatalf("expected trimmed video base url, got %q", cfg.Agents.Video.BaseURL)
 	}
 	if cfg.Prompts.Main != "prompt" {
 		t.Fatalf("expected trimmed prompt, got %q", cfg.Prompts.Main)
@@ -71,11 +75,25 @@ func TestConfigValidate(t *testing.T) {
 			wantInErr: "retry.max_retries",
 		},
 		{
+			name: "invalid retry delay",
+			modify: func(c *Config) {
+				c.Retry.RetryDelayMS = 0
+			},
+			wantInErr: "retry.retry_delay_ms",
+		},
+		{
 			name: "missing main api key",
 			modify: func(c *Config) {
 				c.Agents.Main.APIKey = ""
 			},
 			wantInErr: "agents.main.api_key",
+		},
+		{
+			name: "missing image api key",
+			modify: func(c *Config) {
+				c.Agents.Image.APIKey = ""
+			},
+			wantInErr: "agents.image.api_key",
 		},
 		{
 			name: "missing embedding base url",
@@ -107,4 +125,3 @@ func TestConfigValidate(t *testing.T) {
 		})
 	}
 }
-

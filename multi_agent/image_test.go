@@ -1,6 +1,7 @@
 package multi_agent
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 )
@@ -50,3 +51,18 @@ func TestBuildImageDataURL_NormalBase64(t *testing.T) {
 	}
 }
 
+func TestBuildImageDataURL_OctetStreamFallbackToJpeg(t *testing.T) {
+	raw := make([]byte, 32)
+	for i := range raw {
+		raw[i] = byte(i + 1)
+	}
+	encoded := base64.StdEncoding.EncodeToString(raw)
+
+	got, err := buildImageDataURL(encoded)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !strings.HasPrefix(got, "data:image/jpeg") {
+		t.Fatalf("expected jpeg fallback, got %q", got)
+	}
+}
