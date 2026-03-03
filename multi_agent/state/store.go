@@ -337,34 +337,7 @@ func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
 		return TaskRecord{}, false
 	}
 
-	report := strings.TrimSpace(history.Report)
-	if report == "" {
-		report = strings.TrimSpace(history.CaseSummary)
-	}
-	status := strings.TrimSpace(history.Status)
-	if status == "" {
-		status = TaskStatusCompleted
-	}
-
-	return TaskRecord{
-		TaskID:    history.RecordID,
-		UserID:    history.UserID,
-		Title:     history.Title,
-		Status:    status,
-		CreatedAt: history.CreatedAt,
-		UpdatedAt: history.UpdatedAt,
-		Payload: TaskPayload{
-			Text:          history.PayloadText,
-			Videos:        decodeStringList(history.PayloadVideos),
-			Audios:        decodeStringList(history.PayloadAudios),
-			Images:        decodeStringList(history.PayloadImages),
-			VideoInsights: decodeStringList(history.PayloadVideoInsights),
-			AudioInsights: decodeStringList(history.PayloadAudioInsights),
-			ImageInsights: decodeStringList(history.PayloadImageInsights),
-		},
-		Summary: strings.TrimSpace(history.CaseSummary),
-		Report:  report,
-	}, true
+	return taskFromHistoryEntity(history), true
 }
 
 // GetUserStateView 返回用户任务总览（进行中 + 历史）。
@@ -680,6 +653,40 @@ func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
 			AudioInsights: decodeStringList(entity.PayloadAudioInsights),
 			ImageInsights: decodeStringList(entity.PayloadImageInsights),
 		},
+	}
+}
+
+// taskFromHistoryEntity 将 history_cases 表实体转换为任务详情模型 TaskRecord。
+// 说明：
+// 1) 先复用 historyFromEntity 做基础字段标准化，避免重复维护字段映射逻辑；
+// 2) summary 直接取历史案件的 case_summary；
+// 3) report 为空时回退到 case_summary，保证详情页至少有可读文本；
+// 4) pending/processing 不会走此函数，本函数仅用于历史分支。
+func taskFromHistoryEntity(entity historyCaseEntity) TaskRecord {
+	record := historyFromEntity(entity)
+	report := strings.TrimSpace(record.Report)
+	if report == "" {
+		report = strings.TrimSpace(record.CaseSummary)
+	}
+
+	return TaskRecord{
+		TaskID:    record.RecordID,
+		UserID:    record.UserID,
+		Title:     record.Title,
+		Status:    record.Status,
+		CreatedAt: record.CreatedAt,
+		UpdatedAt: entity.UpdatedAt,
+		Payload: TaskPayload{
+			Text:          strings.TrimSpace(record.Payload.Text),
+			Videos:        append([]string{}, record.Payload.Videos...),
+			Audios:        append([]string{}, record.Payload.Audios...),
+			Images:        append([]string{}, record.Payload.Images...),
+			VideoInsights: append([]string{}, record.Payload.VideoInsights...),
+			AudioInsights: append([]string{}, record.Payload.AudioInsights...),
+			ImageInsights: append([]string{}, record.Payload.ImageInsights...),
+		},
+		Summary: strings.TrimSpace(record.CaseSummary),
+		Report:  report,
 	}
 }
 
