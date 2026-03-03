@@ -103,7 +103,7 @@
 
 来源：
 
-- 首次调用历史案件上传接口时，独立连接该库并执行 `AutoMigrate(&historicalCaseEntity{})`。
+- 服务启动阶段由 `database.InitHistoricalCaseDB()` 主动初始化连接，并执行 `AutoMigrate(&model.HistoricalCaseEntity{})`。
 
 字段：
 
