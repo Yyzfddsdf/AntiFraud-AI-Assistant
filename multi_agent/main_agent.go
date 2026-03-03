@@ -296,11 +296,11 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 
 		for _, call := range msg.ToolCalls {
 			fmt.Printf("[MainAgent][Round %d] tool_call name=%s args=%s\n", round+1, call.Function.Name, truncateForLog(call.Function.Arguments, 240))
-			if call.Function.Name == "submit_final_report" {
+			if call.Function.Name == tool.FinalReportToolName {
 				finalReportSubmitted = true
 				fmt.Printf("[MainAgent][Round %d] mark submit_final_report=true\n", round+1)
 			}
-			if call.Function.Name == "write_user_history_case" {
+			if call.Function.Name == tool.WriteUserHistoryCaseToolName {
 				historyCaseWritten = true
 				fmt.Printf("[MainAgent][Round %d] mark write_user_history_case=true\n", round+1)
 			}
