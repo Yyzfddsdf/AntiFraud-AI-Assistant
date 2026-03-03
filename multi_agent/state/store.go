@@ -362,7 +362,8 @@ func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
 			AudioInsights: decodeStringList(history.PayloadAudioInsights),
 			ImageInsights: decodeStringList(history.PayloadImageInsights),
 		},
-		Report: report,
+		Summary: strings.TrimSpace(history.CaseSummary),
+		Report:  report,
 	}, true
 }
 
@@ -491,6 +492,7 @@ func AddCaseHistory(userID, taskID, title, summary, riskLevel string, payload Ta
 		RecordID:    recordID,
 		UserID:      uid,
 		Title:       normalizeCaseTitle(title, summary),
+		Status:      TaskStatusCompleted,
 		CaseSummary: strings.TrimSpace(summary),
 		RiskLevel:   normalizeRiskLevel(riskLevel),
 		CreatedAt:   now,
@@ -655,10 +657,16 @@ func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCas
 // 2) 自动解码 payload 列表字段；
 // 3) 统一风险等级取值，保证前端展示一致。
 func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
+	status := strings.TrimSpace(entity.Status)
+	if status == "" {
+		status = TaskStatusCompleted
+	}
+
 	return CaseHistoryRecord{
 		RecordID:    strings.TrimSpace(entity.RecordID),
 		UserID:      normalizeUserID(entity.UserID),
 		Title:       strings.TrimSpace(entity.Title),
+		Status:      status,
 		CaseSummary: strings.TrimSpace(entity.CaseSummary),
 		RiskLevel:   normalizeRiskLevel(entity.RiskLevel),
 		CreatedAt:   entity.CreatedAt,

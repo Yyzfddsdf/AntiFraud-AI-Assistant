@@ -35,6 +35,7 @@ type MultimodalTaskItem struct {
 	CreatedAt  string                `json:"created_at"`
 	UpdatedAt  string                `json:"updated_at"`
 	Payload    MultimodalTaskPayload `json:"payload"`
+	Summary    string                `json:"summary"`
 	Report     string                `json:"report,omitempty"`
 	Error      string                `json:"error,omitempty"`
 	HistoryRef string                `json:"history_ref,omitempty"`
@@ -46,6 +47,7 @@ type MultimodalTaskListItem struct {
 	UserID    string `json:"user_id"`
 	Title     string `json:"title"`
 	Status    string `json:"status"`
+	Summary   string `json:"summary"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }

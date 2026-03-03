@@ -231,6 +231,7 @@
       "user_id": "1",
       "title": "疑似冒充客服退款",
       "status": "processing",
+      "summary": "",
       "created_at": "2026-02-20T10:30:00+08:00",
       "updated_at": "2026-02-20T10:30:08+08:00"
     }
@@ -362,6 +363,7 @@
     "user_id": "5",
     "title": "TED学术演讲视频风险核查",
     "status": "completed",
+    "summary": "该内容以公开演讲为主，未发现直接诈骗指令。",
     "created_at": "2026-02-20T23:57:30+08:00",
     "updated_at": "2026-02-20T23:57:45+08:00",
     "payload": {
@@ -389,6 +391,7 @@
     "user_id": "5",
     "title": "批量视频线索核查",
     "status": "completed",
+    "summary": "3 条视频中有 1-2 条出现明显风险信号，需人工复核。",
     "created_at": "2026-02-21T10:00:00+08:00",
     "updated_at": "2026-02-21T10:00:24+08:00",
     "payload": {
@@ -418,6 +421,7 @@
     "user_id": "5",
     "title": "多模态线索核查",
     "status": "processing",
+    "summary": "",
     "created_at": "2026-02-21T11:00:00+08:00",
     "updated_at": "2026-02-21T11:00:05+08:00",
     "payload": {
@@ -513,6 +517,9 @@
 
 - `taskId` 统一使用 `TASK-...`。
 - `payload` 包含原始输入（`text/videos/audios/images`）与各模态分析结果（`*_insights`）。
+- `summary` 为任务摘要字段：
+  - 历史归档任务（`completed`/`failed`）返回归档摘要；
+  - 进行中任务（`pending`/`processing`）固定返回空字符串 `""`。
 - `*_insights` 始终是字符串数组：
   - 单文件时，长度通常为 `1`。
   - 多文件时，长度通常与输入文件数量一致，按输入顺序对应。

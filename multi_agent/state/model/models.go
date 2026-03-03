@@ -22,6 +22,7 @@ type TaskRecord struct {
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  time.Time   `json:"updated_at"`
 	Payload    TaskPayload `json:"payload"`
+	Summary    string      `json:"summary"`
 	Report     string      `json:"report,omitempty"`
 	Error      string      `json:"error,omitempty"`
 	HistoryRef string      `json:"history_ref,omitempty"`
@@ -32,6 +33,7 @@ type CaseHistoryRecord struct {
 	RecordID    string      `json:"record_id"`
 	UserID      string      `json:"user_id"`
 	Title       string      `json:"title"`
+	Status      string      `json:"status"`
 	CaseSummary string      `json:"case_summary"`
 	RiskLevel   string      `json:"risk_level"`
 	CreatedAt   time.Time   `json:"created_at"`

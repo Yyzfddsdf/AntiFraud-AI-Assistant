@@ -181,6 +181,7 @@ func toTaskItem(task state.TaskRecord) MultimodalTaskItem {
 			AudioInsights: append([]string{}, task.Payload.AudioInsights...),
 			ImageInsights: append([]string{}, task.Payload.ImageInsights...),
 		},
+		Summary:    strings.TrimSpace(task.Summary),
 		Report:     task.Report,
 		Error:      task.Error,
 		HistoryRef: task.HistoryRef,
@@ -194,6 +195,7 @@ func toTaskListItem(task state.TaskRecord) MultimodalTaskListItem {
 		UserID:    task.UserID,
 		Title:     task.Title,
 		Status:    task.Status,
+		Summary:   strings.TrimSpace(task.Summary),
 		CreatedAt: task.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: task.UpdatedAt.Format(time.RFC3339),
 	}
