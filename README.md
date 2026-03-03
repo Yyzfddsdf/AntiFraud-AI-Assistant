@@ -116,61 +116,22 @@ flowchart LR
 
 ## 7. 智能体交互图（多模态分析链路）
 
+字符串式简流程：
+
+`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> 写入历史 write_user_history_case -> 任务结束`
+
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant API as API Handler
-    participant Q as Queue/processTask
-    participant S as State Store
-    participant IA as ImageAgent
-    participant VA as VideoAgent
-    participant AA as AudioAgent
-    participant MA as MainAgent
-    participant TO as Tools
-    participant DB as Case Library/History DB
-    participant LLM as OpenAI-Compatible LLM
+flowchart LR
+    U[用户输入 text/images/videos/audios]
+    SA[子智能体并发分析<br/>ImageAgent / VideoAgent / AudioAgent]
+    I[多模态 insights]
+    MA[主智能体聚合分析<br/>MainAgent]
+    T[工具补充证据<br/>相似案件/用户信息]
+    R[submit_final_report 最终结论]
+    H[write_user_history_case 历史归档]
+    E[任务结束]
 
-    API->>Q: EnqueueMultimodalTask(user_id, payload)
-    Q->>S: CreateTask(status=pending)
-    Q->>S: MarkTaskProcessing(status=processing)
-
-    par 子模态并发分析
-        Q->>IA: AnalyzeBatchInParallel(images)
-        IA->>LLM: ChatCompletion + submit_analysis_result
-        LLM-->>IA: 结构化图像分析
-    and
-        Q->>VA: AnalyzeBatchInParallel(videos)
-        VA->>LLM: ChatCompletion + submit_analysis_result
-        LLM-->>VA: 结构化视频分析
-    and
-        Q->>AA: AnalyzeBatchInParallel(audios)
-        AA->>LLM: ChatCompletion + submit_analysis_result
-        LLM-->>AA: 结构化音频分析
-    end
-
-    Q->>S: UpdateTaskInsights(video/audio/image insights)
-    Q->>MA: generateReport(finalInput + ctx)
-
-    loop 工具调用闭环（最多 8 轮）
-        MA->>LLM: ChatCompletion(tool_choice=required)
-        LLM-->>MA: tool call(s)
-        MA->>TO: dispatch tool handler
-        alt search_similar_cases
-            TO->>DB: 向量检索 topK
-            DB-->>TO: 相似案件列表
-        else query_user_info/query_user_history_cases
-            TO->>S: 读取用户任务与历史
-            S-->>TO: 用户画像/历史数据
-        else submit_final_report
-            TO-->>MA: final_result
-        else write_user_history_case
-            TO->>S: AddCaseHistory(归档)
-        end
-        TO-->>MA: tool payload
-    end
-
-    Q->>S: MarkTaskCompleted(report) / MarkTaskFailed(error)
-    S-->>API: tasks/history/detail 可查询
+    U --> SA --> I --> MA --> T --> MA --> R --> H --> E
 ```
 
 交互规则（关键约束）：
