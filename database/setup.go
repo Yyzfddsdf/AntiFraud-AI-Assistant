@@ -16,7 +16,7 @@ import (
 
 var DB *gorm.DB
 
-// ConnectDB 初始化 SQLite 连接、连接池参数和用户表迁移。
+// ConnectDB 初始化主业务库连接、连接池参数和 users 表迁移。
 func ConnectDB() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
@@ -32,7 +32,6 @@ func ConnectDB() {
 
 	var err error
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		// 仅打印错误日志，避免慢 SQL 和未命中查询刷屏。
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
@@ -48,7 +47,6 @@ func ConnectDB() {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// 登录模块当前只依赖用户表，启动时自动迁移。
 	if err = DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("auto migrate failed: ", err)
 	}
@@ -58,7 +56,7 @@ func ConnectDB() {
 func defaultDBPath() string {
 	_, currentFile, _, ok := runtime.Caller(0)
 	if ok {
-		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
+		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), ".."))
 		return filepath.Join(projectRoot, "DB", "auth_system.db")
 	}
 

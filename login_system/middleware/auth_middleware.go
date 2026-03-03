@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"antifraud/database"
 	"antifraud/login_system/controllers"
-	"antifraud/login_system/database"
 	"antifraud/login_system/models"
 
 	"github.com/gin-gonic/gin"

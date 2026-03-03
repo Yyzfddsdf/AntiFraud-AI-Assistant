@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"antifraud/login_system/database"
+	"antifraud/database"
+	model "antifraud/multi_agent/state/model"
 
 	"gorm.io/gorm"
 )
@@ -25,143 +26,14 @@ const (
 	pendingTaskTTL = 20 * time.Minute
 )
 
-// TaskPayload 保存任务原始输入和各子模态解读结果。
-// 用途：
-// 1) 创建任务时，承载用户提交的原始输入（Text/Videos/Audios/Images）；
-// 2) 任务处理中，承载分模态解析后的中间结论（VideoInsights/AudioInsights/ImageInsights）；
-// 3) 作为状态层统一的数据交换结构，在 pending_tasks 与 history_cases 映射转换时复用；
-// 4) 对外返回任务详情时，保证前端拿到的是统一 payload 结构，而不是数据库扁平字段。
-type TaskPayload struct {
-	Text          string   `json:"text"`
-	Videos        []string `json:"videos"`
-	Audios        []string `json:"audios"`
-	Images        []string `json:"images"`
-	VideoInsights []string `json:"video_insights,omitempty"`
-	AudioInsights []string `json:"audio_insights,omitempty"`
-	ImageInsights []string `json:"image_insights,omitempty"`
-}
-
-// TaskRecord 表示“任务视角”的统一记录模型。
-// 用途：
-// 1) 作为进行中任务（pending）查询返回值的标准结构；
-// 2) 作为历史任务（history）详情查询时的兼容结构，减少上层分支判断；
-// 3) 向 HTTP 层输出任务核心字段（task_id/status/payload/report/error/history_ref）；
-// 4) 覆盖任务生命周期关键状态：pending -> processing -> completed/failed。
-type TaskRecord struct {
-	TaskID     string      `json:"task_id"`
-	UserID     string      `json:"user_id"`
-	Title      string      `json:"title"`
-	Status     string      `json:"status"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
-	Payload    TaskPayload `json:"payload"`
-	Report     string      `json:"report,omitempty"`
-	Error      string      `json:"error,omitempty"`
-	HistoryRef string      `json:"history_ref,omitempty"`
-}
-
-// CaseHistoryRecord 表示“历史案件视角”的归档记录模型。
-// 用途：
-// 1) 承载任务完成/失败后的归档快照（标题、摘要、风险、payload、报告）；
-// 2) 用于历史列表与详情接口，作为长期可追溯数据源；
-// 3) 为聊天工具读取既往案件结论提供统一结构；
-// 4) 对应 history_cases 表的业务层对象，避免上层直接依赖 ORM 字段细节。
-type CaseHistoryRecord struct {
-	RecordID    string      `json:"record_id"`
-	UserID      string      `json:"user_id"`
-	Title       string      `json:"title"`
-	CaseSummary string      `json:"case_summary"`
-	RiskLevel   string      `json:"risk_level"`
-	CreatedAt   time.Time   `json:"created_at"`
-	Payload     TaskPayload `json:"payload"`
-	Report      string      `json:"report,omitempty"`
-}
-
-// UserStateView 是用户维度的聚合视图模型。
-// 用途：
-// 1) 一次性聚合当前用户进行中任务（Pending）与历史案件（History）；
-// 2) 服务任务总览页面，减少前端多次请求拼装；
-// 3) 作为“用户当前状态快照”，供会话工具或业务逻辑快速读取。
-// 说明：
-// - Pending 以 task_id 为 key，便于按任务 ID 直接定位；
-// - History 按时间倒序返回，便于前端直接渲染最近记录。
-type UserStateView struct {
-	UserID  string                `json:"user_id"`
-	Pending map[string]TaskRecord `json:"pending"`
-	History []CaseHistoryRecord   `json:"history"`
-}
-
-// pendingTaskEntity 是 pending_tasks 表的 ORM 映射实体。
-// 用途：
-// 1) 持久化仍在处理中的任务，支撑异步流程中的断点查询；
-// 2) 保存任务中间态：status、payload_*_insights、error、history_ref；
-// 3) 在任务完成/失败后，迁移写入 history_cases 并从 pending_tasks 删除；
-// 4) 配合过期清理逻辑（pendingTaskTTL），自动淘汰长时间未完成任务。
-// 字段设计说明：
-// - Payload* 字段使用字符串落库（列表以编码串保存），避免建大量子表；
-// - CreatedAt/UpdatedAt 用于排序、状态追踪和过期判断。
-type pendingTaskEntity struct {
-	TaskID string `gorm:"primaryKey;size:64"`
-	UserID string `gorm:"index;not null"`
-	Title  string `gorm:"size:255;not null"`
-	Status string `gorm:"size:32;index;not null"`
-
-	PayloadText          string `gorm:"type:text"`
-	PayloadVideos        string `gorm:"type:text"`
-	PayloadAudios        string `gorm:"type:text"`
-	PayloadImages        string `gorm:"type:text"`
-	PayloadVideoInsights string `gorm:"type:text"`
-	PayloadAudioInsights string `gorm:"type:text"`
-	PayloadImageInsights string `gorm:"type:text"`
-
-	Report     string `gorm:"type:text"`
-	Error      string `gorm:"type:text"`
-	HistoryRef string `gorm:"size:64"`
-
-	CreatedAt time.Time `gorm:"index;not null"`
-	UpdatedAt time.Time `gorm:"index;not null"`
-}
-
-// TableName 指定 pendingTaskEntity 对应的数据库表名。
-func (pendingTaskEntity) TableName() string {
-	return "pending_tasks"
-}
-
-// historyCaseEntity 是 history_cases 表的 ORM 映射实体。
-// 用途：
-// 1) 保存任务终态（completed/failed）归档数据，作为历史事实库；
-// 2) 支撑历史列表、历史详情、审计回放等读取场景；
-// 3) 与 pendingTaskEntity 构成“进行中 + 已归档”的双表状态模型。
-// 字段设计说明：
-// - RecordID 与 task_id 对齐，便于从任务视角回溯历史；
-// - Status/RiskLevel 保留终态标签，避免后续再推断；
-// - Payload* + Report 保存分析上下文与最终结论，保证可追溯性。
-type historyCaseEntity struct {
-	RecordID    string `gorm:"primaryKey;size:64"`
-	UserID      string `gorm:"index;not null"`
-	Title       string `gorm:"size:255;not null"`
-	CaseSummary string `gorm:"type:text"`
-	Status      string `gorm:"size:32;index;not null"`
-	RiskLevel   string `gorm:"size:32;index"`
-
-	PayloadText          string `gorm:"type:text"`
-	PayloadVideos        string `gorm:"type:text"`
-	PayloadAudios        string `gorm:"type:text"`
-	PayloadImages        string `gorm:"type:text"`
-	PayloadVideoInsights string `gorm:"type:text"`
-	PayloadAudioInsights string `gorm:"type:text"`
-	PayloadImageInsights string `gorm:"type:text"`
-
-	Report string `gorm:"type:text"`
-
-	CreatedAt time.Time `gorm:"index;not null"`
-	UpdatedAt time.Time `gorm:"index;not null"`
-}
-
-// TableName 指定 historyCaseEntity 对应的数据库表名。
-func (historyCaseEntity) TableName() string {
-	return "history_cases"
-}
+// 结构体模型已迁移至 multi_agent/state/model 目录。
+// 这里保留类型别名，保持 state 包对外 API 与现有调用兼容。
+type TaskPayload = model.TaskPayload
+type TaskRecord = model.TaskRecord
+type CaseHistoryRecord = model.CaseHistoryRecord
+type UserStateView = model.UserStateView
+type pendingTaskEntity = model.PendingTaskEntity
+type historyCaseEntity = model.HistoryCaseEntity
 
 var stateSchemaOnce sync.Once
 
@@ -499,8 +371,9 @@ func GetTaskDetailByID(userID, id string) (TaskRecord, bool) {
 // 1) 这是“总览读模型”，优先服务列表与统计场景，而非单任务详情；
 // 2) 函数内部对 pending/history 采用并行查询，降低总览接口等待时间；
 // 3) 查询使用部分字段（Select），只读取总览必需列，避免加载 payload/report 大字段；
-//    - pending_tasks 读取字段：task_id、user_id、title、status、created_at、updated_at
-//    - history_cases 读取字段：record_id、user_id、title、case_summary、risk_level、created_at、updated_at
+//   - pending_tasks 读取字段：task_id、user_id、title、status、created_at、updated_at
+//   - history_cases 读取字段：record_id、user_id、title、case_summary、risk_level、created_at、updated_at
+//
 // 4) 单任务详情请使用 GetTaskDetailByID（该函数会读取完整字段）。
 func GetUserStateView(userID string) UserStateView {
 	db := database.DB

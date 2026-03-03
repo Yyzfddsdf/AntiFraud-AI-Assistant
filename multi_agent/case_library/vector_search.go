@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"antifraud/database"
 )
 
 const (
@@ -50,7 +52,7 @@ func QueryAllHistoricalCases() ([]HistoricalCaseRecord, error) {
 }
 
 func queryAllHistoricalCasesFromDB() ([]HistoricalCaseRecord, error) {
-	db, err := getHistoricalCaseDB()
+	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return nil, err
 	}

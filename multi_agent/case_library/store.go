@@ -12,19 +12,15 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
 	"antifraud/config"
+	"antifraud/database"
 	openai "antifraud/llm"
-
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	model "antifraud/multi_agent/case_library/model"
 )
 
-const historicalCaseDBPathEnv = "HISTORICAL_CASE_DB_PATH"
 const (
 	scamTypesConfigPath    = "config/scam_types.json"
 	targetGroupsConfigPath = "config/target_groups.json"
@@ -34,12 +30,6 @@ const (
 	minCaseDescriptionRunes   = 12
 	maxCaseDescriptionRunes   = 400
 	randomLikeAlnumChunkLimit = 16
-)
-
-var (
-	caseDBOnce sync.Once
-	caseDB     *gorm.DB
-	caseDBErr  error
 )
 
 // FixedTargetGroups 为上传历史案件时允许的人群枚举。
@@ -60,16 +50,10 @@ var FixedRiskLevels = []string{
 	"低",
 }
 
-type ValidationError struct {
-	message string
-}
-
-func (e *ValidationError) Error() string {
-	return e.message
-}
+type ValidationError = model.ValidationError
 
 func newValidationError(format string, args ...interface{}) error {
-	return &ValidationError{message: fmt.Sprintf(format, args...)}
+	return &ValidationError{Message: fmt.Sprintf(format, args...)}
 }
 
 func IsValidationError(err error) bool {
@@ -77,68 +61,10 @@ func IsValidationError(err error) bool {
 	return ok
 }
 
-type CreateHistoricalCaseInput struct {
-	Title           string
-	TargetGroup     string
-	RiskLevel       string
-	ScamType        string
-	CaseDescription string
-	TypicalScripts  []string
-	Keywords        []string
-	ViolatedLaw     string
-	Suggestion      string
-}
-
-type HistoricalCaseRecord struct {
-	CaseID             string
-	CreatedBy          string
-	Title              string
-	TargetGroup        string
-	RiskLevel          string
-	ScamType           string
-	CaseDescription    string
-	TypicalScripts     []string
-	Keywords           []string
-	ViolatedLaw        string
-	Suggestion         string
-	EmbeddingVector    []float64
-	EmbeddingModel     string
-	EmbeddingDimension int
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-}
-
-type HistoricalCasePreview struct {
-	CaseID      string
-	Title       string
-	TargetGroup string
-	RiskLevel   string
-	ScamType    string
-}
-
-type historicalCaseEntity struct {
-	ID                 uint      `gorm:"primaryKey"`
-	CaseID             string    `gorm:"size:32;uniqueIndex;not null"`
-	CreatedBy          string    `gorm:"size:64;index;not null"`
-	Title              string    `gorm:"type:text;not null"`
-	TargetGroup        string    `gorm:"size:32;index;not null"`
-	RiskLevel          string    `gorm:"size:16;index;not null;default:'中'"`
-	ScamType           string    `gorm:"size:64;index;not null;default:'其他诈骗类'"`
-	CaseDescription    string    `gorm:"type:text;not null"`
-	TypicalScripts     string    `gorm:"type:text;not null"`
-	Keywords           string    `gorm:"type:text;not null"`
-	ViolatedLaw        string    `gorm:"type:text;not null"`
-	Suggestion         string    `gorm:"type:text;not null"`
-	EmbeddingVector    string    `gorm:"type:text;not null"`
-	EmbeddingModel     string    `gorm:"size:128;not null"`
-	EmbeddingDimension int       `gorm:"not null"`
-	CreatedAt          time.Time `gorm:"index"`
-	UpdatedAt          time.Time
-}
-
-func (historicalCaseEntity) TableName() string {
-	return "historical_case_library"
-}
+type CreateHistoricalCaseInput = model.CreateHistoricalCaseInput
+type HistoricalCaseRecord = model.HistoricalCaseRecord
+type HistoricalCasePreview = model.HistoricalCasePreview
+type historicalCaseEntity = model.HistoricalCaseEntity
 
 // CreateHistoricalCase 将历史案件写入独立数据库，并保存 embedding 向量。
 func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistoricalCaseInput) (HistoricalCaseRecord, error) {
@@ -170,7 +96,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 		EmbeddingDimension: len(vector),
 	}
 
-	db, err := getHistoricalCaseDB()
+	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return HistoricalCaseRecord{}, err
 	}
@@ -184,7 +110,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 
 // ListHistoricalCasePreviews 返回历史案件预览数据，用于列表页展示。
 func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
-	db, err := getHistoricalCaseDB()
+	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +147,7 @@ func GetHistoricalCaseByID(caseID string) (HistoricalCaseRecord, bool, error) {
 		return HistoricalCaseRecord{}, false, nil
 	}
 
-	db, err := getHistoricalCaseDB()
+	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return HistoricalCaseRecord{}, false, err
 	}
@@ -244,7 +170,7 @@ func DeleteHistoricalCaseByID(caseID string) (bool, error) {
 		return false, nil
 	}
 
-	db, err := getHistoricalCaseDB()
+	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return false, err
 	}
@@ -574,62 +500,6 @@ func generateEmbeddingVector(ctx context.Context, inputText string) ([]float64, 
 		modelName = strings.TrimSpace(cfg.Embedding.Model)
 	}
 	return vector, modelName, nil
-}
-
-// InitHistoricalCaseDB 在服务启动阶段主动初始化案件库数据库连接与表结构。
-func InitHistoricalCaseDB() error {
-	_, err := getHistoricalCaseDB()
-	return err
-}
-
-func getHistoricalCaseDB() (*gorm.DB, error) {
-	caseDBOnce.Do(func() {
-		dbPath := resolveHistoricalCaseDBPath()
-		dbDir := filepath.Dir(dbPath)
-		if dbDir != "." && dbDir != "" {
-			if err := os.MkdirAll(dbDir, 0755); err != nil {
-				caseDBErr = fmt.Errorf("create historical case db directory failed: %w", err)
-				return
-			}
-		}
-
-		db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Error),
-		})
-		if err != nil {
-			caseDBErr = fmt.Errorf("open historical case db failed: %w", err)
-			return
-		}
-		if err := db.AutoMigrate(&historicalCaseEntity{}); err != nil {
-			caseDBErr = fmt.Errorf("auto migrate historical case db failed: %w", err)
-			return
-		}
-
-		log.Printf("[case_library] historical case db path: %s", dbPath)
-		caseDB = db
-	})
-	if caseDBErr != nil {
-		return nil, caseDBErr
-	}
-	return caseDB, nil
-}
-
-func resolveHistoricalCaseDBPath() string {
-	if configuredPath := strings.TrimSpace(os.Getenv(historicalCaseDBPathEnv)); configuredPath != "" {
-		return configuredPath
-	}
-
-	_, currentFile, _, ok := runtime.Caller(0)
-	if ok {
-		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
-		return filepath.Join(projectRoot, "DB", "historical_case_library.db")
-	}
-
-	workingDir, err := os.Getwd()
-	if err == nil {
-		return filepath.Join(workingDir, "DB", "historical_case_library.db")
-	}
-	return filepath.Join("DB", "historical_case_library.db")
 }
 
 func newHistoricalCaseID() string {

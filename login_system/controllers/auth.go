@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"errors"
-	"antifraud/login_system/database"
+	"antifraud/database"
 	"antifraud/login_system/models"
 	"antifraud/login_system/settings"
+	"errors"
 	"net/http"
 	"regexp"
 	"time"

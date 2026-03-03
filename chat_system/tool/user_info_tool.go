@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"antifraud/login_system/database"
+	"antifraud/database"
 	"antifraud/login_system/models"
 	"antifraud/multi_agent/state"
 
