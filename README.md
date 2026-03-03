@@ -145,7 +145,7 @@ flowchart LR
 
 ## 8. 数据库设计与优化（重点）
 
-### 6.1 多库隔离
+### 8.1 多库隔离
 
 项目使用两个独立 SQLite 文件：
 
@@ -158,7 +158,7 @@ flowchart LR
 - 迁移和备份更灵活
 - 向量检索迭代不会影响主业务库稳定性
 
-### 6.2 主业务库（`auth_system.db`）
+### 8.2 主业务库（`auth_system.db`）
 
 主要表：
 
@@ -179,7 +179,7 @@ flowchart LR
   - 读取时对历史明文做兼容回退，避免旧数据读失败
 - 任务详情查询统一：`GetTaskDetailByID` 先查 pending，再查 history，前端一个接口覆盖“未完成+已完成”
 
-### 6.3 历史案件库（`historical_case_library.db`）
+### 8.3 历史案件库（`historical_case_library.db`）
 
 核心表：`historical_case_library`
 
@@ -200,7 +200,7 @@ flowchart LR
 - 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `config/config.json` 读取
 - 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
 
-### 6.4 向量检索优化（当前实现）
+### 8.4 向量检索优化（当前实现）
 
 `search_similar_cases` 工具已经接入真实数据库检索链路：
 
@@ -223,7 +223,7 @@ flowchart LR
 - 删除案件后增量 `remove` 缓存
 - 冷启动并发保护：若首次加载与写入并发，使用 `pendingUpserts/pendingDeletes` 合并，避免丢更新
 
-### 6.5 输入质量与一致性优化（新增）
+### 8.5 输入质量与一致性优化（新增）
 
 - 必填字段收敛：历史案件上传仅要求 `title`、`target_group`、`risk_level`、`case_description`。
 - 可选字段容错：`typical_scripts`、`keywords`、`violated_law`、`suggestion` 允许不传。
@@ -246,7 +246,7 @@ flowchart LR
 
 ## 9. 智能体编排与优化（重点）
 
-### 7.1 多智能体分工
+### 9.1 多智能体分工
 
 - 子智能体：`ImageAgent`、`VideoAgent`、`AudioAgent`
 - 主智能体：`MainAgent`
@@ -260,7 +260,7 @@ flowchart LR
 4. 主智能体聚合并进入工具调用循环
 5. 生成最终报告并归档历史
 
-### 7.2 子智能体侧优化
+### 9.2 子智能体侧优化
 
 - 通用基类 `SubAgentBase`：统一请求构造、重试、工具结果解析
 - 并发处理：`AnalyzeBatchInParallel` 按输入并行，减少总时延
@@ -270,7 +270,7 @@ flowchart LR
   - 视频 `video_url`
   - 音频 `input_audio`（附加 `modalities` 请求字段）
 
-### 7.3 主智能体侧优化
+### 9.3 主智能体侧优化
 
 - 工具驱动闭环：`ToolChoice = required`，强制模型通过工具写关键状态
 - 上下文绑定：`user_id`、`task_id`、原始 payload、insights、final_report 全部通过 `ctx` 传递给工具
@@ -278,13 +278,13 @@ flowchart LR
 - 防失控机制：最大工具轮次限制（`maxRounds=8`）
 - 失败隔离：单工具失败不会导致整个轮次崩溃，错误回填到 tool message
 
-### 7.4 重试与稳定性
+### 9.4 重试与稳定性
 
 - `CommonAgent.Retry` 线性退避重试
 - 统一日志打点：轮次、工具调用、工具返回、最终输出长度
 - 子模态失败兼容：单模态失败会产出错误文本，主流程继续执行
 
-### 7.5 Chat 智能体侧能力
+### 9.5 Chat 智能体侧能力
 
 - SSE 流式输出
 - 工具调用（`chat_query_user_info`、`chat_query_user_case_history`）
