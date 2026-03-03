@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	chatcfg "image_recognition/chat_system/config"
-	chattool "image_recognition/chat_system/tool"
+	chatcfg "antifraud/chat_system/config"
+	chattool "antifraud/chat_system/tool"
 
 	"github.com/redis/go-redis/v9"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const conversationTTL = 5 * time.Minute

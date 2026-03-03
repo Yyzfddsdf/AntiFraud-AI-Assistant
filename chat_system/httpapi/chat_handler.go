@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	chatcfg "image_recognition/chat_system/config"
-	chatservice "image_recognition/chat_system/service"
+	chatcfg "antifraud/chat_system/config"
+	chatservice "antifraud/chat_system/service"
 
 	"github.com/gin-gonic/gin"
 )

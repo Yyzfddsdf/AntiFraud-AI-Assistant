@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"image_recognition/config"
-	"image_recognition/multi_agent/state"
-	"image_recognition/multi_agent/tool"
+	"antifraud/config"
+	"antifraud/multi_agent/state"
+	"antifraud/multi_agent/tool"
 	"strings"
 	"sync"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 type modalityResult struct {

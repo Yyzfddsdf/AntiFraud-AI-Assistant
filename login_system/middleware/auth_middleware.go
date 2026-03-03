@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"image_recognition/login_system/controllers"
-	"image_recognition/login_system/database"
-	"image_recognition/login_system/models"
+	"antifraud/login_system/controllers"
+	"antifraud/login_system/database"
+	"antifraud/login_system/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

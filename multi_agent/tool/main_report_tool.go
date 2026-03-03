@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const FinalReportToolName = "submit_final_report"

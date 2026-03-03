@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"image_recognition/login_system/database"
+	"antifraud/login_system/database"
 
 	"gorm.io/gorm"
 )

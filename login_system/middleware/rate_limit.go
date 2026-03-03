@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"image_recognition/login_system/settings"
+	"antifraud/login_system/settings"
 
 	"github.com/gin-gonic/gin"
 )

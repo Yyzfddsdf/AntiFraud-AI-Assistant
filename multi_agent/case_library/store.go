@@ -16,8 +16,8 @@ import (
 	"time"
 	"unicode"
 
-	"image_recognition/config"
-	openai "image_recognition/llm"
+	"antifraud/config"
+	openai "antifraud/llm"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

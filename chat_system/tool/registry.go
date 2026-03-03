@@ -3,7 +3,7 @@ package tool
 import (
 	"context"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 type ChatToolHandler interface {

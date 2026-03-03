@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"image_recognition/multi_agent/case_library"
+	"antifraud/multi_agent/case_library"
 
 	"github.com/gin-gonic/gin"
 )

@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"image_recognition/config"
+	"antifraud/config"
 	"net/http"
 	"strings"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 func buildImageDataURL(imageBase64 string) (string, error) {

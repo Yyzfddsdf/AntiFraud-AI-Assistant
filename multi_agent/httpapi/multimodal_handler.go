@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"image_recognition/login_system/database"
-	"image_recognition/login_system/models"
-	"image_recognition/multi_agent/queue"
-	"image_recognition/multi_agent/state"
+	"antifraud/login_system/database"
+	"antifraud/login_system/models"
+	"antifraud/multi_agent/queue"
+	"antifraud/multi_agent/state"
 
 	"github.com/gin-gonic/gin"
 )

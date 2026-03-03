@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"image_recognition/multi_agent/state"
+	"antifraud/multi_agent/state"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const ChatQueryUserCaseHistoryToolName = "chat_query_user_case_history"

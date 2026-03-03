@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"image_recognition/login_system/models"
+	"antifraud/login_system/models"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

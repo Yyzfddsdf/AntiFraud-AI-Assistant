@@ -1,30 +1,28 @@
-﻿package main
+package main
 
 import (
 	"net/http"
 	"os"
 
-	chatapi "image_recognition/chat_system/httpapi"
-	"image_recognition/login_system/controllers"
-	"image_recognition/login_system/database"
-	"image_recognition/login_system/middleware"
-	"image_recognition/multi_agent/httpapi"
+	chatapi "antifraud/chat_system/httpapi"
+	"antifraud/login_system/controllers"
+	"antifraud/login_system/database"
+	"antifraud/login_system/middleware"
+	"antifraud/multi_agent/httpapi"
 
 	"github.com/gin-gonic/gin"
 )
 
- // main 是服务启动入口：初始化、路由注册与启动 HTTP 服务。
- // 不信任反向代理头，避免来源判断偏差。
- // 全局 CORS 配置。
+// main 是服务启动入口：完成数据库初始化、路由注册并启动 HTTP 服务。
 func main() {
 	database.ConnectDB()
 
 	r := gin.Default()
 
-	 // 全局限流。
+	// 不信任反向代理头，避免来源判断偏差。
 	r.SetTrustedProxies(nil)
 
-	 // 静态资源与主页。
+	// 全局 CORS 配置。
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -37,13 +35,15 @@ func main() {
 		c.Next()
 	})
 
-	 // 认证相关接口（无需 JWT）。
+	// 全局限流。
 	r.Use(middleware.RateLimitMiddleware())
+
+	// 静态资源与主页。
 	r.StaticFile("/test-login", "login_system/web/test_login.html")
 	r.StaticFile("/", "login_system/web/index.html")
 	r.Static("/assets", "login_system/web/assets")
 
-	 // 业务接口（需要 JWT）。
+	// 认证相关接口（无需 JWT）。
 	authRoutes := r.Group("/api/auth")
 	{
 		authRoutes.GET("/captcha", controllers.GetCaptchaHandle)
@@ -51,7 +51,7 @@ func main() {
 		authRoutes.POST("/login", controllers.LoginHandle)
 	}
 
-	 // 管理员升级接口（需要管理员权限）。
+	// 业务接口（需要 JWT）。
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
@@ -69,6 +69,7 @@ func main() {
 		api.DELETE("/scam/multimodal/history/:recordId", httpapi.DeleteMultimodalHistoryHandle)
 		api.GET("/scam/multimodal/tasks/:taskId", httpapi.GetMultimodalTaskDetailHandle)
 
+		// 管理员案件库接口（需要管理员权限）。
 		adminCaseLibrary := api.Group("/scam/case-library")
 		adminCaseLibrary.Use(middleware.AdminMiddleware())
 		{

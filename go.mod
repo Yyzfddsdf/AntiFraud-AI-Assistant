@@ -1,4 +1,4 @@
-module image_recognition
+module antifraud
 
 go 1.25.0
 

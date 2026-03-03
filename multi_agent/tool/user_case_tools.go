@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"image_recognition/login_system/database"
-	"image_recognition/login_system/models"
-	"image_recognition/multi_agent/state"
+	"antifraud/login_system/database"
+	"antifraud/login_system/models"
+	"antifraud/multi_agent/state"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const QueryUserHistoryCasesToolName = "query_user_history_cases"

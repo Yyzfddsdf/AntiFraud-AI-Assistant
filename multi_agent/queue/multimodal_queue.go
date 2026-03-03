@@ -3,8 +3,8 @@ package queue
 import (
 	"strings"
 
-	"image_recognition/multi_agent"
-	"image_recognition/multi_agent/state"
+	"antifraud/multi_agent"
+	"antifraud/multi_agent/state"
 )
 
 type EnqueueRequest struct {

@@ -3,13 +3,13 @@ package multi_agent
 import (
 	"context"
 	"fmt"
-	"image_recognition/config"
-	"image_recognition/multi_agent/tool"
+	"antifraud/config"
+	"antifraud/multi_agent/tool"
 	"strings"
 	"sync"
 	"time"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 // CommonAgent 保存所有智能体共享的模型参数与重试配置。

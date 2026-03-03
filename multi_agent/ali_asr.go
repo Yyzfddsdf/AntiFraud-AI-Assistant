@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"image_recognition/config"
+	"antifraud/config"
 	"strings"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 func buildAudioDataURL(audioBase64 string) (string, error) {

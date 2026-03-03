@@ -3,10 +3,10 @@ package multi_agent
 import (
 	"context"
 	"fmt"
-	"image_recognition/config"
+	"antifraud/config"
 	"strings"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 func buildVideoDataURL(videoBase64 string) (string, error) {

@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"errors"
-	"image_recognition/login_system/database"
-	"image_recognition/login_system/models"
-	"image_recognition/login_system/settings"
+	"antifraud/login_system/database"
+	"antifraud/login_system/models"
+	"antifraud/login_system/settings"
 	"net/http"
 	"regexp"
 	"time"

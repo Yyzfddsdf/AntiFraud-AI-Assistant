@@ -6,10 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"image_recognition/config"
-	"image_recognition/multi_agent/case_library"
+	"antifraud/config"
+	"antifraud/multi_agent/case_library"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const CaseSearchToolName = "search_similar_cases"

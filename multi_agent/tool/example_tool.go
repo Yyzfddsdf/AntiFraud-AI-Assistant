@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	openai "image_recognition/llm"
+	openai "antifraud/llm"
 )
 
 const ExampleToolName = "example_tool"
