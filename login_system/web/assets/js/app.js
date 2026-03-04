@@ -70,7 +70,23 @@ createApp({
             setTimeout(() => toasts.value = toasts.value.filter(t => t.id !== id), 3000);
         };
 
-        const request = async (path, method = 'GET', body = null) => {
+        const stableJSONStringify = (value) => {
+            try {
+                return JSON.stringify(value);
+            } catch (_) {
+                return '';
+            }
+        };
+
+        const replaceListIfChanged = (targetRef, nextList) => {
+            const normalized = Array.isArray(nextList) ? nextList : [];
+            if (stableJSONStringify(targetRef.value) !== stableJSONStringify(normalized)) {
+                targetRef.value = normalized;
+            }
+        };
+
+        const request = async (path, method = 'GET', body = null, options = {}) => {
+            const { silent = false } = options || {};
             const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
             if (token.value) headers['Authorization'] = `Bearer ${token.value}`;
             
@@ -90,7 +106,9 @@ createApp({
                 if (!res.ok) throw new Error(data.error || 'Request failed');
                 return data;
             } catch (e) {
-                showToast(e.message, 'error');
+                if (!silent) {
+                    showToast(e.message, 'error');
+                }
                 return null;
             }
         };
@@ -228,18 +246,19 @@ createApp({
             }
         };
 
-        const fetchTasks = async () => {
+        const fetchTasks = async ({ silent = false } = {}) => {
             if (!isAuthenticated.value) return;
-            const res = await request('/scam/multimodal/tasks');
+            const res = await request('/scam/multimodal/tasks', 'GET', null, { silent });
             if (res && res.tasks) {
-                tasks.value = res.tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const nextTasks = [...res.tasks].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                replaceListIfChanged(tasks, nextTasks);
             }
         };
 
-        const fetchHistory = async () => {
-            const res = await request('/scam/multimodal/history');
+        const fetchHistory = async ({ silent = false } = {}) => {
+            const res = await request('/scam/multimodal/history', 'GET', null, { silent });
             if (res && res.history) {
-                history.value = res.history;
+                replaceListIfChanged(history, res.history);
             }
         };
 
@@ -279,7 +298,7 @@ createApp({
             const query = userSearch.value ? `?query=${encodeURIComponent(userSearch.value)}` : '';
             const res = await request(`/users${query}`);
             if (res && res.users) {
-                users.value = res.users;
+                replaceListIfChanged(users, res.users);
             }
         };
 
@@ -294,7 +313,7 @@ createApp({
             if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
             const res = await request('/scam/case-library/cases');
             if (res && res.cases) {
-                caseLibrary.value = res.cases;
+                replaceListIfChanged(caseLibrary, res.cases);
             }
         };
 
@@ -305,10 +324,10 @@ createApp({
                 request('/scam/case-library/options/target-groups')
             ]);
             if (scamTypeRes && Array.isArray(scamTypeRes.options)) {
-                scamTypeOptions.value = scamTypeRes.options;
+                replaceListIfChanged(scamTypeOptions, scamTypeRes.options);
             }
             if (targetGroupRes && Array.isArray(targetGroupRes.options)) {
-                targetGroupOptions.value = targetGroupRes.options;
+                replaceListIfChanged(targetGroupOptions, targetGroupRes.options);
             }
         };
 
@@ -479,11 +498,11 @@ createApp({
         // Polling
         let pollInterval;
         const startPolling = () => {
-            fetchTasks();
-            fetchHistory();
+            fetchTasks({ silent: true });
+            fetchHistory({ silent: true });
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
-                if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks();
+                if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
             }, 5000);
         };
         
@@ -550,13 +569,6 @@ createApp({
             window.addEventListener('mouseup', onMouseUp);
         };
 
-        // Watchers
-        watch(activeTab, (newTab) => {
-            if (newTab === 'tasks') fetchTasks();
-            if (newTab === 'history') fetchHistory();
-            if (newTab === 'users') fetchUsers();
-        });
-
         // Init
         onMounted(() => {
             fetchCaptcha();
@@ -585,7 +597,7 @@ createApp({
         const getStatusClass = (status) => {
             const map = {
                 'pending': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold',
-                'processing': 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold animate-pulse',
+                'processing': 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold',
                 'completed': 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold',
                 'failed': 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold'
             };

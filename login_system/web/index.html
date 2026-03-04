@@ -35,9 +35,9 @@
                 <div class="absolute inset-0 tech-bg opacity-60"></div>
                 <div class="absolute inset-0 grid-pattern opacity-40"></div>
                 <!-- Animated Blobs -->
-                <div class="absolute top-0 -left-4 w-96 h-96 bg-brand-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                <div class="absolute top-0 -right-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-                <div class="absolute -bottom-32 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+                <div class="absolute top-0 -left-4 w-96 h-96 bg-brand-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+                <div class="absolute top-0 -right-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+                <div class="absolute -bottom-32 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
             </div>
 
             <div class="relative z-10 w-full flex items-center justify-center p-4">
@@ -100,8 +100,8 @@
             <!-- Dashboard Background -->
             <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div class="absolute inset-0 tech-bg opacity-40"></div>
-                <div class="absolute -left-20 top-0 w-[500px] h-[500px] bg-brand-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-                <div class="absolute left-60 top-40 w-[400px] h-[400px] bg-purple-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+                <div class="absolute -left-20 top-0 w-[500px] h-[500px] bg-brand-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+                <div class="absolute left-60 top-40 w-[400px] h-[400px] bg-purple-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
                 <div class="absolute bottom-0 left-0 w-[600px] h-[400px] bg-indigo-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
             </div>
 
@@ -303,7 +303,7 @@
                             <p class="text-slate-500 mt-2">实时查看所有分析任务的进度与结果</p>
                         </div>
                         <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-full flex items-center gap-2 font-medium">
-                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 系统运行正常
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 系统运行正常
                         </span>
                     </div>
 
@@ -316,7 +316,7 @@
                     </div>
 
                     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="(task, index) in tasks" :key="task.task_id" class="bg-white p-6 rounded-2xl border border-slate-200 card-hover stagger-item flex flex-col h-full" :style="{ animationDelay: index * 50 + 'ms' }">
+                        <div v-for="task in tasks" :key="task.task_id" class="bg-white p-6 rounded-2xl border border-slate-200 card-hover flex flex-col h-full">
                             <div class="flex justify-between items-start mb-4">
                                 <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
                                 <span class="text-xs text-slate-400 font-mono">#{{ task.task_id.substring(0,8) }}</span>
@@ -341,9 +341,9 @@
         </div>
 
         <!-- Case Detail Modal -->
-        <div v-if="selectedCase" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in modal-overlay" @click.self="selectedCase = null">
+        <div v-if="selectedCase" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 animate-fade-in modal-overlay" @click.self="selectedCase = null">
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
                     <div>
                         <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
                         <div class="flex items-center gap-3 mt-1">
@@ -358,7 +358,7 @@
                     </button>
                 </div>
                 
-                <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/50 custom-scrollbar">
+                <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 custom-scrollbar transform-gpu">
                     
                     <!-- Basic Info -->
                     <div class="grid grid-cols-3 gap-6">
@@ -674,8 +674,8 @@
                                 <div class="bg-slate-900 p-5 flex justify-between items-center text-white cursor-move" @mousedown="startDrag">
                                     <div class="flex items-center gap-3">
                                         <div class="relative">
-                                            <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse-slow"></div>
-                                            <div class="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+                                            <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
+                                            <div class="absolute inset-0 bg-emerald-400 rounded-full opacity-20"></div>
                                         </div>
                                         <span class="font-bold text-base tracking-wide">反诈助手</span>
                                     </div>
@@ -723,7 +723,7 @@
 
                     <!-- Bubble Button -->
                     <button @mousedown="startDrag" @click="toggleChat" class="w-16 h-16 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-2xl shadow-slate-900/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group relative cursor-move">
-                        <span v-if="!showChat" class="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                        <span v-if="!showChat" class="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></span>
                         <svg v-if="!showChat" class="w-7 h-7 group-hover:animate-wiggle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                         <svg v-else class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -733,9 +733,9 @@
         </div>
 
         <!-- Task Detail Modal -->
-        <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in modal-overlay" @click.self="selectedTask = null">
+        <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 animate-fade-in modal-overlay" @click.self="selectedTask = null">
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10 no-print shrink-0">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 no-print shrink-0">
                     <div>
                         <h3 class="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1">{{ selectedTask.title || '分析报告' }}</h3>
                         <p class="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-2">
@@ -773,7 +773,7 @@
                     </div>
                 </div>
                 
-                <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50 space-y-6 custom-scrollbar">
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar transform-gpu">
                     <section v-if="selectedTask.summary" class="animate-fade-in">
                         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
@@ -951,8 +951,8 @@
         </div>
 
         <!-- Add Case Modal -->
-        <div v-if="showCaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" @click.self="showCaseModal = false">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up border border-white/20">
+        <div v-if="showCaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 animate-fade-in" @click.self="showCaseModal = false">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up border border-white/20 will-change-transform">
                 <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
                     <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">录入新案件</h3>
                     <button @click="showCaseModal = false" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors">
