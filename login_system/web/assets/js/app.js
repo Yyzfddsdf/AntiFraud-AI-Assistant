@@ -38,6 +38,14 @@ createApp({
         const selectedTask = ref(null);
         const userSearch = ref('');
         
+        // Risk Trend State
+        const riskInterval = ref('day');
+        const riskData = ref(null);
+        // Cache for risk trend data: { 'day': data, 'week': data, 'month': data }
+        const riskCache = reactive({});
+        let pieChartInstance = null;
+        let lineChartInstance = null;
+
         // Draggable Chat State
         const chatPosition = reactive({ left: 0, top: 0 });
         const isDragging = ref(false);
@@ -485,6 +493,150 @@ createApp({
              }
         };
 
+        // Risk Trend Logic
+        const fetchRiskTrend = async (forceRefresh = false) => {
+            if (!isAuthenticated.value) return;
+
+            const interval = riskInterval.value;
+            
+            // 1. 如果有缓存，先立即渲染缓存数据（Stale-While-Revalidate 策略）
+            if (riskCache[interval]) {
+                riskData.value = riskCache[interval];
+                setTimeout(() => renderCharts(), 0);
+                
+                // 如果不是强制刷新，且距离上次更新很近（例如10秒内），可以考虑不发请求
+                // 但为了响应用户需求“点击日周年会访问API”，我们这里总是继续发送请求
+            }
+
+            // 2. 静默请求最新数据
+            try {
+                const res = await request(`/scam/multimodal/history/overview?interval=${interval}`, 'GET', null, { silent: true });
+                if (res) {
+                    // 3. 比较数据是否有变化
+                    const cachedData = riskCache[interval];
+                    const hasChanged = !cachedData || stableJSONStringify(cachedData) !== stableJSONStringify(res);
+
+                    if (hasChanged || forceRefresh) {
+                        riskData.value = res;
+                        riskCache[interval] = res;
+                        setTimeout(() => renderCharts(), 100);
+                        if (forceRefresh) showToast('数据已更新');
+                    }
+                }
+            } catch (e) {
+                console.error('Fetch risk trend failed:', e);
+            }
+        };
+
+        const formatChartLabel = (label) => {
+            const interval = riskInterval.value;
+            if (interval === 'week' && label.includes('-W')) {
+                try {
+                    const [yearStr, weekStr] = label.split('-W');
+                    const year = parseInt(yearStr);
+                    const week = parseInt(weekStr);
+                    
+                    // ISO Week calculation: 1st week contains Jan 4th
+                    const jan4 = new Date(year, 0, 4);
+                    const jan4Day = jan4.getDay() || 7; // Mon=1, Sun=7
+                    const week1Start = new Date(year, 0, 4 - jan4Day + 1);
+                    const start = new Date(week1Start.getTime() + (week - 1) * 7 * 86400000);
+                    const end = new Date(start.getTime() + 6 * 86400000);
+                    
+                    const fmt = d => `${d.getMonth() + 1}.${d.getDate()}`;
+                    return `${year}年第${week}周 (${fmt(start)}-${fmt(end)})`;
+                } catch (e) {
+                    return label;
+                }
+            }
+            if (interval === 'month' && /^\d{4}-\d{2}$/.test(label)) {
+                const [y, m] = label.split('-');
+                return `${y}年${parseInt(m)}月`;
+            }
+            return label;
+        };
+
+        const renderCharts = () => {
+            if (!riskData.value) return;
+            const stats = riskData.value.stats;
+            const trend = riskData.value.trend;
+
+            // Destroy old charts
+            if (pieChartInstance) pieChartInstance.destroy();
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            // Pie Chart
+            const pieCtx = document.getElementById('riskPieChart');
+            if (pieCtx) {
+                pieChartInstance = new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['高风险', '中风险', '低风险'],
+                        datasets: [{
+                            data: [stats.high, stats.medium, stats.low],
+                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+
+            // Line Chart
+            const lineCtx = document.getElementById('riskLineChart');
+            if (lineCtx) {
+                lineChartInstance = new Chart(lineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: trend.map(item => formatChartLabel(item.time_bucket)),
+                        datasets: [
+                            {
+                                label: '高风险',
+                                data: trend.map(item => item.high),
+                                borderColor: '#ef4444',
+                                backgroundColor: '#ef4444',
+                                tension: 0.4
+                            },
+                            {
+                                label: '中风险',
+                                data: trend.map(item => item.medium),
+                                borderColor: '#f59e0b',
+                                backgroundColor: '#f59e0b',
+                                tension: 0.4
+                            },
+                            {
+                                label: '低风险',
+                                data: trend.map(item => item.low),
+                                borderColor: '#10b981',
+                                backgroundColor: '#10b981',
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
         watch(activeTab, (newTab) => {
             if (newTab === 'case_library') {
                 fetchCaseLibrary();
@@ -493,6 +645,7 @@ createApp({
             if (newTab === 'users') fetchUsers();
             if (newTab === 'history') fetchHistory();
             if (newTab === 'tasks') fetchTasks();
+            if (newTab === 'risk_trend') fetchRiskTrend();
         });
 
         // Polling
@@ -992,7 +1145,8 @@ createApp({
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
             parseReport, parseInsight,
-            caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase
+            caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
+            riskInterval, fetchRiskTrend, riskData
         };
     }
 }).mount('#app');
