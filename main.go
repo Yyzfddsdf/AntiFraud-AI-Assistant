@@ -76,6 +76,7 @@ func main() {
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)
 		api.GET("/scam/multimodal/history", httpapi.GetMultimodalHistoryHandle)
+		api.GET("/scam/multimodal/history/overview", httpapi.GetMultimodalRiskOverviewHandle)
 		api.DELETE("/scam/multimodal/history/:recordId", httpapi.DeleteMultimodalHistoryHandle)
 		api.GET("/scam/multimodal/tasks/:taskId", httpapi.GetMultimodalTaskDetailHandle)
 

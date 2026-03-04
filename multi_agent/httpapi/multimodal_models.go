@@ -96,3 +96,26 @@ type UpdateUserAgeResponse struct {
 	Age     int    `json:"age"`
 	Message string `json:"message"`
 }
+
+// MultimodalRiskLevelStats 风险等级统计（高/中/低）。
+type MultimodalRiskLevelStats struct {
+	High   int `json:"high"`
+	Medium int `json:"medium"`
+	Low    int `json:"low"`
+	Total  int `json:"total"`
+}
+
+// MultimodalRiskTrendItem 风险变化趋势条目（按时间桶聚合）。
+type MultimodalRiskTrendItem struct {
+	TimeBucket string `json:"time_bucket"`
+	High       int    `json:"high"`
+	Medium     int    `json:"medium"`
+	Low        int    `json:"low"`
+	Total      int    `json:"total"`
+}
+
+// MultimodalRiskOverviewResponse 用户风险总览响应。
+type MultimodalRiskOverviewResponse struct {
+	Stats MultimodalRiskLevelStats  `json:"stats"`
+	Trend []MultimodalRiskTrendItem `json:"trend"`
+}
