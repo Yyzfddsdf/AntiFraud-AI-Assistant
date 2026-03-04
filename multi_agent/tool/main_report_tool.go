@@ -3,7 +3,6 @@ package tool
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	openai "antifraud/llm"
@@ -29,7 +28,7 @@ var FinalReportTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        FinalReportToolName,
-		Description: "提交最终结构化反诈分析报告。",
+		Description: "提交最终结构化反诈骗分析报告。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -106,7 +105,7 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	riskLevel := normalizeFinalReportRiskLevel(payload.RiskLevel)
 	riskSignals := sanitizeNonEmptyList(payload.RiskSignals)
 	nextActions := sanitizeNonEmptyList(payload.NextActions)
-	attackSteps := normalizeAttackSteps(payload.AttackSteps)
+	attackSteps := sanitizeNonEmptyList(payload.AttackSteps)
 	scamKeywordSentences := sanitizeNonEmptyList(payload.ScamKeywordSentences)
 
 	var report strings.Builder
@@ -150,21 +149,22 @@ func FormatFinalReport(payload FinalReportPayload) string {
 		}
 	}
 
-	report.WriteString("\n6. 诈骗链路还原\n")
-	if len(attackSteps) == 0 {
-		report.WriteString("- 证据不足，暂无法还原完整诈骗链路\n")
-	} else {
+	// 两个字段是可选项：为空就不输出对应章节，不补固定兜底文案。
+	nextSectionID := 6
+	if len(attackSteps) > 0 {
+		report.WriteString("\n\n")
+		report.WriteString(fmt.Sprintf("%d. 诈骗链路还原\n", nextSectionID))
 		for _, step := range attackSteps {
 			report.WriteString("- ")
 			report.WriteString(step)
 			report.WriteString("\n")
 		}
+		nextSectionID++
 	}
 
-	report.WriteString("\n\n7. 诈骗关键词句\n")
-	if len(scamKeywordSentences) == 0 {
-		report.WriteString("- 未提取到明确诈骗关键词句\n")
-	} else {
+	if len(scamKeywordSentences) > 0 {
+		report.WriteString("\n\n")
+		report.WriteString(fmt.Sprintf("%d. 诈骗关键词句\n", nextSectionID))
 		for _, sentence := range scamKeywordSentences {
 			report.WriteString("- ")
 			report.WriteString(sentence)
@@ -185,31 +185,6 @@ func sanitizeNonEmptyList(items []string) []string {
 		cleaned = append(cleaned, trimmed)
 	}
 	return cleaned
-}
-
-// 兼容模型偶发输出的串联链路写法（A->B、A→B、A=>B）。
-var attackStepSeparatorPattern = regexp.MustCompile(`\s*(?:->|→|=>)\s*`)
-
-// normalizeAttackSteps 将 attack_steps 统一成“每个元素仅一个步骤”的严格数组格式。
-// 若模型把多步写在同一元素里，会按箭头分隔符自动拆分并清洗空项。
-func normalizeAttackSteps(items []string) []string {
-	normalized := make([]string, 0, len(items))
-	for _, item := range items {
-		trimmed := strings.TrimSpace(item)
-		if trimmed == "" {
-			continue
-		}
-
-		parts := attackStepSeparatorPattern.Split(trimmed, -1)
-		for _, part := range parts {
-			cleaned := strings.TrimSpace(part)
-			if cleaned == "" {
-				continue
-			}
-			normalized = append(normalized, cleaned)
-		}
-	}
-	return normalized
 }
 
 func normalizeFinalReportRiskLevel(raw string) string {

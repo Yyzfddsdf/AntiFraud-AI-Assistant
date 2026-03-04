@@ -1072,10 +1072,6 @@ createApp({
                 .map((line) => line.trim())
                 .filter((line) => line !== '')
                 .map((line) => line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)、]\s*/, '').trim())
-                .filter((line) => line !== '' && !line.includes('证据不足，暂无法还原完整诈骗链路'))
-                // 兼容历史报告中“单行箭头串联”的写法，统一拆成时间线步骤。
-                .flatMap((line) => line.split(/\s*(?:->|→|=>)\s*/))
-                .map((line) => line.trim())
                 .filter((line) => line !== '');
 
             return stepLines;
@@ -1095,7 +1091,7 @@ createApp({
                 .map((line) => line.trim())
                 .filter((line) => line !== '')
                 .map((line) => line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)、]\s*/, '').trim())
-                .filter((line) => line !== '' && !line.includes('未提取到明确诈骗关键词句'));
+                .filter((line) => line !== '');
 
             return keywords;
         };
