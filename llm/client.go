@@ -77,10 +77,19 @@ type ChatMessageVideoURL struct {
 }
 
 type ChatMessagePart struct {
-	Type        string                 `json:"type"`
-	Text        string                 `json:"text,omitempty"`
-	ImageURL    *ChatMessageImageURL   `json:"image_url,omitempty"`
-	VideoURL    *ChatMessageVideoURL   `json:"video_url,omitempty"`
+	Type     string               `json:"type"`
+	Text     string               `json:"text,omitempty"`
+	ImageURL *ChatMessageImageURL `json:"image_url,omitempty"`
+	VideoURL *ChatMessageVideoURL `json:"video_url,omitempty"`
+	// ExtraFields 用于透传尚未在结构体中预定义的 provider 扩展字段。
+	//
+	// 例如新增一个自定义 part（audio_url）可这样写：
+	//   ChatMessagePart{
+	//     Type: "audio_url",
+	//     ExtraFields: map[string]interface{}{
+	//       "audio_url": map[string]interface{}{"url": "https://example.com/a.wav"},
+	//     },
+	//   }
 	ExtraFields map[string]interface{} `json:"-"`
 }
 
