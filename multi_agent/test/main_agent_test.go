@@ -1,4 +1,4 @@
-package multi_agent
+package multi_agent_test
 
 import (
 	"reflect"
@@ -13,4 +13,3 @@ func TestNormalizeBase64List(t *testing.T) {
 		t.Fatalf("unexpected normalize result: want=%v got=%v", want, got)
 	}
 }
-

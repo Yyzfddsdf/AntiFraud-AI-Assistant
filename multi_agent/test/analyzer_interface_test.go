@@ -1,14 +1,34 @@
-package multi_agent
+package multi_agent_test
 
 import (
 	"errors"
 	"strings"
 	"testing"
-	"time"
+
+	appcfg "antifraud/config"
+	multiagent "antifraud/multi_agent"
 )
 
+func testCommonAgent() multiagent.CommonAgent {
+	return multiagent.NewCommonAgent(
+		"test-agent",
+		appcfg.ModelConfig{
+			Model:       "gpt-test",
+			APIKey:      "k",
+			BaseURL:     "https://example.com/v1",
+			MaxTokens:   64,
+			TopP:        1,
+			Temperature: 0.1,
+		},
+		appcfg.RetryConfig{
+			MaxRetries:   3,
+			RetryDelayMS: 1,
+		},
+	)
+}
+
 func TestCommonAgentRetry_SuccessFirstAttempt(t *testing.T) {
-	agent := CommonAgent{name: "test-agent", RetryMax: 3, RetryDelay: time.Millisecond}
+	agent := testCommonAgent()
 	calls := 0
 	err := agent.Retry("do-something", func() error {
 		calls++
@@ -23,7 +43,7 @@ func TestCommonAgentRetry_SuccessFirstAttempt(t *testing.T) {
 }
 
 func TestCommonAgentRetry_SuccessAfterRetry(t *testing.T) {
-	agent := CommonAgent{name: "test-agent", RetryMax: 3, RetryDelay: time.Millisecond}
+	agent := testCommonAgent()
 	calls := 0
 	err := agent.Retry("do-something", func() error {
 		calls++
@@ -41,7 +61,7 @@ func TestCommonAgentRetry_SuccessAfterRetry(t *testing.T) {
 }
 
 func TestCommonAgentRetry_FailedAfterMaxAttempts(t *testing.T) {
-	agent := CommonAgent{name: "test-agent", RetryMax: 3, RetryDelay: time.Millisecond}
+	agent := testCommonAgent()
 	calls := 0
 	err := agent.Retry("do-something", func() error {
 		calls++
@@ -57,4 +77,3 @@ func TestCommonAgentRetry_FailedAfterMaxAttempts(t *testing.T) {
 		t.Fatalf("unexpected error text: %v", err)
 	}
 }
-

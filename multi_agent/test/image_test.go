@@ -1,4 +1,4 @@
-package multi_agent
+package multi_agent_test
 
 import (
 	"encoding/base64"

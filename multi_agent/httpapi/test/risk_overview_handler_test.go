@@ -1,10 +1,12 @@
-package httpapi
+package httpapi_test
 
 import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	httpapi "antifraud/multi_agent/httpapi"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +19,7 @@ func TestGetMultimodalRiskOverviewHandle_InvalidInterval(t *testing.T) {
 		c.Set("userID", "u-test")
 		c.Next()
 	})
-	router.GET("/overview", GetMultimodalRiskOverviewHandle)
+	router.GET("/overview", httpapi.GetMultimodalRiskOverviewHandle)
 
 	req := httptest.NewRequest(http.MethodGet, "/overview?interval=year", nil)
 	resp := httptest.NewRecorder()
@@ -44,7 +46,7 @@ func TestGetMultimodalRiskOverviewHandle_Success(t *testing.T) {
 		c.Set("userID", "u-test")
 		c.Next()
 	})
-	router.GET("/overview", GetMultimodalRiskOverviewHandle)
+	router.GET("/overview", httpapi.GetMultimodalRiskOverviewHandle)
 
 	req := httptest.NewRequest(http.MethodGet, "/overview?interval=day", nil)
 	resp := httptest.NewRecorder()
@@ -54,7 +56,7 @@ func TestGetMultimodalRiskOverviewHandle_Success(t *testing.T) {
 		t.Fatalf("unexpected status: got=%d want=%d", resp.Code, http.StatusOK)
 	}
 
-	var payload MultimodalRiskOverviewResponse
+	var payload httpapi.MultimodalRiskOverviewResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode response failed: %v", err)
 	}

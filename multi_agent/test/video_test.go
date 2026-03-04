@@ -1,6 +1,8 @@
-package multi_agent
+package multi_agent_test
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestBuildVideoDataURL_DataURLPassthrough(t *testing.T) {
 	input := "data:video/mp4;base64,AAAA"
@@ -37,4 +39,3 @@ func TestBuildVideoDataURL_Base64Wrap(t *testing.T) {
 		t.Fatalf("unexpected data url: want %q, got %q", want, got)
 	}
 }
-

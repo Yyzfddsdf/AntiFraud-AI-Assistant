@@ -1,13 +1,15 @@
-package tool
+package tool_test
 
 import (
 	"strings"
 	"testing"
+
+	agenttool "antifraud/multi_agent/tool"
 )
 
 func TestParseAnalysisResult_ValidJSON(t *testing.T) {
 	raw := `{"visual_impression":"v","key_content":"k","suspicious_points":["a","b"]}`
-	got, err := ParseAnalysisResult(raw)
+	got, err := agenttool.ParseAnalysisResult(raw)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -17,14 +19,14 @@ func TestParseAnalysisResult_ValidJSON(t *testing.T) {
 }
 
 func TestParseAnalysisResult_InvalidJSON(t *testing.T) {
-	_, err := ParseAnalysisResult("{invalid")
+	_, err := agenttool.ParseAnalysisResult("{invalid")
 	if err == nil {
 		t.Fatalf("expected parse error for invalid json")
 	}
 }
 
 func TestFormatAnalysisResult_NoSuspiciousPoints(t *testing.T) {
-	out := FormatAnalysisResult(AnalysisResult{
+	out := agenttool.FormatAnalysisResult(agenttool.AnalysisResult{
 		VisualImpression: "视觉描述",
 		KeyContent:       "关键信息",
 		SuspiciousPoints: nil,
@@ -35,7 +37,7 @@ func TestFormatAnalysisResult_NoSuspiciousPoints(t *testing.T) {
 }
 
 func TestFormatAnalysisResult_WithSuspiciousPoints(t *testing.T) {
-	out := FormatAnalysisResult(AnalysisResult{
+	out := agenttool.FormatAnalysisResult(agenttool.AnalysisResult{
 		VisualImpression: "视觉描述",
 		KeyContent:       "关键信息",
 		SuspiciousPoints: []string{"可疑点A", "可疑点B"},
@@ -44,4 +46,3 @@ func TestFormatAnalysisResult_WithSuspiciousPoints(t *testing.T) {
 		t.Fatalf("expected numbered suspicious points, got %q", out)
 	}
 }
-

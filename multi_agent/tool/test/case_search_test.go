@@ -1,6 +1,8 @@
-package tool
+package tool_test
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestNoneFallback(t *testing.T) {
 	if got := noneFallback("   "); got != "none" {
@@ -10,4 +12,3 @@ func TestNoneFallback(t *testing.T) {
 		t.Fatalf("expected trimmed value, got %q", got)
 	}
 }
-

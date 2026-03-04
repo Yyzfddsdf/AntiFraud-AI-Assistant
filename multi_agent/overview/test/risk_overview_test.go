@@ -1,9 +1,10 @@
-package overview
+package overview_test
 
 import (
 	"testing"
 	"time"
 
+	overview "antifraud/multi_agent/overview"
 	"antifraud/multi_agent/state"
 )
 
@@ -15,12 +16,12 @@ func TestBuildRiskOverviewFromHistory_Day(t *testing.T) {
 		{RiskLevel: "unknown", CreatedAt: time.Date(2026, 3, 1, 16, 5, 0, 0, time.UTC)},
 	}
 
-	result := BuildRiskOverviewFromHistory("u-1", history, IntervalDay)
+	result := overview.BuildRiskOverviewFromHistory("u-1", history, overview.IntervalDay)
 
 	if result.UserID != "u-1" {
 		t.Fatalf("unexpected user id: %s", result.UserID)
 	}
-	if result.Interval != IntervalDay {
+	if result.Interval != overview.IntervalDay {
 		t.Fatalf("unexpected interval: %s", result.Interval)
 	}
 
@@ -49,15 +50,15 @@ func TestNormalizeInterval(t *testing.T) {
 		want  string
 		ok    bool
 	}{
-		{input: "", want: IntervalDay, ok: true},
-		{input: "day", want: IntervalDay, ok: true},
-		{input: "week", want: IntervalWeek, ok: true},
-		{input: "month", want: IntervalMonth, ok: true},
+		{input: "", want: overview.IntervalDay, ok: true},
+		{input: "day", want: overview.IntervalDay, ok: true},
+		{input: "week", want: overview.IntervalWeek, ok: true},
+		{input: "month", want: overview.IntervalMonth, ok: true},
 		{input: "invalid", want: "", ok: false},
 	}
 
 	for _, tc := range tests {
-		got, ok := NormalizeInterval(tc.input)
+		got, ok := overview.NormalizeInterval(tc.input)
 		if got != tc.want || ok != tc.ok {
 			t.Fatalf("NormalizeInterval(%q) = (%q, %v), want (%q, %v)", tc.input, got, ok, tc.want, tc.ok)
 		}
