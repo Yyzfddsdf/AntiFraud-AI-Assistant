@@ -3,6 +3,7 @@ package tool
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	openai "antifraud/llm"
@@ -73,7 +74,7 @@ var FinalReportTool = openai.Tool{
 				"attack_steps": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "诈骗链路步骤，按时间顺序列出从诱导到收尾的关键行为。",
+					"description": "诈骗链路步骤（严格数组）。每个元素只能写一个步骤，按时间顺序排列；禁止把多个步骤写成单个元素（如“步骤A→步骤B→步骤C”）。",
 				},
 			},
 			"required": []string{
@@ -100,7 +101,7 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	riskLevel := normalizeFinalReportRiskLevel(payload.RiskLevel)
 	riskSignals := sanitizeNonEmptyList(payload.RiskSignals)
 	nextActions := sanitizeNonEmptyList(payload.NextActions)
-	attackSteps := sanitizeNonEmptyList(payload.AttackSteps)
+	attackSteps := normalizeAttackSteps(payload.AttackSteps)
 
 	var report strings.Builder
 	report.WriteString("1. 综合摘要\n")
@@ -167,6 +168,31 @@ func sanitizeNonEmptyList(items []string) []string {
 		cleaned = append(cleaned, trimmed)
 	}
 	return cleaned
+}
+
+// 兼容模型偶发输出的串联链路写法（A->B、A→B、A=>B）。
+var attackStepSeparatorPattern = regexp.MustCompile(`\s*(?:->|→|=>)\s*`)
+
+// normalizeAttackSteps 将 attack_steps 统一成“每个元素仅一个步骤”的严格数组格式。
+// 若模型把多步写在同一元素里，会按箭头分隔符自动拆分并清洗空项。
+func normalizeAttackSteps(items []string) []string {
+	normalized := make([]string, 0, len(items))
+	for _, item := range items {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+
+		parts := attackStepSeparatorPattern.Split(trimmed, -1)
+		for _, part := range parts {
+			cleaned := strings.TrimSpace(part)
+			if cleaned == "" {
+				continue
+			}
+			normalized = append(normalized, cleaned)
+		}
+	}
+	return normalized
 }
 
 func normalizeFinalReportRiskLevel(raw string) string {
