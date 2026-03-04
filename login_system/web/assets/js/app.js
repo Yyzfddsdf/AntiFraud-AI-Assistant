@@ -1081,6 +1081,25 @@ createApp({
             return stepLines;
         };
 
+        const extractScamKeywordSentences = (reportText) => {
+            if (!reportText) return [];
+            const reportSections = parseReport(reportText);
+            const keywordSection = reportSections.find((section) => {
+                const title = String(section?.title || '').trim();
+                return title.includes('诈骗关键词句');
+            });
+            if (!keywordSection || !keywordSection.content) return [];
+
+            const keywords = keywordSection.content
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line !== '')
+                .map((line) => line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)、]\s*/, '').trim())
+                .filter((line) => line !== '' && !line.includes('未提取到明确诈骗关键词句'));
+
+            return keywords;
+        };
+
         const parseInsight = (text) => {
             if (!text) return [];
             const sections = [];
@@ -1336,7 +1355,7 @@ createApp({
             showChat, chatMessages, chatInput, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
-            parseReport, extractAttackSteps, parseInsight,
+            parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
             riskInterval, fetchRiskTrend, riskData,
             adminStatsInterval, fetchAdminStats, adminStatsData

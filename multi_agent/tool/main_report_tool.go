@@ -12,16 +12,17 @@ import (
 const FinalReportToolName = "submit_final_report"
 
 type FinalReportPayload struct {
-	Summary      string   `json:"summary"`
-	TextFinding  string   `json:"text_finding"`
-	ImageFinding string   `json:"image_finding"`
-	VideoFinding string   `json:"video_finding"`
-	AudioFinding string   `json:"audio_finding"`
-	RiskSignals  []string `json:"risk_signals"`
-	RiskLevel    string   `json:"risk_level"`
-	RiskReason   string   `json:"risk_reason"`
-	NextActions  []string `json:"next_actions"`
-	AttackSteps  []string `json:"attack_steps"`
+	Summary              string   `json:"summary"`
+	TextFinding          string   `json:"text_finding"`
+	ImageFinding         string   `json:"image_finding"`
+	VideoFinding         string   `json:"video_finding"`
+	AudioFinding         string   `json:"audio_finding"`
+	RiskSignals          []string `json:"risk_signals"`
+	RiskLevel            string   `json:"risk_level"`
+	RiskReason           string   `json:"risk_reason"`
+	NextActions          []string `json:"next_actions"`
+	AttackSteps          []string `json:"attack_steps"`
+	ScamKeywordSentences []string `json:"scam_keyword_sentences"`
 }
 
 var FinalReportTool = openai.Tool{
@@ -74,7 +75,12 @@ var FinalReportTool = openai.Tool{
 				"attack_steps": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "诈骗链路步骤（严格数组）。每个元素只能写一个步骤，按时间顺序排列；禁止把多个步骤写成单个元素（如“步骤A→步骤B→步骤C”）。",
+					"description": "诈骗链路步骤（可选，严格数组）。如有充分证据可提供；如无可不传。每个元素只能写一个步骤，按时间顺序排列；禁止把多个步骤写成单个元素（如“步骤A→步骤B→步骤C”）。",
+				},
+				"scam_keyword_sentences": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]string{"type": "string"},
+					"description": "诈骗关键词句（可选，严格数组）。如有明确关键词句可提供；如无可不传。每个元素只包含一个关键词或关键句；禁止把多个关键词句写在同一个元素里。",
 				},
 			},
 			"required": []string{
@@ -87,7 +93,6 @@ var FinalReportTool = openai.Tool{
 				"risk_level",
 				"risk_reason",
 				"next_actions",
-				"attack_steps",
 			},
 		},
 	},
@@ -102,6 +107,7 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	riskSignals := sanitizeNonEmptyList(payload.RiskSignals)
 	nextActions := sanitizeNonEmptyList(payload.NextActions)
 	attackSteps := normalizeAttackSteps(payload.AttackSteps)
+	scamKeywordSentences := sanitizeNonEmptyList(payload.ScamKeywordSentences)
 
 	var report strings.Builder
 	report.WriteString("1. 综合摘要\n")
@@ -151,6 +157,17 @@ func FormatFinalReport(payload FinalReportPayload) string {
 		for _, step := range attackSteps {
 			report.WriteString("- ")
 			report.WriteString(step)
+			report.WriteString("\n")
+		}
+	}
+
+	report.WriteString("\n\n7. 诈骗关键词句\n")
+	if len(scamKeywordSentences) == 0 {
+		report.WriteString("- 未提取到明确诈骗关键词句\n")
+	} else {
+		for _, sentence := range scamKeywordSentences {
+			report.WriteString("- ")
+			report.WriteString(sentence)
 			report.WriteString("\n")
 		}
 	}

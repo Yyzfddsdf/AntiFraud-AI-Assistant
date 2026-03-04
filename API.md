@@ -539,13 +539,19 @@
   "risk_level": "低|中|高",
   "risk_reason": "string",
   "next_actions": ["string"],
-  "attack_steps": ["string"]
+  "attack_steps": ["string"],
+  "scam_keyword_sentences": ["string"]
 }
 ```
 
+说明：
+
+- `attack_steps`、`scam_keyword_sentences` 为可选字段（有内容时传数组；无内容可不传）。
+- 若传入这两个字段，必须满足数组约束。
+
 `attack_steps` 约束（严格执行）：
 
-- 必须是字符串数组（`[]string`）。
+- 若提供，必须是字符串数组（`[]string`）。
 - 每个元素仅允许一个步骤，按时间顺序排列。
 - 禁止把整条链路写成单个元素（错误示例：`"发布收费通知（班级收书费）→指定线上交费方式→要求每人支付50元"`）。
 - 正确示例：`["发布收费通知（班级收书费）", "指定线上交费方式", "要求每人支付50元"]`。
@@ -554,6 +560,21 @@
 
 - 若单个步骤文本内仍出现箭头串联（`->` / `→` / `=>`），前端时间线渲染会按箭头自动拆分为多个步骤节点。
 - 若步骤文本为“证据不足，暂无法还原完整诈骗链路”，前端不会渲染时间线节点。
+
+`scam_keyword_sentences` 约束（严格执行）：
+
+- 若提供，必须是字符串数组（`[]string`）。
+- 每个元素仅允许一个关键词或关键句。
+- 禁止把多个关键词句拼接成单个元素。
+- 若返回“未提取到明确诈骗关键词句”，前端不会渲染关键词标签。
+
+字段缺省时 API 返回（重点）：
+
+- 当 `attack_steps` 未提供或为空数组时，`report` 第 6 节固定返回：
+  `- 证据不足，暂无法还原完整诈骗链路`
+- 当 `scam_keyword_sentences` 未提供或为空数组时，`report` 第 7 节固定返回：
+  `- 未提取到明确诈骗关键词句`
+- 以上两种兜底文案会出现在 `GET /api/scam/multimodal/tasks/:taskId` 的 `task.report` 文本中（任务完成后）。
 
 渲染后的 `report` 通常为：
 
@@ -584,6 +605,11 @@
 6. 诈骗链路还原
 - {attack_step_1}
 - {attack_step_2}
+...
+
+7. 诈骗关键词句
+- {scam_keyword_sentence_1}
+- {scam_keyword_sentence_2}
 ...
 ```
 

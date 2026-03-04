@@ -939,6 +939,22 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div v-if="extractScamKeywordSentences(selectedTask.report).length > 0" class="pt-5 mt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-1.5 h-4 bg-fuchsia-500 rounded-full"></span>
+                                        <h5 class="text-sm font-bold text-slate-800">诈骗关键词句</h5>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span
+                                            v-for="(keyword, idx) in extractScamKeywordSentences(selectedTask.report)"
+                                            :key="'scam-keyword-'+idx"
+                                            class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-100"
+                                        >
+                                            {{ keyword }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
