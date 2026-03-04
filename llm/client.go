@@ -285,12 +285,27 @@ type ChatCompletionResponse struct {
 	Choices []ChatCompletionChoice `json:"choices"`
 }
 
+type ChatCompletionStreamFunctionCallDelta struct {
+	Name      string `json:"name,omitempty"`
+	Arguments string `json:"arguments,omitempty"`
+}
+
+type ChatCompletionStreamToolCallDelta struct {
+	Index    *int                                   `json:"index,omitempty"`
+	ID       string                                 `json:"id,omitempty"`
+	Type     string                                 `json:"type,omitempty"`
+	Function *ChatCompletionStreamFunctionCallDelta `json:"function,omitempty"`
+}
+
 type ChatCompletionStreamChoiceDelta struct {
-	Content string `json:"content"`
+	Role      string                              `json:"role,omitempty"`
+	Content   string                              `json:"content"`
+	ToolCalls []ChatCompletionStreamToolCallDelta `json:"tool_calls,omitempty"`
 }
 
 type ChatCompletionStreamChoice struct {
-	Delta ChatCompletionStreamChoiceDelta `json:"delta"`
+	Delta        ChatCompletionStreamChoiceDelta `json:"delta"`
+	FinishReason string                          `json:"finish_reason,omitempty"`
 }
 
 type ChatCompletionStreamResponse struct {

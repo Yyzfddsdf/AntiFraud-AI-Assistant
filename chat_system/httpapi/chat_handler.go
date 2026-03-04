@@ -60,18 +60,24 @@ func ChatHandle(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	emitSSE := func(eventType string, payload map[string]interface{}) {
+		c.SSEvent(eventType, chatservice.EncodeEvent(payload))
+		c.Writer.Flush()
+	}
 
 	assistantReply, turnMessages, err := service.StreamReply(streamCtx, userID, message, messages, func(event map[string]interface{}) error {
-		c.SSEvent("event", chatservice.EncodeEvent(event))
+		emitSSE("event", event)
 		return nil
 	})
 	if err != nil {
-		c.SSEvent("error", chatservice.EncodeEvent(map[string]interface{}{"error": err.Error()}))
+		emitSSE("error", map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	if err := chatservice.PersistConversation(cfg, userID, turnMessages); err != nil {
-		c.SSEvent("error", chatservice.EncodeEvent(map[string]interface{}{"error": err.Error()}))
+		emitSSE("error", map[string]interface{}{"error": err.Error()})
 		return
 	}
 

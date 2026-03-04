@@ -130,130 +130,49 @@ func BuildMessagesForUser(cfg *chatcfg.Config, userID string, currentUserInput s
 	return messages, nil
 }
 
-// StreamReply 先完成工具调用，再进入纯文本流式回复。
+// StreamReply 使用全流式回合处理：首轮即 stream=true，边接收边向前端推送内容；
+// 若出现 tool_calls，则在参数拼接完成后执行工具并继续下一轮流式请求。
 func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (string, []ConversationMessage, error) {
-	finalMessages, toolMessages, err := s.resolveToolCalls(ctx, userID, messages, emit)
-	if err != nil {
-		return "", nil, err
-	}
-
-	stream, err := s.client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
-		Model:       s.model,
-		Messages:    finalMessages,
-		Stream:      true,
-		MaxTokens:   2048,
-		Temperature: 0.7,
-		TopP:        1.0,
-	})
-	if err != nil {
-		return "", nil, fmt.Errorf("create chat stream failed: %w", err)
-	}
-	defer stream.Close()
-
-	var responseBuilder strings.Builder
-
-	for {
-		resp, recvErr := stream.Recv()
-		if recvErr != nil {
-			if recvErr == io.EOF {
-				break
-			}
-			return "", nil, fmt.Errorf("recv stream failed: %w", recvErr)
-		}
-
-		if len(resp.Choices) == 0 {
-			continue
-		}
-
-		delta := resp.Choices[0].Delta
-		if strings.TrimSpace(delta.Content) == "" && delta.Content == "" {
-			continue
-		}
-
-		responseBuilder.WriteString(delta.Content)
-		if emit != nil {
-			if err := emit(map[string]interface{}{
-				"type":    "content",
-				"content": delta.Content,
-			}); err != nil {
-				return "", nil, err
-			}
-		}
-	}
-
-	if emit != nil {
-		if err := emit(map[string]interface{}{"type": "done", "reason": "stop"}); err != nil {
-			return "", nil, err
-		}
-	}
-
-	finalReply := strings.TrimSpace(responseBuilder.String())
-
-	turnMessages := make([]ConversationMessage, 0, len(toolMessages)+2)
-	turnMessages = append(turnMessages, ConversationMessage{Role: openai.ChatMessageRoleUser, Content: strings.TrimSpace(userInput)})
-	turnMessages = append(turnMessages, toolMessages...)
-	turnMessages = append(turnMessages, ConversationMessage{Role: openai.ChatMessageRoleAssistant, Content: finalReply})
-
-	return finalReply, turnMessages, nil
-}
-
-// resolveToolCalls 通过非流式轮询，执行模型触发的工具调用并回填 tool 消息。
-func (s *ChatService) resolveToolCalls(ctx context.Context, userID string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) ([]openai.ChatCompletionMessage, []ConversationMessage, error) {
 	resolved := append([]openai.ChatCompletionMessage{}, messages...)
 	recorded := make([]ConversationMessage, 0)
 
-	for {
-		resp, err := s.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-			Model:       s.model,
-			Messages:    resolved,
-			Tools:       chattool.ChatTools(),
-			ToolChoice:  "auto",
-			Stream:      false,
-			MaxTokens:   1024,
-			Temperature: 0.3,
-			TopP:        1.0,
-		})
+	const maxRounds = 8
+	for round := 0; round < maxRounds; round++ {
+		assistantMessage, err := s.streamAssistantRound(ctx, resolved, emit)
 		if err != nil {
-			return nil, nil, fmt.Errorf("resolve tool calls failed: %w", err)
+			return "", nil, err
 		}
+		resolved = append(resolved, assistantMessage)
 
-		if len(resp.Choices) == 0 {
-			return resolved, recorded, nil
-		}
+		if len(assistantMessage.ToolCalls) == 0 {
+			if emit != nil {
+				if err := emit(map[string]interface{}{"type": "done", "reason": "stop"}); err != nil {
+					return "", nil, err
+				}
+			}
 
-		msg := resp.Choices[0].Message
-		resolved = append(resolved, openai.ChatCompletionMessage{
-			Role:      openai.ChatMessageRoleAssistant,
-			Content:   msg.Content,
-			ToolCalls: msg.ToolCalls,
-		})
-
-		if len(msg.ToolCalls) == 0 {
-			return resolved, recorded, nil
+			finalReply := strings.TrimSpace(assistantMessage.Content)
+			turnMessages := make([]ConversationMessage, 0, len(recorded)+2)
+			turnMessages = append(turnMessages, ConversationMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: strings.TrimSpace(userInput),
+			})
+			turnMessages = append(turnMessages, recorded...)
+			turnMessages = append(turnMessages, ConversationMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: finalReply,
+			})
+			return finalReply, turnMessages, nil
 		}
 
 		recorded = append(recorded, ConversationMessage{
 			Role:      openai.ChatMessageRoleAssistant,
-			Content:   strings.TrimSpace(msg.Content),
-			ToolCalls: openAIToolCallsToConversation(msg.ToolCalls),
+			Content:   strings.TrimSpace(assistantMessage.Content),
+			ToolCalls: openAIToolCallsToConversation(assistantMessage.ToolCalls),
 		})
 
-		toolResponseAdded := false
-		for _, call := range msg.ToolCalls {
-			handler := chattool.GetChatToolHandler(call.Function.Name)
-			toolPayload := map[string]interface{}{
-				"error": fmt.Sprintf("unsupported tool: %s", call.Function.Name),
-			}
-
-			if handler != nil {
-				result, handleErr := handler.Handle(ctx, userID, call.Function.Arguments)
-				if handleErr != nil {
-					toolPayload = map[string]interface{}{"error": handleErr.Error()}
-				} else {
-					toolPayload = result.Payload
-				}
-			}
-
+		for _, call := range assistantMessage.ToolCalls {
+			toolPayload := s.handleToolCall(ctx, userID, call)
 			if emit != nil {
 				_ = emit(map[string]interface{}{
 					"type": "tool_call",
@@ -279,13 +198,161 @@ func (s *ChatService) resolveToolCalls(ctx context.Context, userID string, messa
 				ToolCallID: call.ID,
 				Content:    string(payloadBytes),
 			})
-			toolResponseAdded = true
-		}
-
-		if !toolResponseAdded {
-			return resolved, recorded, nil
 		}
 	}
+
+	return "", nil, fmt.Errorf("resolve tool calls exceeded max rounds: %d", maxRounds)
+}
+
+func (s *ChatService) streamAssistantRound(ctx context.Context, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (openai.ChatCompletionMessage, error) {
+	stream, err := s.client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
+		Model:       s.model,
+		Messages:    messages,
+		Tools:       chattool.ChatTools(),
+		ToolChoice:  "auto",
+		Stream:      true,
+		MaxTokens:   2048,
+		Temperature: 0.7,
+		TopP:        1.0,
+	})
+	if err != nil {
+		return openai.ChatCompletionMessage{}, fmt.Errorf("create chat stream failed: %w", err)
+	}
+	defer stream.Close()
+
+	var contentBuilder strings.Builder
+	toolCallCollector := newStreamToolCallCollector()
+
+	for {
+		resp, recvErr := stream.Recv()
+		if recvErr != nil {
+			if recvErr == io.EOF {
+				break
+			}
+			return openai.ChatCompletionMessage{}, fmt.Errorf("recv stream failed: %w", recvErr)
+		}
+
+		if len(resp.Choices) == 0 {
+			continue
+		}
+
+		delta := resp.Choices[0].Delta
+		if delta.Content != "" {
+			contentBuilder.WriteString(delta.Content)
+			if emit != nil {
+				if err := emit(map[string]interface{}{
+					"type":    "content",
+					"content": delta.Content,
+				}); err != nil {
+					return openai.ChatCompletionMessage{}, err
+				}
+			}
+		}
+		if len(delta.ToolCalls) > 0 {
+			toolCallCollector.Append(delta.ToolCalls)
+		}
+	}
+
+	return openai.ChatCompletionMessage{
+		Role:      openai.ChatMessageRoleAssistant,
+		Content:   contentBuilder.String(),
+		ToolCalls: toolCallCollector.ToolCalls(),
+	}, nil
+}
+
+func (s *ChatService) handleToolCall(ctx context.Context, userID string, call openai.ToolCall) map[string]interface{} {
+	toolPayload := map[string]interface{}{
+		"error": fmt.Sprintf("unsupported tool: %s", call.Function.Name),
+	}
+
+	handler := chattool.GetChatToolHandler(call.Function.Name)
+	if handler == nil {
+		return toolPayload
+	}
+
+	result, err := handler.Handle(ctx, userID, call.Function.Arguments)
+	if err != nil {
+		return map[string]interface{}{"error": err.Error()}
+	}
+	return result.Payload
+}
+
+type streamToolCallCollector struct {
+	calls   map[int]*openai.ToolCall
+	order   []int
+	lastIdx int
+	hasLast bool
+}
+
+func newStreamToolCallCollector() *streamToolCallCollector {
+	return &streamToolCallCollector{
+		calls: map[int]*openai.ToolCall{},
+		order: make([]int, 0),
+	}
+}
+
+func (c *streamToolCallCollector) Append(deltas []openai.ChatCompletionStreamToolCallDelta) {
+	for _, delta := range deltas {
+		idx := c.resolveIndex(delta.Index)
+		call := c.ensure(idx)
+
+		if strings.TrimSpace(delta.ID) != "" {
+			call.ID = delta.ID
+		}
+		if strings.TrimSpace(delta.Type) != "" {
+			call.Type = delta.Type
+		}
+		if delta.Function != nil {
+			if strings.TrimSpace(delta.Function.Name) != "" {
+				call.Function.Name = delta.Function.Name
+			}
+			if delta.Function.Arguments != "" {
+				call.Function.Arguments += delta.Function.Arguments
+			}
+		}
+	}
+}
+
+func (c *streamToolCallCollector) ToolCalls() []openai.ToolCall {
+	result := make([]openai.ToolCall, 0, len(c.order))
+	for _, idx := range c.order {
+		call := *c.calls[idx]
+		if strings.TrimSpace(call.Type) == "" {
+			call.Type = openai.ToolTypeFunction
+		}
+		if strings.TrimSpace(call.ID) == "" {
+			call.ID = fmt.Sprintf("tool_call_%d", idx)
+		}
+		result = append(result, call)
+	}
+	return result
+}
+
+func (c *streamToolCallCollector) resolveIndex(index *int) int {
+	if index != nil {
+		c.lastIdx = *index
+		c.hasLast = true
+		return *index
+	}
+	if c.hasLast {
+		return c.lastIdx
+	}
+	if len(c.order) > 0 {
+		return c.order[len(c.order)-1]
+	}
+	return 0
+}
+
+func (c *streamToolCallCollector) ensure(index int) *openai.ToolCall {
+	if call, ok := c.calls[index]; ok {
+		return call
+	}
+	call := &openai.ToolCall{
+		Type: openai.ToolTypeFunction,
+	}
+	c.calls[index] = call
+	c.order = append(c.order, index)
+	return call
 }
 
 // PersistConversation 将本轮新增消息追加写入 Redis，并重置 TTL。
