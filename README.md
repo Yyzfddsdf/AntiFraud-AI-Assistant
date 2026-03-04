@@ -292,6 +292,15 @@ flowchart LR
 - Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟
 - 会话可刷新：`POST /api/chat/refresh`
 
+### 9.6 用户风险趋势总览（创新点）
+
+- 新增用户风险总览聚合层：`multi_agent/overview/`，直接复用历史案件数据（`GetCaseHistory`）生成轻量总览。
+- 面向“运营看盘 + 用户自查”场景，输出两类核心信息：
+  - 风险变化趋势：按时间桶聚合（`day/week/month`）统计每个时间段的 `high/medium/low/total`。
+  - 风险等级统计：返回用户历史总体 `high/medium/low/total` 数量，便于快速判断风险结构。
+- 接口：`GET /api/scam/multimodal/history/overview?interval=day|week|month`
+- 设计目标：与案件明细查询解耦，总览接口可独立扩展为报表、看板、告警订阅等上层业务能力。
+
 ---
 
 ## 10. 安全与权限
