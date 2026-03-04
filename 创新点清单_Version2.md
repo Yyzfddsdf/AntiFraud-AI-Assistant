@@ -3,10 +3,10 @@
 ## 🟢 简单
 
 ### 1. 用户风险趋势
-- **实现方式**：遍历 `GetCaseHistory()`，按时间排序聚合每条记录的风险等级，新增 `GET /api/user/risk-trend` 接口返回趋势数组和趋势方向（上升/下降/平稳）已补充API为集成到tool里
+- **实现方式**：遍历 `GetCaseHistory()`，按时间排序聚合每条记录的风险等级，新增 `GET /api/user/risk-trend` 接口返回趋势数组和趋势方向（上升/下降/平稳）已补充API，未集成到tool里
 
 ### 2. 案件时序热力图
-- **实现方式**：对 `historical_case_library` 表按 `created_at` 月份 + `scam_type` 做 SQL 聚合查询，新增管理员接口 `GET /api/scam/case-library/stats/heatmap` 返回各月各类型案件数量
+- **实现方式**：对 `historical_case_library` 表按 `created_at` 月份 + `scam_type` 做 SQL 聚合查询，新增管理员接口 `GET /api/scam/case-library/stats/heatmap` 返回各月各类型案件数量 已完成
 
 ### 3. 防诈知识库问答
 - **实现方式**：在 Chat 工具列表中加入 `search_similar_cases` 工具，更新系统提示词，使模型在用户询问诈骗知识时主动调用案件库检索并以知识问答形式回答 已完成

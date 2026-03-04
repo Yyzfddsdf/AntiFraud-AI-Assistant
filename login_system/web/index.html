@@ -921,6 +921,24 @@
                                 <div v-if="parseReport(selectedTask.report).length === 0" class="prose prose-sm prose-slate max-w-none">
                                     <pre class="whitespace-pre-wrap font-sans">{{ selectedTask.report }}</pre>
                                 </div>
+
+                                <div v-if="extractAttackSteps(selectedTask.report).length > 0" class="pt-5 mt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="w-1.5 h-4 bg-rose-500 rounded-full"></span>
+                                        <h5 class="text-sm font-bold text-slate-800">诈骗链路时间线</h5>
+                                    </div>
+                                    <div class="relative pl-8 space-y-4">
+                                        <div class="absolute left-[11px] top-1 bottom-1 w-px bg-rose-100"></div>
+                                        <div v-for="(step, idx) in extractAttackSteps(selectedTask.report)" :key="'attack-step-'+idx" class="relative">
+                                            <span class="absolute -left-8 top-0.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
+                                                {{ idx + 1 }}
+                                            </span>
+                                            <div class="bg-rose-50/60 border border-rose-100 rounded-xl px-3 py-2">
+                                                <p class="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">{{ step }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>

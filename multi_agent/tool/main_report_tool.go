@@ -20,6 +20,7 @@ type FinalReportPayload struct {
 	RiskLevel    string   `json:"risk_level"`
 	RiskReason   string   `json:"risk_reason"`
 	NextActions  []string `json:"next_actions"`
+	AttackSteps  []string `json:"attack_steps"`
 }
 
 var FinalReportTool = openai.Tool{
@@ -69,6 +70,11 @@ var FinalReportTool = openai.Tool{
 					"items":       map[string]string{"type": "string"},
 					"description": "建议的下一步核查动作。",
 				},
+				"attack_steps": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]string{"type": "string"},
+					"description": "诈骗链路步骤，按时间顺序列出从诱导到收尾的关键行为。",
+				},
 			},
 			"required": []string{
 				"summary",
@@ -80,6 +86,7 @@ var FinalReportTool = openai.Tool{
 				"risk_level",
 				"risk_reason",
 				"next_actions",
+				"attack_steps",
 			},
 		},
 	},
@@ -91,6 +98,9 @@ func ParseFinalReportPayload(arguments string) (FinalReportPayload, error) {
 
 func FormatFinalReport(payload FinalReportPayload) string {
 	riskLevel := normalizeFinalReportRiskLevel(payload.RiskLevel)
+	riskSignals := sanitizeNonEmptyList(payload.RiskSignals)
+	nextActions := sanitizeNonEmptyList(payload.NextActions)
+	attackSteps := sanitizeNonEmptyList(payload.AttackSteps)
 
 	var report strings.Builder
 	report.WriteString("1. 综合摘要\n")
@@ -106,14 +116,10 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	report.WriteString(strings.TrimSpace(payload.AudioFinding))
 
 	report.WriteString("\n\n3. 风险信号\n")
-	if len(payload.RiskSignals) == 0 {
+	if len(riskSignals) == 0 {
 		report.WriteString("- 未发现明确风险信号\n")
 	} else {
-		for _, signal := range payload.RiskSignals {
-			signal = strings.TrimSpace(signal)
-			if signal == "" {
-				continue
-			}
+		for _, signal := range riskSignals {
 			report.WriteString("- ")
 			report.WriteString(signal)
 			report.WriteString("\n")
@@ -127,21 +133,40 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	report.WriteString(strings.TrimSpace(payload.RiskReason))
 
 	report.WriteString("\n\n5. 建议的下一步动作\n")
-	if len(payload.NextActions) == 0 {
+	if len(nextActions) == 0 {
 		report.WriteString("- 补充上下文信息后再次核验\n")
 	} else {
-		for _, action := range payload.NextActions {
-			action = strings.TrimSpace(action)
-			if action == "" {
-				continue
-			}
+		for _, action := range nextActions {
 			report.WriteString("- ")
 			report.WriteString(action)
 			report.WriteString("\n")
 		}
 	}
 
+	report.WriteString("\n6. 诈骗链路还原\n")
+	if len(attackSteps) == 0 {
+		report.WriteString("- 证据不足，暂无法还原完整诈骗链路\n")
+	} else {
+		for _, step := range attackSteps {
+			report.WriteString("- ")
+			report.WriteString(step)
+			report.WriteString("\n")
+		}
+	}
+
 	return strings.TrimSpace(report.String())
+}
+
+func sanitizeNonEmptyList(items []string) []string {
+	cleaned := make([]string, 0, len(items))
+	for _, item := range items {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		cleaned = append(cleaned, trimmed)
+	}
+	return cleaned
 }
 
 func normalizeFinalReportRiskLevel(raw string) string {
