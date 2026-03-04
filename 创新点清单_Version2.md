@@ -16,7 +16,7 @@
 ## 🟡 中等
 
 ### 4. 诈骗链路还原
-- **实现方式**：在 `submit_final_report` 的 JSON schema 中新增 `attack_steps: []string` 字段，更新主智能体提示词要求输出骗局步骤，前端渲染成时间线展示
+- **实现方式**：在 `submit_final_report` 的 JSON schema 中新增 `attack_steps: []string` 字段，更新主智能体提示词要求输出骗局步骤，前端渲染成时间线展示  已完成
 
 ### 5. 关键词风险标注
 - **实现方式**：在 `submit_final_report` schema 中新增 `risk_tokens: [{text, risk_level}]` 字段，主智能体分析完成后对原文中的高危词汇进行标注并返回，前端高亮渲染

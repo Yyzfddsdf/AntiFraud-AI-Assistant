@@ -99,28 +99,18 @@ func QueryUserHistoryCases(ctx context.Context) ([]string, error) {
 
 	results := make([]string, 0, len(history))
 	for _, record := range history {
-		videoInsights := "none"
-		if len(record.Payload.VideoInsights) > 0 {
-			videoInsights = strings.Join(record.Payload.VideoInsights, "; ")
-		}
-		audioInsights := "none"
-		if len(record.Payload.AudioInsights) > 0 {
-			audioInsights = strings.Join(record.Payload.AudioInsights, "; ")
-		}
-		imageInsights := "none"
-		if len(record.Payload.ImageInsights) > 0 {
-			imageInsights = strings.Join(record.Payload.ImageInsights, "; ")
+		report := strings.TrimSpace(record.Report)
+		if report == "" {
+			report = "none"
 		}
 
 		results = append(results, fmt.Sprintf(
-			"%s | title: %s | summary: %s | risk: %s | video: %s | audio: %s | image: %s",
+			"%s | title: %s | summary: %s | risk: %s | report: %s",
 			record.CreatedAt.Format("2006-01-02 15:04:05"),
 			record.Title,
 			record.CaseSummary,
 			record.RiskLevel,
-			videoInsights,
-			audioInsights,
-			imageInsights,
+			report,
 		))
 	}
 	return results, nil
