@@ -1,4 +1,4 @@
-package httpapi
+package models
 
 // MultimodalScamAnalyzeRequest 多模态诈骗智能助手请求体。
 type MultimodalScamAnalyzeRequest struct {

@@ -1,4 +1,4 @@
-package httpapi
+package models
 
 // CreateHistoricalCaseRequest 上传历史案件请求体。
 type CreateHistoricalCaseRequest struct {

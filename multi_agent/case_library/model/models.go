@@ -51,6 +51,7 @@ type HistoricalCasePreview struct {
 	TargetGroup string
 	RiskLevel   string
 	ScamType    string
+	CreatedAt   time.Time
 }
 
 // HistoricalCaseEntity 是 historical_case_library 表 ORM 映射实体。

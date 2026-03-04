@@ -135,6 +135,7 @@ func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
 			TargetGroup: strings.TrimSpace(row.TargetGroup),
 			RiskLevel:   normalizedRiskLevel,
 			ScamType:    strings.TrimSpace(row.ScamType),
+			CreatedAt:   row.CreatedAt,
 		})
 	}
 	return previews, nil

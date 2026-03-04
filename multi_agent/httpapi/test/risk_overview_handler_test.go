@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	httpapi "antifraud/multi_agent/httpapi"
+	apimodel "antifraud/multi_agent/httpapi/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,7 +57,7 @@ func TestGetMultimodalRiskOverviewHandle_Success(t *testing.T) {
 		t.Fatalf("unexpected status: got=%d want=%d", resp.Code, http.StatusOK)
 	}
 
-	var payload httpapi.MultimodalRiskOverviewResponse
+	var payload apimodel.MultimodalRiskOverviewResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode response failed: %v", err)
 	}

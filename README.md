@@ -301,6 +301,16 @@ flowchart LR
 - 接口：`GET /api/scam/multimodal/history/overview?interval=day|week|month`
 - 设计目标：与案件明细查询解耦，总览接口可独立扩展为报表、看板、告警订阅等上层业务能力。
 
+### 9.7 历史案件库运营统计总览（创新点）
+
+- 在 `multi_agent/httpapi/historical_case_statistics_*` 中新增管理员统计聚合能力，直接使用历史案件预览接口数据（`ListHistoricalCasePreviews`）做轻量聚合。
+- 面向“案件库运营/知识库治理”场景，返回多维度统计：
+  - 按诈骗类型统计：`by_scam_type`
+  - 按目标人群统计：`by_target_group`
+  - 按时间粒度趋势：`trend`（支持 `day/week/month`）
+- 接口：`GET /api/scam/case-library/cases/overview?interval=day|week|month`
+- 权限要求：仅管理员可访问（挂载在 `AdminMiddleware` 路由组下）。
+
 ---
 
 ## 10. 安全与权限

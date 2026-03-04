@@ -46,6 +46,15 @@ createApp({
         let pieChartInstance = null;
         let lineChartInstance = null;
 
+        // Admin Stats State
+        const adminStatsInterval = ref('day');
+        const adminStatsData = ref(null);
+        // Cache for admin stats: { 'day': data, 'week': data, 'month': data }
+        const adminStatsCache = reactive({});
+        let adminTrendChart = null;
+        let adminTypeChart = null;
+        let adminTargetChart = null;
+
         // Draggable Chat State
         const chatPosition = reactive({ left: 0, top: 0 });
         const isDragging = ref(false);
@@ -637,6 +646,165 @@ createApp({
             }
         };
 
+        const formatAdminChartLabel = (label) => {
+            const interval = adminStatsInterval.value;
+            if (interval === 'week' && label.includes('-W')) {
+                try {
+                    const [yearStr, weekStr] = label.split('-W');
+                    const year = parseInt(yearStr);
+                    const week = parseInt(weekStr);
+                    const jan4 = new Date(year, 0, 4);
+                    const jan4Day = jan4.getDay() || 7; 
+                    const week1Start = new Date(year, 0, 4 - jan4Day + 1);
+                    const start = new Date(week1Start.getTime() + (week - 1) * 7 * 86400000);
+                    const end = new Date(start.getTime() + 6 * 86400000);
+                    const fmt = d => `${d.getMonth() + 1}.${d.getDate()}`;
+                    return `${year}年第${week}周 (${fmt(start)}-${fmt(end)})`;
+                } catch (e) {
+                    return label;
+                }
+            }
+            if (interval === 'month' && /^\d{4}-\d{2}$/.test(label)) {
+                const [y, m] = label.split('-');
+                return `${y}年${parseInt(m)}月`;
+            }
+            return label;
+        };
+
+        const fetchAdminStats = async (forceRefresh = false) => {
+            if (!isAuthenticated.value || user.value.role !== 'admin') return;
+
+            const interval = adminStatsInterval.value;
+            
+            // 1. Check Cache
+            if (adminStatsCache[interval]) {
+                adminStatsData.value = adminStatsCache[interval];
+                setTimeout(() => renderAdminCharts(), 0);
+            }
+
+            // 2. Silent Update
+            try {
+                const res = await request(`/scam/case-library/cases/overview?interval=${interval}`, 'GET', null, { silent: true });
+                if (res) {
+                    const cachedData = adminStatsCache[interval];
+                    const hasChanged = !cachedData || stableJSONStringify(cachedData) !== stableJSONStringify(res);
+
+                    if (hasChanged || forceRefresh) {
+                        adminStatsData.value = res;
+                        adminStatsCache[interval] = res;
+                        setTimeout(() => renderAdminCharts(), 100);
+                        if (forceRefresh) showToast('全景数据已更新');
+                    }
+                }
+            } catch (e) {
+                console.error('Fetch admin stats failed:', e);
+            }
+        };
+
+        const renderAdminCharts = () => {
+            if (!adminStatsData.value) return;
+            const { trend, by_scam_type, by_target_group } = adminStatsData.value;
+
+            // Destroy old charts
+            if (adminTrendChart) adminTrendChart.destroy();
+            if (adminTypeChart) adminTypeChart.destroy();
+            if (adminTargetChart) adminTargetChart.destroy();
+
+            // 1. Trend Line Chart
+            const trendCtx = document.getElementById('adminTrendChart');
+            if (trendCtx) {
+                adminTrendChart = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: trend.map(item => formatAdminChartLabel(item.time_bucket)),
+                        datasets: [{
+                            label: '新增案件数',
+                            data: trend.map(item => item.count),
+                            borderColor: '#6366f1', // Indigo-500
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `新增案件: ${ctx.raw} 例`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Scam Type Pie Chart
+            const typeCtx = document.getElementById('adminTypeChart');
+            if (typeCtx) {
+                // Generate colors dynamically based on count
+                const colors = [
+                    '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
+                    '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'
+                ];
+                
+                adminTypeChart = new Chart(typeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: by_scam_type.map(i => i.name),
+                        datasets: [{
+                            data: by_scam_type.map(i => i.count),
+                            backgroundColor: colors.slice(0, by_scam_type.length),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // 3. Target Group Pie Chart
+            const targetCtx = document.getElementById('adminTargetChart');
+            if (targetCtx) {
+                const targetColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
+                
+                adminTargetChart = new Chart(targetCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: by_target_group.map(i => i.name),
+                        datasets: [{
+                            data: by_target_group.map(i => i.count),
+                            backgroundColor: targetColors.slice(0, by_target_group.length),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+        };
+
         watch(activeTab, (newTab) => {
             if (newTab === 'case_library') {
                 fetchCaseLibrary();
@@ -646,6 +814,7 @@ createApp({
             if (newTab === 'history') fetchHistory();
             if (newTab === 'tasks') fetchTasks();
             if (newTab === 'risk_trend') fetchRiskTrend();
+            if (newTab === 'admin_stats') fetchAdminStats();
         });
 
         // Polling
@@ -1146,7 +1315,8 @@ createApp({
             isSidebarCollapsed, toggleSidebar,
             parseReport, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
-            riskInterval, fetchRiskTrend, riskData
+            riskInterval, fetchRiskTrend, riskData,
+            adminStatsInterval, fetchAdminStats, adminStatsData
         };
     }
 }).mount('#app');

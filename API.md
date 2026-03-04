@@ -1205,7 +1205,73 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases" \
 
 ---
 
-## 18.1) 获取可选诈骗类型列表（仅管理员）
+## 18.1) 历史案件库统计总览（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/cases/overview`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### Query 参数
+
+- `interval`（可选）：时间聚合粒度，支持 `day`、`week`、`month`，默认 `day`。
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 该接口基于 `ListHistoricalCasePreviews` 进行聚合，适用于后台总览看板。
+- 返回三类信息：
+  - 时间趋势统计（`trend`）：按 `interval` 聚合每个时间桶的案件数量；
+  - 按诈骗类型统计（`by_scam_type`）；
+  - 按目标人群统计（`by_target_group`）。
+
+### 成功响应（200）
+
+```json
+{
+  "interval": "week",
+  "total": 12,
+  "by_scam_type": [
+    {"name": "冒充客服类", "count": 5},
+    {"name": "刷单返利类", "count": 4},
+    {"name": "未知", "count": 3}
+  ],
+  "by_target_group": [
+    {"name": "老人", "count": 7},
+    {"name": "青年", "count": 5}
+  ],
+  "trend": [
+    {"time_bucket": "2026-W08", "count": 3},
+    {"time_bucket": "2026-W09", "count": 6},
+    {"time_bucket": "2026-W10", "count": 3}
+  ]
+}
+```
+
+### 时间桶格式
+
+- `day`：`YYYY-MM-DD`
+- `week`：`YYYY-Www`（ISO 周，例如 `2026-W10`）
+- `month`：`YYYY-MM`
+
+### 常见失败响应
+
+- `400` `interval` 非法（仅支持 `day/week/month`）
+- `401` 未认证
+- `403` 权限不足（非管理员）
+- `500` 统计查询失败
+
+### cURL 示例
+
+```bash
+curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval=week" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
+## 18.2) 获取可选诈骗类型列表（仅管理员）
 
 - **Method**: `GET`
 - **Path**: `/api/scam/case-library/options/scam-types`
@@ -1238,7 +1304,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases" \
 
 ---
 
-## 18.2) 获取可选目标人群列表（仅管理员）
+## 18.3) 获取可选目标人群列表（仅管理员）
 
 - **Method**: `GET`
 - **Path**: `/api/scam/case-library/options/target-groups`

@@ -157,6 +157,12 @@
                         <div v-if="!isSidebarCollapsed" class="text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-3 mt-8 transition-opacity duration-200">管理员功能</div>
                         <div v-else class="h-6 mt-8"></div>
                         
+                        <button @click="activeTab = 'admin_stats'" :class="['w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'admin_stats' ? 'bg-brand-50/80 text-brand-700 shadow-sm ring-1 ring-brand-100/50' : 'text-slate-600 hover:bg-white/30 hover:text-slate-900']" :title="isSidebarCollapsed ? '全景分析' : ''">
+                            <svg class="w-5 h-5 min-w-[20px] transition-colors" :class="activeTab === 'admin_stats' ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">全景分析</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">全景分析</div>
+                        </button>
+                        
                         <button @click="activeTab = 'users'" :class="['w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'users' ? 'bg-brand-50/80 text-brand-700 shadow-sm ring-1 ring-brand-100/50' : 'text-slate-600 hover:bg-white/30 hover:text-slate-900']" :title="isSidebarCollapsed ? '用户权限管理' : ''">
                             <svg class="w-5 h-5 min-w-[20px] transition-colors" :class="activeTab === 'users' ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                             <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">用户权限管理</span>
@@ -555,6 +561,61 @@
                             </h3>
                             <div class="relative h-64 w-full">
                                 <canvas id="riskLineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users View (Admin Only) -->
+                <div v-if="activeTab === 'admin_stats' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">案件库全景分析</h1>
+                            <p class="text-slate-500 mt-2">系统全局案件数据统计与趋势洞察</p>
+                        </div>
+                        <div class="flex bg-slate-100 p-1 rounded-lg">
+                            <button @click="adminStatsInterval = 'day'; fetchAdminStats()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', adminStatsInterval === 'day' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">日</button>
+                            <button @click="adminStatsInterval = 'week'; fetchAdminStats()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', adminStatsInterval === 'week' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">周</button>
+                            <button @click="adminStatsInterval = 'month'; fetchAdminStats()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', adminStatsInterval === 'month' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">月</button>
+                            <button @click="fetchAdminStats(true)" class="px-2 py-1.5 text-slate-400 hover:text-brand-600 ml-1 transition-colors" title="刷新数据">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <!-- Trend Line Chart -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-brand-500 rounded-full"></span>
+                                案件入库趋势
+                            </h3>
+                            <div class="relative h-72 w-full">
+                                <canvas id="adminTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Scam Type Pie Chart -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                                诈骗类型分布
+                            </h3>
+                            <div class="relative h-64 w-full flex items-center justify-center">
+                                <canvas id="adminTypeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Target Group Pie Chart -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
+                                目标人群分布
+                            </h3>
+                            <div class="relative h-64 w-full flex items-center justify-center">
+                                <canvas id="adminTargetChart"></canvas>
                             </div>
                         </div>
                     </div>

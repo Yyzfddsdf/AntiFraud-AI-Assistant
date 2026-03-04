@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"antifraud/database"
-	"antifraud/login_system/models"
+	loginmodel "antifraud/login_system/models"
+	apimodel "antifraud/multi_agent/httpapi/models"
 	"antifraud/multi_agent/queue"
 	"antifraud/multi_agent/state"
 
@@ -17,7 +18,7 @@ import (
 
 // AnalyzeMultimodalScamHandle 处理多模态诈骗智能助手分析请求。
 func AnalyzeMultimodalScamHandle(c *gin.Context) {
-	var payload MultimodalScamAnalyzeRequest
+	var payload apimodel.MultimodalScamAnalyzeRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
 		return
@@ -44,7 +45,7 @@ func AnalyzeMultimodalScamHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusAccepted, MultimodalScamEnqueueResponse{
+	c.JSON(http.StatusAccepted, apimodel.MultimodalScamEnqueueResponse{
 		TaskID:  task.TaskID,
 		Status:  task.Status,
 		Message: "任务已入队，后台处理中，请通过查询接口获取状态与结果",
@@ -55,7 +56,7 @@ func AnalyzeMultimodalScamHandle(c *gin.Context) {
 func GetMultimodalTaskStateHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
 	view := queue.GetUserTaskState(userID)
-	tasks := make([]MultimodalTaskListItem, 0, len(view.Pending))
+	tasks := make([]apimodel.MultimodalTaskListItem, 0, len(view.Pending))
 
 	for _, task := range view.Pending {
 		tasks = append(tasks, toTaskListItem(task))
@@ -65,7 +66,7 @@ func GetMultimodalTaskStateHandle(c *gin.Context) {
 		return tasks[i].UpdatedAt > tasks[j].UpdatedAt
 	})
 
-	c.JSON(http.StatusOK, MultimodalTaskStateResponse{
+	c.JSON(http.StatusOK, apimodel.MultimodalTaskStateResponse{
 		UserID: view.UserID,
 		Tasks:  tasks,
 	})
@@ -76,9 +77,9 @@ func GetMultimodalHistoryHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
 	view := queue.GetUserTaskState(userID)
 
-	history := make([]MultimodalHistoryItem, 0, len(view.History))
+	history := make([]apimodel.MultimodalHistoryItem, 0, len(view.History))
 	for _, item := range view.History {
-		history = append(history, MultimodalHistoryItem{
+		history = append(history, apimodel.MultimodalHistoryItem{
 			RecordID:    item.RecordID,
 			Title:       item.Title,
 			CaseSummary: item.CaseSummary,
@@ -87,7 +88,7 @@ func GetMultimodalHistoryHandle(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, MultimodalHistoryResponse{
+	c.JSON(http.StatusOK, apimodel.MultimodalHistoryResponse{
 		UserID:  view.UserID,
 		History: history,
 	})
@@ -112,7 +113,7 @@ func DeleteMultimodalHistoryHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, DeleteMultimodalHistoryResponse{
+	c.JSON(http.StatusOK, apimodel.DeleteMultimodalHistoryResponse{
 		UserID:   userID,
 		RecordID: recordID,
 		Message:  "历史案件删除成功",
@@ -134,12 +135,12 @@ func GetMultimodalTaskDetailHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, MultimodalTaskDetailResponse{Task: toTaskItem(task)})
+	c.JSON(http.StatusOK, apimodel.MultimodalTaskDetailResponse{Task: toTaskItem(task)})
 }
 
 // UpdateUserAgeHandle 更新当前登录用户年龄（写入 user 基础数据 DB）。
 func UpdateUserAgeHandle(c *gin.Context) {
-	var payload UpdateUserAgeRequest
+	var payload apimodel.UpdateUserAgeRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
 		return
@@ -151,12 +152,12 @@ func UpdateUserAgeHandle(c *gin.Context) {
 	}
 
 	userID := getCurrentUserID(c)
-	if err := database.DB.Model(&models.User{}).Where("id = ?", userID).Update("age", payload.Age).Error; err != nil {
+	if err := database.DB.Model(&loginmodel.User{}).Where("id = ?", userID).Update("age", payload.Age).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "年龄写入失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, UpdateUserAgeResponse{
+	c.JSON(http.StatusOK, apimodel.UpdateUserAgeResponse{
 		UserID:  userID,
 		Age:     payload.Age,
 		Message: "年龄更新成功",
@@ -164,15 +165,15 @@ func UpdateUserAgeHandle(c *gin.Context) {
 }
 
 // toTaskItem 将内部任务结构转换为 API 任务详情结构。
-func toTaskItem(task state.TaskRecord) MultimodalTaskItem {
-	return MultimodalTaskItem{
+func toTaskItem(task state.TaskRecord) apimodel.MultimodalTaskItem {
+	return apimodel.MultimodalTaskItem{
 		TaskID:    task.TaskID,
 		UserID:    task.UserID,
 		Title:     task.Title,
 		Status:    task.Status,
 		CreatedAt: task.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: task.UpdatedAt.Format(time.RFC3339),
-		Payload: MultimodalTaskPayload{
+		Payload: apimodel.MultimodalTaskPayload{
 			Text:          task.Payload.Text,
 			Videos:        append([]string{}, task.Payload.Videos...),
 			Audios:        append([]string{}, task.Payload.Audios...),
@@ -189,8 +190,8 @@ func toTaskItem(task state.TaskRecord) MultimodalTaskItem {
 }
 
 // toTaskListItem 将内部任务结构转换为任务列表项结构。
-func toTaskListItem(task state.TaskRecord) MultimodalTaskListItem {
-	return MultimodalTaskListItem{
+func toTaskListItem(task state.TaskRecord) apimodel.MultimodalTaskListItem {
+	return apimodel.MultimodalTaskListItem{
 		TaskID:    task.TaskID,
 		UserID:    task.UserID,
 		Title:     task.Title,

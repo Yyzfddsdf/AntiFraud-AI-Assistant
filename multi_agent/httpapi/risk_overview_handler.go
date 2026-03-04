@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	apimodel "antifraud/multi_agent/httpapi/models"
 	"antifraud/multi_agent/overview"
 
 	"github.com/gin-gonic/gin"
@@ -23,9 +24,9 @@ func GetMultimodalRiskOverviewHandle(c *gin.Context) {
 	userID := getCurrentUserID(c)
 	result := overview.BuildUserRiskOverview(userID, normalized)
 
-	trend := make([]MultimodalRiskTrendItem, 0, len(result.Trend))
+	trend := make([]apimodel.MultimodalRiskTrendItem, 0, len(result.Trend))
 	for _, point := range result.Trend {
-		trend = append(trend, MultimodalRiskTrendItem{
+		trend = append(trend, apimodel.MultimodalRiskTrendItem{
 			TimeBucket: point.TimeBucket,
 			High:       point.High,
 			Medium:     point.Medium,
@@ -34,8 +35,8 @@ func GetMultimodalRiskOverviewHandle(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, MultimodalRiskOverviewResponse{
-		Stats: MultimodalRiskLevelStats{
+	c.JSON(http.StatusOK, apimodel.MultimodalRiskOverviewResponse{
+		Stats: apimodel.MultimodalRiskLevelStats{
 			High:   result.Stats.High,
 			Medium: result.Stats.Medium,
 			Low:    result.Stats.Low,

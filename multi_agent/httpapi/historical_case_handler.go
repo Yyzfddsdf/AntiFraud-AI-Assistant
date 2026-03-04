@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"antifraud/multi_agent/case_library"
+	apimodel "antifraud/multi_agent/httpapi/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +14,7 @@ import (
 // CreateHistoricalCaseHandle 上传历史案件并自动生成 embedding 向量后入库。
 // 数据会写入独立的 historical_case_library.db，不占用现有业务数据库文件。
 func CreateHistoricalCaseHandle(c *gin.Context) {
-	var payload CreateHistoricalCaseRequest
+	var payload apimodel.CreateHistoricalCaseRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
 		return
@@ -44,9 +45,9 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, CreateHistoricalCaseResponse{
+	c.JSON(http.StatusCreated, apimodel.CreateHistoricalCaseResponse{
 		Message: "historical case stored",
-		Case: HistoricalCaseItem{
+		Case: apimodel.HistoricalCaseItem{
 			CaseID:             record.CaseID,
 			CreatedBy:          strings.TrimSpace(record.CreatedBy),
 			Title:              record.Title,
@@ -65,7 +66,6 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 	})
 }
 
-
 // GetHistoricalCasePreviewHandle 返回历史案件预览列表。
 // 仅包含标题、目标人群、风险等级以及 case_id（便于前端点详情）。
 func GetHistoricalCasePreviewHandle(c *gin.Context) {
@@ -75,9 +75,9 @@ func GetHistoricalCasePreviewHandle(c *gin.Context) {
 		return
 	}
 
-	items := make([]HistoricalCasePreviewItem, 0, len(previews))
+	items := make([]apimodel.HistoricalCasePreviewItem, 0, len(previews))
 	for _, preview := range previews {
-		items = append(items, HistoricalCasePreviewItem{
+		items = append(items, apimodel.HistoricalCasePreviewItem{
 			CaseID:      preview.CaseID,
 			Title:       preview.Title,
 			TargetGroup: preview.TargetGroup,
@@ -86,7 +86,7 @@ func GetHistoricalCasePreviewHandle(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, HistoricalCasePreviewResponse{
+	c.JSON(http.StatusOK, apimodel.HistoricalCasePreviewResponse{
 		Total: len(items),
 		Cases: items,
 	})
@@ -110,8 +110,8 @@ func GetHistoricalCaseDetailHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, HistoricalCaseDetailResponse{
-		Case: HistoricalCaseDetailItem{
+	c.JSON(http.StatusOK, apimodel.HistoricalCaseDetailResponse{
+		Case: apimodel.HistoricalCaseDetailItem{
 			CaseID:             record.CaseID,
 			CreatedBy:          strings.TrimSpace(record.CreatedBy),
 			Title:              record.Title,
@@ -150,7 +150,7 @@ func DeleteHistoricalCaseHandle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, DeleteHistoricalCaseResponse{
+	c.JSON(http.StatusOK, apimodel.DeleteHistoricalCaseResponse{
 		CaseID:  caseID,
 		Message: "historical case deleted",
 	})
