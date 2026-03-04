@@ -274,7 +274,63 @@
 
 ---
 
-## 删除当前用户历史案件（需鉴权）
+## 8.1) 查询当前用户风险总览（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/multimodal/history/overview`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### Query 参数
+
+- `interval`（可选）：时间聚合粒度，支持 `day`、`week`、`month`，默认 `day`。
+
+### 成功响应（200）
+
+```json
+{
+  "stats": {
+    "high": 3,
+    "medium": 5,
+    "low": 2,
+    "total": 10
+  },
+  "trend": [
+    {
+      "time_bucket": "2026-03-01",
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "total": 3
+    },
+    {
+      "time_bucket": "2026-03-02",
+      "high": 2,
+      "medium": 1,
+      "low": 1,
+      "total": 4
+    }
+  ]
+}
+```
+
+### 说明
+
+- 该接口直接基于 `GetCaseHistory` 聚合，返回“风险变化趋势 + 高中低数量统计”两类总览信息。
+- `time_bucket` 格式：
+  - `day`：`YYYY-MM-DD`
+  - `week`：`YYYY-Www`（ISO 周，例如 `2026-W10`）
+  - `month`：`YYYY-MM`
+
+### 常见失败响应
+
+- `400` `interval` 非法（仅支持 `day/week/month`）
+- `401` 未认证
+
+---
+
+## 8.2) 删除当前用户历史案件（需鉴权）
 
 - **Method**: `DELETE`
 - **Path**: `/api/scam/multimodal/history/:recordId`
@@ -838,11 +894,12 @@ GET /api/users?query=admin
 6. `POST /api/scam/multimodal/analyze`
 7. `GET /api/scam/multimodal/tasks`
 8. `GET /api/scam/multimodal/history`
-9. `GET /api/scam/multimodal/tasks/:taskId`
-10. `POST /api/chat`
-11. `GET /api/chat/context`
-12. `POST /api/chat/refresh`
-13. `DELETE /api/user`
+9. `GET /api/scam/multimodal/history/overview`
+10. `GET /api/scam/multimodal/tasks/:taskId`
+11. `POST /api/chat`
+12. `GET /api/chat/context`
+13. `POST /api/chat/refresh`
+14. `DELETE /api/user`
 
 ---
 
@@ -941,6 +998,13 @@ curl -X GET "http://localhost:8081/api/scam/multimodal/tasks/<TASK_ID>" \
 
 ```bash
 curl -X GET "http://localhost:8081/api/scam/multimodal/history" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 查询当前用户风险总览
+
+```bash
+curl -X GET "http://localhost:8081/api/scam/multimodal/history/overview?interval=day" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 

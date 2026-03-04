@@ -71,6 +71,7 @@ go run .
 - `login_system/`：注册登录、用户管理、JWT 中间件、限流
 - `chat_system/`：聊天 SSE、工具调用、Redis 上下文
 - `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
+- `multi_agent/overview/`：用户风险总览聚合（基于历史案件生成趋势与统计）
 - `multi_agent/case_library/`：历史案件库、embedding 入库、向量检索与缓存
 - `llm/`：OpenAI 兼容客户端（聊天、流式、embedding）
 
@@ -335,6 +336,7 @@ flowchart LR
 - `GET /api/scam/multimodal/tasks`
 - `GET /api/scam/multimodal/tasks/:taskId`
 - `GET /api/scam/multimodal/history`
+- `GET /api/scam/multimodal/history/overview`
 - `DELETE /api/scam/multimodal/history/:recordId`
 
 历史案件库（admin）：
