@@ -14,6 +14,11 @@ createApp({
         const captchaImage = ref('');
         const captchaId = ref('');
         const toasts = ref([]);
+        const alertEvents = ref([]);
+        const alertUnreadCount = ref(0);
+        const alertModalVisible = ref(false);
+        const activeAlertEvent = ref(null);
+        const alertConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
         const tasks = ref([]);
         const history = ref([]);
         const users = ref([]);
@@ -80,11 +85,179 @@ createApp({
             images: []
         });
 
+        // Alert WebSocket Runtime
+        let alertSocket = null;
+        let alertReconnectTimer = null;
+        let alertReconnectAttempts = 0;
+        const alertSeenRecordIDs = new Set();
+        const maxAlertReconnectDelayMS = 30000;
+
         // Helpers
         const showToast = (message, type = 'success') => {
             const id = Date.now();
             toasts.value.push({ id, message, type });
             setTimeout(() => toasts.value = toasts.value.filter(t => t.id !== id), 3000);
+        };
+
+        const alertConnectionLabel = computed(() => {
+            switch (alertConnectionStatus.value) {
+                case 'connected':
+                    return '告警通道已连接';
+                case 'connecting':
+                    return '告警通道连接中';
+                case 'reconnecting':
+                    return '告警通道重连中';
+                default:
+                    return '告警通道未连接';
+            }
+        });
+
+        const buildAlertWebSocketURL = () => {
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const base = `${protocol}://${window.location.host}/api/alert/ws`;
+            const queryToken = encodeURIComponent(token.value || '');
+            return `${base}?token=${queryToken}`;
+        };
+
+        const disconnectAlertWebSocket = () => {
+            if (alertReconnectTimer) {
+                clearTimeout(alertReconnectTimer);
+                alertReconnectTimer = null;
+            }
+            alertReconnectAttempts = 0;
+
+            if (alertSocket) {
+                const ws = alertSocket;
+                alertSocket = null;
+                ws.onopen = null;
+                ws.onmessage = null;
+                ws.onerror = null;
+                ws.onclose = null;
+                if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                    ws.close(1000, 'client logout');
+                }
+            }
+            alertConnectionStatus.value = 'disconnected';
+        };
+
+        const scheduleAlertReconnect = () => {
+            if (!isAuthenticated.value || !token.value) return;
+            if (alertReconnectTimer) return;
+
+            const delay = Math.min(maxAlertReconnectDelayMS, 1000 * Math.pow(2, alertReconnectAttempts));
+            alertReconnectAttempts += 1;
+            alertReconnectTimer = setTimeout(() => {
+                alertReconnectTimer = null;
+                connectAlertWebSocket();
+            }, delay);
+        };
+
+        const acknowledgeActiveAlert = () => {
+            if (activeAlertEvent.value && !activeAlertEvent.value.read) {
+                activeAlertEvent.value.read = true;
+                alertUnreadCount.value = Math.max(0, alertUnreadCount.value - 1);
+            }
+            alertModalVisible.value = false;
+        };
+
+        const openLatestAlert = () => {
+            if (!Array.isArray(alertEvents.value) || alertEvents.value.length === 0) {
+                return;
+            }
+            activeAlertEvent.value = alertEvents.value[0];
+            alertModalVisible.value = true;
+        };
+
+        const openAlertHistory = async () => {
+            const current = activeAlertEvent.value;
+            acknowledgeActiveAlert();
+            if (!current) return;
+
+            activeTab.value = 'history';
+            await fetchHistory({ silent: true });
+            if (current.record_id) {
+                await viewTaskDetail(current.record_id);
+            }
+        };
+
+        const handleAlertMessage = (payload) => {
+            if (!payload || payload.type !== 'high_risk_alert') return;
+            const recordID = String(payload.record_id || '').trim();
+            if (!recordID) return;
+            if (alertSeenRecordIDs.has(recordID)) return;
+            alertSeenRecordIDs.add(recordID);
+
+            const event = {
+                id: `${recordID}-${Date.now()}`,
+                record_id: recordID,
+                title: String(payload.title || '').trim() || '高风险案件',
+                case_summary: String(payload.case_summary || '').trim() || '系统检测到高风险案件，请及时核查。',
+                scam_type: String(payload.scam_type || '').trim() || '未知类型',
+                risk_level: String(payload.risk_level || '').trim() || '高',
+                created_at: String(payload.created_at || '').trim(),
+                sent_at: String(payload.sent_at || '').trim(),
+                read: false
+            };
+
+            alertEvents.value = [event, ...alertEvents.value].slice(0, 30);
+            alertUnreadCount.value += 1;
+            activeAlertEvent.value = event;
+            alertModalVisible.value = true;
+            showToast(`高风险预警：${event.title}`, 'error');
+            fetchHistory({ silent: true });
+        };
+
+        const connectAlertWebSocket = () => {
+            if (!isAuthenticated.value || !token.value) return;
+            if (alertSocket && (alertSocket.readyState === WebSocket.OPEN || alertSocket.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+
+            let ws = null;
+            try {
+                alertConnectionStatus.value = 'connecting';
+                ws = new WebSocket(buildAlertWebSocketURL());
+            } catch (error) {
+                alertConnectionStatus.value = 'reconnecting';
+                scheduleAlertReconnect();
+                return;
+            }
+
+            alertSocket = ws;
+
+            ws.onopen = () => {
+                if (alertSocket !== ws) return;
+                alertReconnectAttempts = 0;
+                alertConnectionStatus.value = 'connected';
+            };
+
+            ws.onmessage = (event) => {
+                if (!event || typeof event.data !== 'string') return;
+                try {
+                    const payload = JSON.parse(event.data);
+                    handleAlertMessage(payload);
+                } catch (_) {
+                    // ignore malformed payload to avoid UI cascade failure
+                }
+            };
+
+            ws.onerror = () => {
+                if (alertSocket !== ws) return;
+                if (alertConnectionStatus.value !== 'connected') {
+                    alertConnectionStatus.value = 'reconnecting';
+                }
+            };
+
+            ws.onclose = () => {
+                if (alertSocket !== ws) return;
+                alertSocket = null;
+                if (!isAuthenticated.value) {
+                    alertConnectionStatus.value = 'disconnected';
+                    return;
+                }
+                alertConnectionStatus.value = 'reconnecting';
+                scheduleAlertReconnect();
+            };
         };
 
         const stableJSONStringify = (value) => {
@@ -188,6 +361,11 @@ createApp({
             isAuthenticated.value = false;
             user.value = {};
             stopPolling();
+            alertEvents.value = [];
+            alertUnreadCount.value = 0;
+            alertModalVisible.value = false;
+            activeAlertEvent.value = null;
+            alertSeenRecordIDs.clear();
         };
 
         const updateAge = async () => {
@@ -822,6 +1000,7 @@ createApp({
         const startPolling = () => {
             fetchTasks({ silent: true });
             fetchHistory({ silent: true });
+            connectAlertWebSocket();
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
                 if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
@@ -830,6 +1009,7 @@ createApp({
         
         const stopPolling = () => {
             if (pollInterval) clearInterval(pollInterval);
+            disconnectAlertWebSocket();
         };
 
         // Draggable Logic
@@ -1355,7 +1535,9 @@ createApp({
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
             riskInterval, fetchRiskTrend, riskData,
-            adminStatsInterval, fetchAdminStats, adminStatsData
+            adminStatsInterval, fetchAdminStats, adminStatsData,
+            alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
+            openLatestAlert, acknowledgeActiveAlert, openAlertHistory
         };
     }
 }).mount('#app');

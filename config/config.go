@@ -46,6 +46,12 @@ type RetryConfig struct {
 	RetryDelayMS int `json:"retry_delay_ms"`
 }
 
+// AlertWSConfig 定义实时告警 WebSocket 轮询配置。
+type AlertWSConfig struct {
+	PollIntervalSeconds int `json:"poll_interval_seconds"`
+	RecentWindowMinutes int `json:"recent_window_minutes"`
+}
+
 // AgentModelConfig 按智能体拆分模型与调用参数，便于后续扩展新 provider/model。
 type AgentModelConfig struct {
 	Main  ModelConfig `json:"main"`
@@ -70,6 +76,7 @@ type Config struct {
 	Redis     RedisConfig      `json:"redis"`
 	Prompts   PromptConfig     `json:"prompts"`
 	Retry     RetryConfig      `json:"retry"`
+	AlertWS   AlertWSConfig    `json:"alert_ws"`
 }
 
 var (
@@ -141,6 +148,7 @@ func (c *Config) normalize() {
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
 	c.Prompts.Audio = strings.TrimSpace(c.Prompts.Audio)
+	c.AlertWS = normalizeAlertWS(c.AlertWS)
 }
 
 // normalizeModel 处理单个模型配置的字符串规范化。
@@ -186,6 +194,16 @@ func normalizeRedis(redisCfg RedisConfig) RedisConfig {
 		redisCfg.DB = 0
 	}
 	return redisCfg
+}
+
+func normalizeAlertWS(alertCfg AlertWSConfig) AlertWSConfig {
+	if alertCfg.PollIntervalSeconds <= 0 {
+		alertCfg.PollIntervalSeconds = 30
+	}
+	if alertCfg.RecentWindowMinutes <= 0 {
+		alertCfg.RecentWindowMinutes = 60
+	}
+	return alertCfg
 }
 
 // validate 校验整体配置完整性。

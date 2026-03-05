@@ -73,6 +73,7 @@ func main() {
 		api.POST("/chat", chatapi.ChatHandle)
 		api.GET("/chat/context", chatapi.GetChatContextHandle)
 		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)
+		api.GET("/alert/ws", httpapi.AlertWebSocketHandle)
 		api.PUT("/scam/multimodal/user/age", httpapi.UpdateUserAgeHandle)
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)

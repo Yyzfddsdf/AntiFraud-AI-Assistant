@@ -4,6 +4,7 @@
 
 - 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档、相似案件检索）
+- 实时高风险告警（WebSocket 连接下的主动预警推送）
 
 默认服务端口：`8081`
 
@@ -61,6 +62,7 @@ go run .
   - `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `redis`：统一缓存配置（`addr`、`password`、`db`）
+  - `alert_ws`：实时告警轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `prompts.main / image / video / audio`：提示词
   - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
@@ -327,6 +329,15 @@ flowchart LR
 - 接口：`GET /api/scam/case-library/cases/overview?interval=day|week|month`
 - 权限要求：仅管理员可访问（挂载在 `AdminMiddleware` 路由组下）。
 
+### 9.8 实时高风险告警推送（WebSocket）
+
+- 新增接口：`GET /api/alert/ws`
+- 触发规则：连接建立后按 `config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“高风险且在告警窗口内”记录时主动推送。
+- 推送消息类型：`high_risk_alert`，包含 `record_id/title/case_summary/scam_type/risk_level/created_at/sent_at`。
+- 连接中断后服务端轮询协程自动退出，前端负责重连策略（建议指数退避）。
+- 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
+- 默认值（配置缺失或非法时回退）：`poll_interval_seconds=30`、`recent_window_minutes=60`。
+
 ---
 
 ## 10. 安全与权限
@@ -383,6 +394,10 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 - `GET /api/scam/multimodal/history/overview`
 - `DELETE /api/scam/multimodal/history/:recordId`
 
+实时告警：
+
+- `GET /api/alert/ws`（WebSocket）
+
 历史案件库（admin）：
 
 - `POST /api/scam/case-library/cases`
@@ -421,9 +436,10 @@ go test ./...
 本地联调建议：
 
 1. 先注册/登录拿 JWT
-2. 提交多模态任务并轮询详情
-3. 检查历史归档、风险等级、report 一致性
-4. 使用管理员账号上传历史案件并验证相似检索结果
+2. 建立 `/api/alert/ws` WebSocket 连接并观察连接状态
+3. 提交多模态任务并轮询详情
+4. 检查历史归档、风险等级、report 与实时告警一致性
+5. 使用管理员账号上传历史案件并验证相似检索结果
 
 ---
 

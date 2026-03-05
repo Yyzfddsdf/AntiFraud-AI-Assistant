@@ -802,6 +802,70 @@ data:{"type":"done","reason":"stop"}
 
 ---
 
+## 13.1) 实时高风险告警 WebSocket（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/alert/ws`
+- **协议**: WebSocket
+
+### 触发逻辑（服务端）
+
+- 连接建立后，服务端按配置轮询当前用户 `history_cases`：
+  - `config/config.json -> alert_ws.poll_interval_seconds`
+- 当发现“`risk_level = 高` 且 `created_at` 在告警窗口内”的记录时，主动推送告警消息：
+  - `config/config.json -> alert_ws.recent_window_minutes`
+- 同一连接内，同一 `record_id` 只推送一次。
+- 连接断开后，后台轮询 goroutine 自动退出。
+
+默认值（配置缺失或非法时自动回退）：
+
+- `poll_interval_seconds = 30`
+- `recent_window_minutes = 60`
+
+### 鉴权方式
+
+- 非浏览器客户端：推荐使用 `Authorization: Bearer <JWT_TOKEN>`。
+- 浏览器原生 WebSocket：使用 Query 参数 `token` 传 JWT，例如：
+  - `ws://localhost:8081/api/alert/ws?token=<JWT_TOKEN>`
+
+### 消息示例（服务端 -> 客户端）
+
+```json
+{
+  "type": "high_risk_alert",
+  "user_id": "1",
+  "record_id": "TASK-123456",
+  "title": "疑似冒充客服退款",
+  "case_summary": "发现转账引导与敏感信息索取",
+  "scam_type": "冒充客服类",
+  "risk_level": "高",
+  "created_at": "2026-03-05T12:01:00Z",
+  "sent_at": "2026-03-05T12:01:30Z"
+}
+```
+
+### 浏览器接入示例
+
+```js
+const jwt = localStorage.getItem('token');
+const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${protocol}://${location.host}/api/alert/ws?token=${encodeURIComponent(jwt)}`);
+
+ws.onmessage = (event) => {
+  const payload = JSON.parse(event.data);
+  if (payload.type === 'high_risk_alert') {
+    console.log('收到高风险告警', payload);
+  }
+};
+```
+
+### 常见失败响应
+
+- 握手阶段返回 `401`：Token 缺失、无效或过期。
+- 网络断开：客户端需自行重连（建议指数退避）。
+
+---
+
 ## 14) 账户升级（需鉴权）
 
 - **Method**: `POST`
@@ -940,16 +1004,17 @@ GET /api/users?query=admin
 2. `POST /api/auth/register`
 3. `GET /api/auth/captcha`（登录前建议刷新）
 4. `POST /api/auth/login`
-5. `GET /api/user`
-6. `POST /api/scam/multimodal/analyze`
-7. `GET /api/scam/multimodal/tasks`
-8. `GET /api/scam/multimodal/history`
-9. `GET /api/scam/multimodal/history/overview`
-10. `GET /api/scam/multimodal/tasks/:taskId`
-11. `POST /api/chat`
-12. `GET /api/chat/context`
-13. `POST /api/chat/refresh`
-14. `DELETE /api/user`
+5. `GET /api/alert/ws`（WebSocket，建议登录后立即建立）
+6. `GET /api/user`
+7. `POST /api/scam/multimodal/analyze`
+8. `GET /api/scam/multimodal/tasks`
+9. `GET /api/scam/multimodal/history`
+10. `GET /api/scam/multimodal/history/overview`
+11. `GET /api/scam/multimodal/tasks/:taskId`
+12. `POST /api/chat`
+13. `GET /api/chat/context`
+14. `POST /api/chat/refresh`
+15. `DELETE /api/user`
 
 ---
 

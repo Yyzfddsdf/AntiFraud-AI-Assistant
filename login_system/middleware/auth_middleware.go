@@ -47,21 +47,14 @@ func AuthMiddleware(userReader AuthUserReader) gin.HandlerFunc {
 			return
 		}
 
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		tokenString, tokenErr := extractBearerToken(c)
+		if tokenErr != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "未提供授权 Token"})
 			c.Abort()
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token 格式错误"})
-			c.Abort()
-			return
-		}
-
-		claims, err := authcore.ParseToken(parts[1])
+		claims, err := authcore.ParseToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效或过期的 Token"})
 			c.Abort()
@@ -84,6 +77,30 @@ func AuthMiddleware(userReader AuthUserReader) gin.HandlerFunc {
 		c.Set("userID", claims.UserID)
 		c.Next()
 	}
+}
+
+// extractBearerToken 解析鉴权 Token：
+// 1) 常规 HTTP 请求：仅支持 Authorization: Bearer <token>。
+// 2) WebSocket 升级请求：在缺失 Authorization 时，允许使用 query 参数 token。
+func extractBearerToken(c *gin.Context) (string, error) {
+	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" || strings.TrimSpace(parts[1]) == "" {
+			return "", fmt.Errorf("invalid authorization header")
+		}
+		return strings.TrimSpace(parts[1]), nil
+	}
+
+	upgrade := strings.ToLower(strings.TrimSpace(c.GetHeader("Upgrade")))
+	if upgrade == "websocket" {
+		queryToken := strings.TrimSpace(c.Query("token"))
+		if queryToken != "" {
+			return queryToken, nil
+		}
+	}
+
+	return "", fmt.Errorf("token is empty")
 }
 
 // AdminMiddleware 确保用户拥有管理员权限
