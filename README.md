@@ -80,6 +80,7 @@ go run .
 
 - `main.go`：服务入口、路由挂载、中间件注册
 - `cache/`：统一 Redis 缓存函数（少参数读写、计数窗口、Hash 管理）
+- `login_system/auth/`：JWT 能力边界（claims、签发、验签、鉴权错误语义）
 - `login_system/`：注册登录、用户管理、JWT 中间件、限流
 - `chat_system/`：聊天 SSE、工具调用、Redis 上下文
 - `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
@@ -331,6 +332,7 @@ flowchart LR
 ## 10. 安全与权限
 
 - JWT 鉴权：校验 token 后会二次校验用户是否存在、用户名/邮箱是否匹配
+- 鉴权中间件解耦：`AuthMiddleware/AdminMiddleware` 通过 `AuthUserReader` 接口注入用户读取能力，不再直接依赖全局 `database.DB`
 - 管理员权限：
   - `GET /api/users`
   - 历史案件库上传/查询/删除接口
@@ -338,6 +340,14 @@ flowchart LR
 - 注册安全策略：
   - 密码复杂度校验（大写+小写+符号）
   - 注册时年龄默认 `28`，不接受注册请求中直接传 `age`
+
+中间件注入示例（`main.go`）：
+
+```go
+authUserReader := middleware.NewGormAuthUserReader(database.DB)
+api.Use(middleware.AuthMiddleware(authUserReader))
+api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAllUsersHandle)
+```
 
 ---
 
@@ -436,6 +446,7 @@ go test ./...
 - 向量库管理侧缓存迁移到 Redis Hash，支持多实例共享检索快照。
 - 聊天上下文读写迁移到 `cache/` 通用函数，缓存访问路径统一。
 - 主配置新增 `redis` 节点，统一缓存连接参数收敛在 `config/config.json`。
+- Auth 边界解耦：JWT 逻辑收敛到 `login_system/auth`，`Auth/Admin` 中间件通过接口注入读取用户数据，去除对控制器与全局 DB 的直接耦合。
 
 ### 15.2 当前边界
 
