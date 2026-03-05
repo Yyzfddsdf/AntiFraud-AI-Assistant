@@ -19,6 +19,7 @@ createApp({
         const alertModalVisible = ref(false);
         const activeAlertEvent = ref(null);
         const alertConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
+        const alertDrawerVisible = ref(false);
         const tasks = ref([]);
         const history = ref([]);
         const users = ref([]);
@@ -112,6 +113,108 @@ createApp({
             }
         });
 
+        const recentHighRiskCases = computed(() => {
+            const unreadRecordIDs = new Set(
+                (alertEvents.value || [])
+                    .filter((item) => item && !item.read)
+                    .map((item) => String(item.record_id || '').trim())
+                    .filter((item) => item !== '')
+            );
+
+            const merged = new Map();
+            const historyItems = Array.isArray(history.value) ? history.value : [];
+            for (const item of historyItems) {
+                if (!item) continue;
+                const recordID = String(item.record_id || '').trim();
+                if (!recordID) continue;
+                const riskLevel = String(item.risk_level || '').trim();
+                if (riskLevel !== '高') continue;
+
+                merged.set(recordID, {
+                    record_id: recordID,
+                    title: String(item.title || '').trim() || '高风险案件',
+                    case_summary: String(item.case_summary || '').trim() || '暂无摘要',
+                    scam_type: String(item.scam_type || '').trim() || '未知类型',
+                    risk_level: '高',
+                    created_at: String(item.created_at || '').trim(),
+                    sent_at: '',
+                    unread: unreadRecordIDs.has(recordID)
+                });
+            }
+
+            const alertItems = Array.isArray(alertEvents.value) ? alertEvents.value : [];
+            for (const event of alertItems) {
+                if (!event) continue;
+                const recordID = String(event.record_id || '').trim();
+                if (!recordID) continue;
+                if (!merged.has(recordID)) {
+                    merged.set(recordID, {
+                        record_id: recordID,
+                        title: String(event.title || '').trim() || '高风险案件',
+                        case_summary: String(event.case_summary || '').trim() || '暂无摘要',
+                        scam_type: String(event.scam_type || '').trim() || '未知类型',
+                        risk_level: String(event.risk_level || '').trim() || '高',
+                        created_at: String(event.created_at || '').trim(),
+                        sent_at: String(event.sent_at || '').trim(),
+                        unread: !event.read
+                    });
+                } else if (!event.read) {
+                    const existing = merged.get(recordID);
+                    if (existing) existing.unread = true;
+                }
+            }
+
+            return Array.from(merged.values())
+                .sort((a, b) => {
+                    const timeA = new Date(a.created_at || a.sent_at || 0).getTime();
+                    const timeB = new Date(b.created_at || b.sent_at || 0).getTime();
+                    return timeB - timeA;
+                })
+                .slice(0, 20);
+        });
+
+        const markAlertReadByRecordID = (recordID) => {
+            const targetID = String(recordID || '').trim();
+            if (!targetID) return;
+
+            let reduced = 0;
+            for (const event of alertEvents.value) {
+                if (!event) continue;
+                if (String(event.record_id || '').trim() !== targetID) continue;
+                if (!event.read) {
+                    event.read = true;
+                    reduced += 1;
+                }
+            }
+            if (reduced > 0) {
+                alertUnreadCount.value = Math.max(0, alertUnreadCount.value - reduced);
+            }
+            if (activeAlertEvent.value && String(activeAlertEvent.value.record_id || '').trim() === targetID) {
+                activeAlertEvent.value.read = true;
+            }
+        };
+
+        const closeAlertDrawer = () => {
+            alertDrawerVisible.value = false;
+        };
+
+        const toggleAlertDrawer = async () => {
+            alertDrawerVisible.value = !alertDrawerVisible.value;
+            if (alertDrawerVisible.value) {
+                await fetchHistory({ silent: true });
+            }
+        };
+
+        const openAlertCaseDetail = async (item) => {
+            if (!item || !item.record_id) return;
+            markAlertReadByRecordID(item.record_id);
+            alertDrawerVisible.value = false;
+            alertModalVisible.value = false;
+            activeTab.value = 'history';
+            await fetchHistory({ silent: true });
+            await viewTaskDetail(item.record_id);
+        };
+
         const buildAlertWebSocketURL = () => {
             const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
             const base = `${protocol}://${window.location.host}/api/alert/ws`;
@@ -153,31 +256,16 @@ createApp({
         };
 
         const acknowledgeActiveAlert = () => {
-            if (activeAlertEvent.value && !activeAlertEvent.value.read) {
-                activeAlertEvent.value.read = true;
-                alertUnreadCount.value = Math.max(0, alertUnreadCount.value - 1);
+            if (activeAlertEvent.value) {
+                markAlertReadByRecordID(activeAlertEvent.value.record_id);
             }
             alertModalVisible.value = false;
         };
 
-        const openLatestAlert = () => {
-            if (!Array.isArray(alertEvents.value) || alertEvents.value.length === 0) {
-                return;
-            }
-            activeAlertEvent.value = alertEvents.value[0];
-            alertModalVisible.value = true;
-        };
-
         const openAlertHistory = async () => {
             const current = activeAlertEvent.value;
-            acknowledgeActiveAlert();
             if (!current) return;
-
-            activeTab.value = 'history';
-            await fetchHistory({ silent: true });
-            if (current.record_id) {
-                await viewTaskDetail(current.record_id);
-            }
+            await openAlertCaseDetail(current);
         };
 
         const handleAlertMessage = (payload) => {
@@ -361,6 +449,7 @@ createApp({
             isAuthenticated.value = false;
             user.value = {};
             stopPolling();
+            alertDrawerVisible.value = false;
             alertEvents.value = [];
             alertUnreadCount.value = 0;
             alertModalVisible.value = false;
@@ -1537,7 +1626,8 @@ createApp({
             riskInterval, fetchRiskTrend, riskData,
             adminStatsInterval, fetchAdminStats, adminStatsData,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
-            openLatestAlert, acknowledgeActiveAlert, openAlertHistory
+            alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
+            acknowledgeActiveAlert, openAlertHistory
         };
     }
 }).mount('#app');
