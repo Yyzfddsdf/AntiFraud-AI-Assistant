@@ -1,12 +1,12 @@
 package multi_agent
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"antifraud/config"
 	"antifraud/multi_agent/state"
 	"antifraud/multi_agent/tool"
+	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 

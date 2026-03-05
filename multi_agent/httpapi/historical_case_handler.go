@@ -152,7 +152,7 @@ func DeleteHistoricalCaseHandle(c *gin.Context) {
 
 	c.JSON(http.StatusOK, apimodel.DeleteHistoricalCaseResponse{
 		CaseID:  caseID,
-		Message: "historical case deleted",
+		Message: "历史案件删除成功",
 	})
 }
 

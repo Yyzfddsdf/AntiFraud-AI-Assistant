@@ -4,6 +4,7 @@
 
 - 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档、相似案件检索）
+- 主分析流程按需自动更新案件库（典型案例自动向量化入库）
 - 实时高风险告警（WebSocket 连接下的主动预警推送）
 
 默认服务端口：`8081`
@@ -137,7 +138,7 @@ flowchart LR
 
 字符串式简流程：
 
-`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> 写入历史 write_user_history_case -> 任务结束`
+`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例入库 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
 
 ```mermaid
 flowchart LR
@@ -156,7 +157,7 @@ flowchart LR
 交互规则（关键约束）：
 
 - 子智能体只负责各自模态的结构化提取，不直接写历史归档。
-- 主智能体必须先 `submit_final_report`，再 `write_user_history_case`，完成后结束。
+- 主智能体必须先 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`；最终必须 `write_user_history_case` 并结束。
 - 任务状态由 `state` 统一维护：`pending -> processing -> completed/failed`。
 - 工具层负责“查询/归档动作”，模型层负责“推理与决策”。
 
@@ -337,6 +338,17 @@ flowchart LR
 - 连接中断后服务端轮询协程自动退出，前端负责重连策略（建议指数退避）。
 - 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
 - 默认值（配置缺失或非法时回退）：`poll_interval_seconds=30`、`recent_window_minutes=60`。
+
+### 9.9 主流程按需自动更新案件库（新增）
+
+- 主智能体工具链新增：`upload_historical_case_to_vector_db`（自动 embedding + 入库）。
+- 触发原则：当案件被判定为“典型案例”时可写入案件库，风险等级不设门槛（高/中/低均可）。
+- 跳过原则：若案件不具备典型性，或证据不足、字段不完整，则不执行入库。
+- 调用顺序约束：
+  - `submit_final_report`
+  - （可选）`upload_historical_case_to_vector_db`
+  - `write_user_history_case`（必需终态步骤）
+- 设计目标：在不强制每案入库的前提下，持续沉淀可复用样本，控制知识库质量并避免冗余写入。
 
 ---
 

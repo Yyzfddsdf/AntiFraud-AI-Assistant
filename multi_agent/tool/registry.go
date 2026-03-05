@@ -32,6 +32,7 @@ var mainAgentToolRegistry = []openai.Tool{
 	CaseSearchTool,
 	QueryUserHistoryCasesTool,
 	QueryUserInfoTool,
+	UploadHistoricalCaseToVectorDBTool,
 	WriteUserHistoryCaseTool,
 	FinalReportTool,
 	ExampleTool,
@@ -42,12 +43,13 @@ var mainAgentToolBlacklist = map[string]struct{}{
 }
 
 var mainAgentToolHandlers = map[string]ToolHandler{
-	CaseSearchToolName:            &CaseSearchHandler{},
-	QueryUserHistoryCasesToolName: &QueryUserHistoryCasesHandler{},
-	QueryUserInfoToolName:         &QueryUserInfoHandler{},
-	WriteUserHistoryCaseToolName:  &WriteUserHistoryCaseHandler{},
-	FinalReportToolName:           &FinalReportHandler{},
-	ExampleToolName:               &ExampleHandler{},
+	CaseSearchToolName:                     &CaseSearchHandler{},
+	QueryUserHistoryCasesToolName:          &QueryUserHistoryCasesHandler{},
+	QueryUserInfoToolName:                  &QueryUserInfoHandler{},
+	WriteUserHistoryCaseToolName:           &WriteUserHistoryCaseHandler{},
+	FinalReportToolName:                    &FinalReportHandler{},
+	ExampleToolName:                        &ExampleHandler{},
+	UploadHistoricalCaseToVectorDBToolName: &UploadHistoricalCaseToVectorDBHandler{},
 }
 
 // MainAgentTools 返回主智能体可用工具列表（已过滤黑名单）。

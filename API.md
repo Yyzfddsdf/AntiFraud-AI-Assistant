@@ -1533,7 +1533,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 ```json
 {
   "case_id": "HCASE-5F3C91AA12DE",
-  "message": "historical case deleted"
+  "message": "历史案件删除成功"
 }
 ```
 
