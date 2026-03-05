@@ -25,6 +25,7 @@ type QueryUserInfoInput struct{}
 type WriteUserHistoryCaseInput struct {
 	Title       string `json:"title"`
 	CaseSummary string `json:"case_summary"`
+	ScamType    string `json:"scam_type"`
 	RiskLevel   string `json:"risk_level"`
 }
 
@@ -68,13 +69,14 @@ var WriteUserHistoryCaseTool = openai.Tool{
 					"type":        "string",
 					"description": "案件摘要。",
 				},
+				"scam_type": buildScamTypeSchema("诈骗类型。必须来自 config/scam_types.json 配置。"),
 				"risk_level": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"低", "中", "高"},
 					"description": "风险等级，仅允许：低/中/高。",
 				},
 			},
-			"required": []string{"title", "case_summary", "risk_level"},
+			"required": []string{"title", "case_summary", "scam_type", "risk_level"},
 		},
 	},
 }
@@ -105,15 +107,24 @@ func QueryUserHistoryCases(ctx context.Context) ([]string, error) {
 		}
 
 		results = append(results, fmt.Sprintf(
-			"%s | title: %s | summary: %s | risk: %s | report: %s",
+			"%s | title: %s | summary: %s | scam_type: %s | risk: %s | report: %s",
 			record.CreatedAt.Format("2006-01-02 15:04:05"),
 			record.Title,
 			record.CaseSummary,
+			noneIfEmpty(record.ScamType),
 			record.RiskLevel,
 			report,
 		))
 	}
 	return results, nil
+}
+
+func noneIfEmpty(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "none"
+	}
+	return trimmed
 }
 
 func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
@@ -183,9 +194,14 @@ func normalizeRiskLevelFromHistory(raw string) string {
 // 2) 子模态洞察来自 CurrentTaskInsights(ctx)
 // 3) 最终报告来自 CurrentFinalReport(ctx)
 func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) (map[string]interface{}, error) {
+	normalizedScamType, scamTypeErr := normalizeAndValidateScamType(input.ScamType)
+	if scamTypeErr != nil {
+		return nil, fmt.Errorf("invalid scam_type: %v", scamTypeErr)
+	}
+
 	payload := CurrentTaskPayload(ctx)
 	insights := CurrentTaskInsights(ctx)
-	state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, input.RiskLevel, state.TaskPayload{
+	state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, normalizedScamType, input.RiskLevel, state.TaskPayload{
 		Text:          payload.Text,
 		Videos:        append([]string{}, payload.Videos...),
 		Audios:        append([]string{}, payload.Audios...),
@@ -202,6 +218,7 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 		"title":        input.Title,
 		"created_at":   time.Now().Format(time.RFC3339),
 		"case_summary": input.CaseSummary,
+		"scam_type":    normalizedScamType,
 		"report":       CurrentFinalReport(ctx),
 		"stored_level": strings.TrimSpace(input.RiskLevel),
 	}, nil

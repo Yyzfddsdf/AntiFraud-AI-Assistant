@@ -113,6 +113,11 @@ h1, h2, h3, h4, h5, h6 {
     background: rgba(15, 23, 42, 0.5);
 }
 
+/* Print visibility helpers */
+.print-only {
+    display: none !important;
+}
+
 /* Print Styles */
 @media print {
     body > :not(#app) { display: none; }
@@ -131,6 +136,7 @@ h1, h2, h3, h4, h5, h6 {
         overflow: visible !important;
     }
     .no-print { display: none !important; }
+    .print-only { display: block !important; }
     body { background: white; color: black; }
     section { page-break-inside: avoid; }
 }

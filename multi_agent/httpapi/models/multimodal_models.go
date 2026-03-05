@@ -32,6 +32,7 @@ type MultimodalTaskItem struct {
 	UserID     string                `json:"user_id"`
 	Title      string                `json:"title"`
 	Status     string                `json:"status"`
+	ScamType   string                `json:"scam_type,omitempty"`
 	CreatedAt  string                `json:"created_at"`
 	UpdatedAt  string                `json:"updated_at"`
 	Payload    MultimodalTaskPayload `json:"payload"`
@@ -63,6 +64,7 @@ type MultimodalHistoryItem struct {
 	RecordID    string `json:"record_id"`
 	Title       string `json:"title"`
 	CaseSummary string `json:"case_summary"`
+	ScamType    string `json:"scam_type,omitempty"`
 	RiskLevel   string `json:"risk_level"`
 	CreatedAt   string `json:"created_at"`
 }

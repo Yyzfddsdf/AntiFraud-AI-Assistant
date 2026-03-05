@@ -488,6 +488,7 @@
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">任务ID</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">案件标题</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">摘要</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">时间</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
@@ -502,6 +503,7 @@
                                                 {{ normalizeRiskLevelText(item.risk_level) }}
                                             </span>
                                         </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ item.scam_type || '-' }}</td>
                                         <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ item.case_summary }}</td>
                                         <td class="px-6 py-4 text-slate-400 font-medium">{{ formatTime(item.created_at) }}</td>
                                         <td class="px-6 py-4 text-right">
@@ -852,6 +854,12 @@
                             <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                             ID: {{ selectedTask.task_id }}
                         </p>
+                        <div class="mt-2 flex items-center gap-2 flex-wrap">
+                            <span :class="getStatusClass(selectedTask.status)">{{ getStatusLabel(selectedTask.status) }}</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border border-fuchsia-200 text-fuchsia-700 bg-fuchsia-50">
+                                诈骗类型：{{ selectedTask.scam_type || '未识别' }}
+                            </span>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <!-- Export Dropdown -->
@@ -884,6 +892,15 @@
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar transform-gpu">
+                    <section class="print-only">
+                        <div class="bg-white rounded-xl border border-slate-200 p-4">
+                            <h4 class="text-sm font-bold text-slate-800 mb-2">报告元信息</h4>
+                            <p class="text-sm text-slate-700">
+                                诈骗类型：{{ selectedTask.scam_type || '未识别' }}
+                            </p>
+                        </div>
+                    </section>
+
                     <section v-if="selectedTask.summary" class="animate-fade-in">
                         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">

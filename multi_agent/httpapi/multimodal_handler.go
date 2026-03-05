@@ -83,6 +83,7 @@ func GetMultimodalHistoryHandle(c *gin.Context) {
 			RecordID:    item.RecordID,
 			Title:       item.Title,
 			CaseSummary: item.CaseSummary,
+			ScamType:    item.ScamType,
 			RiskLevel:   item.RiskLevel,
 			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
 		})
@@ -171,6 +172,7 @@ func toTaskItem(task state.TaskRecord) apimodel.MultimodalTaskItem {
 		UserID:    task.UserID,
 		Title:     task.Title,
 		Status:    task.Status,
+		ScamType:  task.ScamType,
 		CreatedAt: task.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: task.UpdatedAt.Format(time.RFC3339),
 		Payload: apimodel.MultimodalTaskPayload{

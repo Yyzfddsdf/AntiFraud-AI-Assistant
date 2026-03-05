@@ -16,6 +16,7 @@ type FinalReportPayload struct {
 	ImageFinding         string   `json:"image_finding"`
 	VideoFinding         string   `json:"video_finding"`
 	AudioFinding         string   `json:"audio_finding"`
+	ScamType             string   `json:"scam_type"`
 	RiskSignals          []string `json:"risk_signals"`
 	RiskLevel            string   `json:"risk_level"`
 	RiskReason           string   `json:"risk_reason"`
@@ -52,6 +53,7 @@ var FinalReportTool = openai.Tool{
 					"type":        "string",
 					"description": "音频模态关键发现。",
 				},
+				"scam_type": buildScamTypeSchema("诈骗类型（必填）。必须来自 config/scam_types.json 配置。"),
 				"risk_signals": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
@@ -88,6 +90,7 @@ var FinalReportTool = openai.Tool{
 				"image_finding",
 				"video_finding",
 				"audio_finding",
+				"scam_type",
 				"risk_signals",
 				"risk_level",
 				"risk_reason",
@@ -135,6 +138,8 @@ func FormatFinalReport(payload FinalReportPayload) string {
 	report.WriteString("\n4. 风险等级与理由\n")
 	report.WriteString("- 风险等级: ")
 	report.WriteString(riskLevel)
+	report.WriteString("\n- 诈骗类型: ")
+	report.WriteString(strings.TrimSpace(payload.ScamType))
 	report.WriteString("\n- 理由: ")
 	report.WriteString(strings.TrimSpace(payload.RiskReason))
 
@@ -205,6 +210,13 @@ func (h *FinalReportHandler) Handle(ctx context.Context, args string) (ToolRespo
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("parse final report tool payload failed: %v", err)}}, nil
 	}
+
+	normalizedScamType, scamTypeErr := normalizeAndValidateScamType(payload.ScamType)
+	if scamTypeErr != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid scam_type: %v", scamTypeErr)}}, nil
+	}
+	payload.ScamType = normalizedScamType
+
 	return ToolResponse{
 		Payload:        map[string]interface{}{"status": "success", "message": "最终报告已提交"},
 		FinalResultStr: FormatFinalReport(payload),

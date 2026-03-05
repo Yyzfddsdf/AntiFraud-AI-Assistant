@@ -1292,6 +1292,7 @@ createApp({
                 let content = `# 诈骗风险分析报告\n\n`;
                 content += `**任务ID**: ${task.task_id}\n`;
                 content += `**标题**: ${task.title}\n`;
+                content += `**诈骗类型**: ${task.scam_type || '未识别'}\n`;
                 content += `**生成时间**: ${new Date(task.created_at).toLocaleString()}\n`;
                 content += `**状态**: ${task.status}\n\n`;
                 

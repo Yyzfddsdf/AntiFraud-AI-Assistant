@@ -154,6 +154,7 @@ func MarkTaskCompleted(userID, taskID, report string) {
 				UserID:               uid,
 				Title:                normalizeCaseTitle(pending.Title, summary),
 				CaseSummary:          summary,
+				ScamType:             "",
 				Status:               TaskStatusCompleted,
 				RiskLevel:            normalizeRiskLevel(""),
 				PayloadText:          pending.PayloadText,
@@ -248,6 +249,7 @@ func MarkTaskFailed(userID, taskID, errMsg string) {
 			UserID:               uid,
 			Title:                normalizeCaseTitle(pending.Title, reason),
 			CaseSummary:          reason,
+			ScamType:             "",
 			Status:               TaskStatusFailed,
 			RiskLevel:            normalizeRiskLevel("中"),
 			PayloadText:          pending.PayloadText,
@@ -379,7 +381,7 @@ func GetUserStateView(userID string) UserStateView {
 		defer wg.Done()
 		// 总览与风险统计仅需历史元数据，不加载 payload/report 等大字段。
 		if err := db.Model(&historyCaseEntity{}).
-			Select("record_id", "user_id", "title", "case_summary", "risk_level", "created_at", "updated_at").
+			Select("record_id", "user_id", "title", "case_summary", "scam_type", "risk_level", "created_at", "updated_at").
 			Where("user_id = ?", uid).
 			Order("created_at desc").
 			Find(&historyRows).Error; err != nil {
@@ -453,7 +455,7 @@ func expireStalePendingTasks(userID, taskID string) {
 }
 
 // AddCaseHistory 直接写入历史记录（用于工具显式归档场景）。
-func AddCaseHistory(userID, taskID, title, summary, riskLevel string, payload TaskPayload, report string) CaseHistoryRecord {
+func AddCaseHistory(userID, taskID, title, summary, scamType, riskLevel string, payload TaskPayload, report string) CaseHistoryRecord {
 	uid := normalizeUserID(userID)
 	now := time.Now()
 	recordID := strings.TrimSpace(taskID)
@@ -467,6 +469,7 @@ func AddCaseHistory(userID, taskID, title, summary, riskLevel string, payload Ta
 		Title:       normalizeCaseTitle(title, summary),
 		Status:      TaskStatusCompleted,
 		CaseSummary: strings.TrimSpace(summary),
+		ScamType:    strings.TrimSpace(scamType),
 		RiskLevel:   normalizeRiskLevel(riskLevel),
 		CreatedAt:   now,
 		Payload: TaskPayload{
@@ -609,6 +612,7 @@ func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCas
 		UserID:               normalizeUserID(record.UserID),
 		Title:                strings.TrimSpace(record.Title),
 		CaseSummary:          strings.TrimSpace(record.CaseSummary),
+		ScamType:             strings.TrimSpace(record.ScamType),
 		Status:               strings.TrimSpace(status),
 		RiskLevel:            normalizeRiskLevel(record.RiskLevel),
 		PayloadText:          strings.TrimSpace(record.Payload.Text),
@@ -641,6 +645,7 @@ func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
 		Title:       strings.TrimSpace(entity.Title),
 		Status:      status,
 		CaseSummary: strings.TrimSpace(entity.CaseSummary),
+		ScamType:    strings.TrimSpace(entity.ScamType),
 		RiskLevel:   normalizeRiskLevel(entity.RiskLevel),
 		CreatedAt:   entity.CreatedAt,
 		Report:      strings.TrimSpace(entity.Report),
@@ -674,6 +679,7 @@ func taskFromHistoryEntity(entity historyCaseEntity) TaskRecord {
 		UserID:    record.UserID,
 		Title:     record.Title,
 		Status:    record.Status,
+		ScamType:  strings.TrimSpace(record.ScamType),
 		CreatedAt: record.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,
 		Payload: TaskPayload{

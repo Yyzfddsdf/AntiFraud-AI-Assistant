@@ -52,12 +52,12 @@
 | `title` | `string` / `varchar(255)` | `not null` | 任务标题 |
 | `status` | `string` / `varchar(32)` | 索引, `not null` | 任务状态：`pending/processing` 等 |
 | `payload_text` | `string` / `text` | 无 | 文本输入 |
-| `payload_videos` | `string` / `text` | 无 | 视频输入数组（JSON 字符串） |
-| `payload_audios` | `string` / `text` | 无 | 音频输入数组（JSON 字符串） |
-| `payload_images` | `string` / `text` | 无 | 图片输入数组（JSON 字符串） |
-| `payload_video_insights` | `string` / `text` | 无 | 视频洞察数组（JSON 字符串） |
-| `payload_audio_insights` | `string` / `text` | 无 | 音频洞察数组（JSON 字符串） |
-| `payload_image_insights` | `string` / `text` | 无 | 图片洞察数组（JSON 字符串） |
+| `payload_videos` | `string` / `text` | 无 | 视频输入数组（逗号分隔 Base64 字符串） |
+| `payload_audios` | `string` / `text` | 无 | 音频输入数组（逗号分隔 Base64 字符串） |
+| `payload_images` | `string` / `text` | 无 | 图片输入数组（逗号分隔 Base64 字符串） |
+| `payload_video_insights` | `string` / `text` | 无 | 视频洞察数组（逗号分隔 Base64 字符串） |
+| `payload_audio_insights` | `string` / `text` | 无 | 音频洞察数组（逗号分隔 Base64 字符串） |
+| `payload_image_insights` | `string` / `text` | 无 | 图片洞察数组（逗号分隔 Base64 字符串） |
 | `report` | `string` / `text` | 无 | 过程中可能暂存的报告文本 |
 | `error` | `string` / `text` | 无 | 错误信息 |
 | `history_ref` | `string` / `varchar(64)` | 无 | 归档引用 ID |
@@ -66,7 +66,8 @@
 
 数据格式说明：
 
-- `payload_videos/payload_audios/payload_images` 是 JSON 数组字符串。
+- `payload_*` 列由服务端内部编码为“逗号分隔 Base64 字符串”（不是 JSON 数组字符串）。
+- 空数组会存为空字符串 `""`，读取时解码为 `[]`。
 - 数组元素通常是 Base64 Data URL 或可访问媒体 URL（取决于前端提交内容）。
 
 ### 2.3 `history_cases`（任务历史归档表）
@@ -84,15 +85,16 @@
 | `user_id` | `string` / `text` | 索引, `not null` | 用户 ID |
 | `title` | `string` / `varchar(255)` | `not null` | 历史标题 |
 | `case_summary` | `string` / `text` | 无 | 案件摘要 |
+| `scam_type` | `string` / `varchar(64)` | 索引 | 诈骗类型（可空，来源于归档/工具写入） |
 | `status` | `string` / `varchar(32)` | 索引, `not null` | `completed/failed` |
 | `risk_level` | `string` / `varchar(32)` | 索引 | 风险等级（高/中/低） |
 | `payload_text` | `string` / `text` | 无 | 原始文本 |
-| `payload_videos` | `string` / `text` | 无 | 原始视频数组（JSON 字符串） |
-| `payload_audios` | `string` / `text` | 无 | 原始音频数组（JSON 字符串） |
-| `payload_images` | `string` / `text` | 无 | 原始图片数组（JSON 字符串） |
-| `payload_video_insights` | `string` / `text` | 无 | 视频洞察数组（JSON 字符串） |
-| `payload_audio_insights` | `string` / `text` | 无 | 音频洞察数组（JSON 字符串） |
-| `payload_image_insights` | `string` / `text` | 无 | 图片洞察数组（JSON 字符串） |
+| `payload_videos` | `string` / `text` | 无 | 原始视频数组（逗号分隔 Base64 字符串） |
+| `payload_audios` | `string` / `text` | 无 | 原始音频数组（逗号分隔 Base64 字符串） |
+| `payload_images` | `string` / `text` | 无 | 原始图片数组（逗号分隔 Base64 字符串） |
+| `payload_video_insights` | `string` / `text` | 无 | 视频洞察数组（逗号分隔 Base64 字符串） |
+| `payload_audio_insights` | `string` / `text` | 无 | 音频洞察数组（逗号分隔 Base64 字符串） |
+| `payload_image_insights` | `string` / `text` | 无 | 图片洞察数组（逗号分隔 Base64 字符串） |
 | `report` | `string` / `text` | 无 | 最终报告 |
 | `created_at` | `time.Time` / `datetime` | 索引, `not null` | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 索引, `not null` | 更新时间 |

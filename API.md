@@ -261,6 +261,7 @@
       "record_id": "TASK-123456",
       "title": "疑似冒充客服退款",
       "case_summary": "对方要求转入安全账户",
+      "scam_type": "冒充客服类",
       "risk_level": "高",
       "created_at": "2026-02-20T10:35:00+08:00"
     }
@@ -419,6 +420,7 @@
     "user_id": "5",
     "title": "TED学术演讲视频风险核查",
     "status": "completed",
+    "scam_type": "冒充客服类",
     "summary": "该内容以公开演讲为主，未发现直接诈骗指令。",
     "created_at": "2026-02-20T23:57:30+08:00",
     "updated_at": "2026-02-20T23:57:45+08:00",
@@ -447,6 +449,7 @@
     "user_id": "5",
     "title": "批量视频线索核查",
     "status": "completed",
+    "scam_type": "冒充客服类",
     "summary": "3 条视频中有 1-2 条出现明显风险信号，需人工复核。",
     "created_at": "2026-02-21T10:00:00+08:00",
     "updated_at": "2026-02-21T10:00:24+08:00",
@@ -620,6 +623,9 @@
 - `summary` 为任务摘要字段：
   - 历史归档任务（`completed`/`failed`）返回归档摘要；
   - 进行中任务（`pending`/`processing`）固定返回空字符串 `""`。
+- `scam_type` 为可选字段：
+  - 历史归档任务（`completed`/`failed`）若已识别诈骗类型则返回；
+  - 进行中任务（`pending`/`processing`）通常不返回该字段。
 - `*_insights` 始终是字符串数组：
   - 单文件时，长度通常为 `1`。
   - 多文件时，长度通常与输入文件数量一致，按输入顺序对应。

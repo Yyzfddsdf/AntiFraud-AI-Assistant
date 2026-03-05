@@ -19,6 +19,7 @@ type TaskRecord struct {
 	UserID     string      `json:"user_id"`
 	Title      string      `json:"title"`
 	Status     string      `json:"status"`
+	ScamType   string      `json:"scam_type,omitempty"`
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  time.Time   `json:"updated_at"`
 	Payload    TaskPayload `json:"payload"`
@@ -35,6 +36,7 @@ type CaseHistoryRecord struct {
 	Title       string      `json:"title"`
 	Status      string      `json:"status"`
 	CaseSummary string      `json:"case_summary"`
+	ScamType    string      `json:"scam_type,omitempty"`
 	RiskLevel   string      `json:"risk_level"`
 	CreatedAt   time.Time   `json:"created_at"`
 	Payload     TaskPayload `json:"payload"`
@@ -81,6 +83,7 @@ type HistoryCaseEntity struct {
 	UserID      string `gorm:"index;not null"`
 	Title       string `gorm:"size:255;not null"`
 	CaseSummary string `gorm:"type:text"`
+	ScamType    string `gorm:"size:64;index"`
 	Status      string `gorm:"size:32;index;not null"`
 	RiskLevel   string `gorm:"size:32;index"`
 
