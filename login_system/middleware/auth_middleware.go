@@ -5,11 +5,10 @@ import (
 	"strings"
 
 	"antifraud/database"
-	"antifraud/login_system/controllers"
+	authcore "antifraud/login_system/auth"
 	"antifraud/login_system/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // AuthMiddleware 校验 Authorization Bearer JWT，并将用户信息写入上下文。
@@ -29,13 +28,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := parts[1]
-		claims := &controllers.Claims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return controllers.GetJWTSecret(), nil
-		})
-		if err != nil || !token.Valid {
+		claims, err := authcore.ParseToken(parts[1])
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效或过期的 Token"})
 			c.Abort()
 			return

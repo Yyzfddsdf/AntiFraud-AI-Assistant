@@ -2,43 +2,16 @@ package controllers
 
 import (
 	"antifraud/database"
+	authcore "antifraud/login_system/auth"
 	"antifraud/login_system/models"
 	"antifraud/login_system/settings"
 	"errors"
 	"net/http"
 	"regexp"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var jwtSecret = []byte(settings.GetJWTSecret())
-
-type Claims struct {
-	UserID   uint   `json:"user_id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	jwt.RegisteredClaims
-}
-
-// generateJWT 生成包含用户基础标识的 JWT。
-func generateJWT(userID uint, email, username string) (string, error) {
-	expirationTime := time.Now().Add(settings.JWTExpireDuration)
-	claims := &Claims{
-		UserID:   userID,
-		Email:    email,
-		Username: username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
-}
 
 // RegisterHandle 处理用户注册：参数校验、验证码校验、密码强度校验、写库。
 func RegisterHandle(c *gin.Context) {
@@ -117,7 +90,7 @@ func LoginHandle(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := generateJWT(user.ID, user.Email, user.Username)
+	tokenString, err := authcore.IssueToken(user.ID, user.Email, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Token 失败"})
 		return
@@ -181,11 +154,6 @@ func DeleteCurrentUserHandle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "用户已删除"})
-}
-
-// GetJWTSecret 对外提供 JWT 密钥读取（供鉴权中间件使用）。
-func GetJWTSecret() []byte {
-	return jwtSecret
 }
 
 var (
