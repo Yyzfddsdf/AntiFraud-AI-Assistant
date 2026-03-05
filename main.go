@@ -26,6 +26,7 @@ func main() {
 	if err := database.InitHistoricalCaseDB(); err != nil {
 		log.Fatalf("init historical case db failed: %v", err)
 	}
+	authUserReader := middleware.NewGormAuthUserReader(database.DB)
 
 	r := gin.Default()
 
@@ -63,11 +64,11 @@ func main() {
 
 	// 业务接口（需要 JWT）。
 	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware())
+	api.Use(middleware.AuthMiddleware(authUserReader))
 	{
 		api.GET("/user", controllers.GetCurrentUserHandle)
 		api.DELETE("/user", controllers.DeleteCurrentUserHandle)
-		api.GET("/users", middleware.AdminMiddleware(), controllers.GetAllUsersHandle)
+		api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAllUsersHandle)
 		api.POST("/upgrade", controllers.UpgradeUserHandle)
 		api.POST("/chat", chatapi.ChatHandle)
 		api.GET("/chat/context", chatapi.GetChatContextHandle)
@@ -82,7 +83,7 @@ func main() {
 
 		// 管理员案件库接口（需要管理员权限）。
 		adminCaseLibrary := api.Group("/scam/case-library")
-		adminCaseLibrary.Use(middleware.AdminMiddleware())
+		adminCaseLibrary.Use(middleware.AdminMiddleware(authUserReader))
 		{
 			adminCaseLibrary.POST("/cases", httpapi.CreateHistoricalCaseHandle)
 			adminCaseLibrary.GET("/cases", httpapi.GetHistoricalCasePreviewHandle)
