@@ -26,15 +26,22 @@ type modalityResult struct {
 // MainAgent 负责聚合多模态子智能体结果并驱动工具调用闭环。
 type MainAgent struct {
 	CommonAgent
+	client       *openai.Client
 	modelID      string
 	systemPrompt string
 }
 
 // NewMainAgent 按配置创建主智能体实例。
 func NewMainAgent(modelCfg config.ModelConfig, retryCfg config.RetryConfig, systemPrompt string) *MainAgent {
+	common := NewCommonAgent("MainAgent", modelCfg, retryCfg)
+
 	return &MainAgent{
-		CommonAgent:  NewCommonAgent("MainAgent", modelCfg, retryCfg),
-		modelID:      modelCfg.Model,
+		CommonAgent: common,
+		client: openai.NewClientWithConfig(openai.Config{
+			APIKey:  common.APIKey,
+			BaseURL: common.BaseURL,
+		}),
+		modelID:      strings.TrimSpace(modelCfg.Model),
 		systemPrompt: strings.TrimSpace(systemPrompt),
 	}
 }
@@ -210,9 +217,9 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 	ctx = tool.BindTaskID(ctx, taskID)
 	ctx = tool.BindTaskPayload(ctx, rawText, rawVideos, rawAudios, rawImages)
 
-	openaiCfg := openai.DefaultConfig(a.APIKey)
-	openaiCfg.BaseURL = a.BaseURL
-	client := openai.NewClientWithConfig(openaiCfg)
+	if a.client == nil {
+		return "", fmt.Errorf("main agent client is not initialized")
+	}
 
 	messages := []openai.ChatCompletionMessage{
 		{
@@ -236,7 +243,7 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 		var resp openai.ChatCompletionResponse
 		if err := a.Retry(action, func() error {
 			var callErr error
-			resp, callErr = client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+			resp, callErr = a.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 				Model:       a.modelID,
 				Messages:    messages,
 				Tools:       tool.MainAgentTools(),
