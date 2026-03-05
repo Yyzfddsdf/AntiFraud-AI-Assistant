@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"time"
 
-	chatcfg "antifraud/chat_system/config"
+	"antifraud/cache"
 	chattool "antifraud/chat_system/tool"
-
-	"github.com/redis/go-redis/v9"
+	appcfg "antifraud/config"
 
 	openai "antifraud/llm"
 )
 
 const conversationTTL = 5 * time.Minute
-const chatSystemPrompt = `你是“反诈对话助手”，同时保持简洁、友好、专业，默认使用中文回复。
+const defaultChatSystemPrompt = `你是“反诈对话助手”，同时保持简洁、友好、专业，默认使用中文回复。
 
 你的核心目标是主动引导用户防骗，而不是只被动答题。每轮对话按以下原则执行：
 1) 先识别风险信号：冒充公检法/客服、诱导转账、索要验证码、要求屏幕共享/远程控制、投资拉群、刷单返利、交友裸聊敲诈、虚假链接等。
@@ -56,16 +56,23 @@ type ChatService struct {
 }
 
 // NewChatService 根据聊天配置创建服务实例。
-func NewChatService(cfg *chatcfg.Config) *ChatService {
-	modelID := strings.TrimSpace(cfg.ChatModel)
+func NewChatService(cfg *appcfg.ChatConfig) *ChatService {
+	modelID := ""
+	apiKey := ""
+	baseURL := ""
+	if cfg != nil {
+		modelID = strings.TrimSpace(cfg.Model)
+		apiKey = strings.TrimSpace(cfg.APIKey)
+		baseURL = strings.TrimSpace(cfg.BaseURL)
+	}
 	if modelID == "" {
 		modelID = "qwen/qwen3.5-397b-a17b"
 	}
 
 	return &ChatService{
 		client: openai.NewClientWithConfig(openai.Config{
-			APIKey:  cfg.APIKey,
-			BaseURL: cfg.BaseURL,
+			APIKey:  apiKey,
+			BaseURL: baseURL,
 		}),
 		model: modelID,
 	}
@@ -73,7 +80,7 @@ func NewChatService(cfg *chatcfg.Config) *ChatService {
 
 // BuildMessagesForUser 组装最终请求消息：
 // 系统提示词 + Redis 历史上下文 + 当前用户输入。
-func BuildMessagesForUser(cfg *chatcfg.Config, userID string, currentUserInput string) ([]openai.ChatCompletionMessage, error) {
+func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput string) ([]openai.ChatCompletionMessage, error) {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
@@ -82,35 +89,20 @@ func BuildMessagesForUser(cfg *chatcfg.Config, userID string, currentUserInput s
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: chatSystemPrompt,
+			Content: resolveChatSystemPrompt(systemPrompt),
 		},
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPwd,
-		DB:       cfg.RedisDB,
-	})
-	defer rdb.Close()
-
-	ctx := context.Background()
 	key := conversationKey(trimmedUserID)
-	raw, err := rdb.Get(ctx, key).Result()
-	if err != nil {
-		if err != redis.Nil {
-			return nil, fmt.Errorf("load conversation from redis failed: %w", err)
-		}
-		raw = ""
-	}
-
-	if raw != "" {
-		_ = rdb.Expire(ctx, key, conversationTTL).Err()
-	}
-
 	history := make([]ConversationMessage, 0)
-	if strings.TrimSpace(raw) != "" {
-		if err := json.Unmarshal([]byte(raw), &history); err != nil {
-			return nil, fmt.Errorf("decode conversation failed: %w", err)
+	found, err := cache.GetJSON(key, &history)
+	if err != nil {
+		return nil, fmt.Errorf("load conversation from redis failed: %w", err)
+	}
+	if found {
+		// 读取历史后刷新 TTL，保持活跃会话不被过早回收。
+		if err := cache.SetJSON(key, history, conversationTTL); err != nil {
+			log.Printf("[chat] refresh conversation ttl failed: user=%s err=%v", trimmedUserID, err)
 		}
 	}
 
@@ -356,7 +348,7 @@ func (c *streamToolCallCollector) ensure(index int) *openai.ToolCall {
 }
 
 // PersistConversation 将本轮新增消息追加写入 Redis，并重置 TTL。
-func PersistConversation(cfg *chatcfg.Config, userID string, newMessages []ConversationMessage) error {
+func PersistConversation(userID string, newMessages []ConversationMessage) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
@@ -365,57 +357,31 @@ func PersistConversation(cfg *chatcfg.Config, userID string, newMessages []Conve
 		return nil
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPwd,
-		DB:       cfg.RedisDB,
-	})
-	defer rdb.Close()
-
-	ctx := context.Background()
 	key := conversationKey(trimmedUserID)
 
 	history := make([]ConversationMessage, 0)
-	raw, err := rdb.Get(ctx, key).Result()
-	if err != nil && err != redis.Nil {
+	_, err := cache.GetJSON(key, &history)
+	if err != nil {
 		return fmt.Errorf("load conversation before persist failed: %w", err)
-	}
-	if strings.TrimSpace(raw) != "" {
-		if err := json.Unmarshal([]byte(raw), &history); err != nil {
-			return fmt.Errorf("decode conversation before persist failed: %w", err)
-		}
 	}
 
 	history = append(history, sanitizeConversationMessages(newMessages)...)
 
-	payload, err := json.Marshal(history)
-	if err != nil {
-		return fmt.Errorf("encode conversation failed: %w", err)
-	}
-
-	if err := rdb.Set(ctx, key, payload, conversationTTL).Err(); err != nil {
+	if err := cache.SetJSON(key, history, conversationTTL); err != nil {
 		return fmt.Errorf("save conversation to redis failed: %w", err)
 	}
 	return nil
 }
 
 // ClearConversation 清空指定用户会话上下文。
-func ClearConversation(cfg *chatcfg.Config, userID string) error {
+func ClearConversation(userID string) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPwd,
-		DB:       cfg.RedisDB,
-	})
-	defer rdb.Close()
-
-	ctx := context.Background()
 	key := conversationKey(trimmedUserID)
-	if err := rdb.Del(ctx, key).Err(); err != nil {
+	if err := cache.Delete(key); err != nil {
 		return fmt.Errorf("clear conversation from redis failed: %w", err)
 	}
 
@@ -423,38 +389,24 @@ func ClearConversation(cfg *chatcfg.Config, userID string) error {
 }
 
 // GetConversationContext 查询上下文、剩余 TTL 和上下文是否存在。
-func GetConversationContext(cfg *chatcfg.Config, userID string) ([]ConversationMessage, int64, bool, error) {
+func GetConversationContext(userID string) ([]ConversationMessage, int64, bool, error) {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPwd,
-		DB:       cfg.RedisDB,
-	})
-	defer rdb.Close()
-
-	ctx := context.Background()
 	key := conversationKey(trimmedUserID)
 
-	raw, err := rdb.Get(ctx, key).Result()
+	history := make([]ConversationMessage, 0)
+	found, err := cache.GetJSON(key, &history)
 	if err != nil {
-		if err == redis.Nil {
-			return []ConversationMessage{}, 0, false, nil
-		}
 		return nil, 0, false, fmt.Errorf("load conversation context failed: %w", err)
 	}
-
-	history := make([]ConversationMessage, 0)
-	if strings.TrimSpace(raw) != "" {
-		if err := json.Unmarshal([]byte(raw), &history); err != nil {
-			return nil, 0, true, fmt.Errorf("decode conversation context failed: %w", err)
-		}
+	if !found {
+		return []ConversationMessage{}, 0, false, nil
 	}
 
-	ttl, err := rdb.TTL(ctx, key).Result()
+	ttl, err := cache.TTL(key)
 	if err != nil {
 		return nil, 0, true, fmt.Errorf("read conversation ttl failed: %w", err)
 	}
@@ -559,4 +511,12 @@ func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletio
 func EncodeEvent(event map[string]interface{}) string {
 	data, _ := json.Marshal(event)
 	return string(data)
+}
+
+func resolveChatSystemPrompt(prompt string) string {
+	trimmed := strings.TrimSpace(prompt)
+	if trimmed == "" {
+		return defaultChatSystemPrompt
+	}
+	return trimmed
 }

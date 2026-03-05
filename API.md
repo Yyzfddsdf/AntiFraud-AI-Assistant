@@ -666,8 +666,8 @@
 - Redis 上下文键：`chat:context:<user_id>`。
 - 上下文缓存过期时间：5 分钟；每次新请求会刷新 TTL 为 5 分钟。
 - 若缓存过期，下一次请求将视为新对话。
-- 聊天模型配置读取：`chat_system/config/config.json`（需正确配置 `api_key`、`base_url`、`chat_model`）。
-- Redis 配置同样读取 `chat_system/config/config.json`（`redis_addr`、`redis_password`、`redis_db`）。
+- 聊天配置读取：`config/config.json` 的 `chat` 节点（`prompt`、`model`、`api_key`、`base_url`）。
+- Redis 配置读取：`config/config.json` 的 `redis` 节点（`addr`、`password`、`db`）。
 
 ### 响应事件
 

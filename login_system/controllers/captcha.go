@@ -5,47 +5,23 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html"
+	"log"
 	"math/big"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
+	"antifraud/cache"
 	"antifraud/login_system/settings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type captchaEntry struct {
-	Code      string
-	ExpiresAt time.Time
+	Code string `json:"code"`
 }
 
-// captchaStore 为进程内验证码存储：按 captchaId 保存验证码与过期时间。
-var captchaStore = struct {
-	mu   sync.Mutex
-	data map[string]captchaEntry
-}{
-	data: map[string]captchaEntry{},
-}
-
-// init 启动过期验证码清理协程。
-func init() {
-	go func() {
-		ticker := time.NewTicker(settings.CaptchaCleanupInterval)
-		defer ticker.Stop()
-		for range ticker.C {
-			now := time.Now()
-			captchaStore.mu.Lock()
-			for id, item := range captchaStore.data {
-				if now.After(item.ExpiresAt) {
-					delete(captchaStore.data, id)
-				}
-			}
-			captchaStore.mu.Unlock()
-		}
-	}()
-}
+const captchaCachePrefix = "cache:captcha:"
 
 // GetCaptchaHandle 生成并返回彩色 SVG 验证码（Data URL）。
 func GetCaptchaHandle(c *gin.Context) {
@@ -55,7 +31,10 @@ func GetCaptchaHandle(c *gin.Context) {
 		return
 	}
 
-	storeCaptcha(captchaID, code, settings.CaptchaTTL)
+	if err := storeCaptcha(captchaID, code, settings.CaptchaTTL); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "验证码存储失败"})
+		return
+	}
 	svg := buildCaptchaSVG(code)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -67,36 +46,39 @@ func GetCaptchaHandle(c *gin.Context) {
 
 // verifyCaptcha 校验验证码：一次性消费，校验后立即删除。
 func verifyCaptcha(captchaID, captchaCode string) bool {
+	trimmedID := strings.TrimSpace(captchaID)
 	provided := strings.TrimSpace(strings.ToUpper(captchaCode))
-	if captchaID == "" || provided == "" {
+	if trimmedID == "" || provided == "" {
 		return false
 	}
 
-	now := time.Now()
-	captchaStore.mu.Lock()
-	defer captchaStore.mu.Unlock()
-
-	entry, exists := captchaStore.data[captchaID]
-	if !exists {
+	var entry captchaEntry
+	found, err := cache.GetDelJSON(captchaCacheKey(trimmedID), &entry)
+	if err != nil {
+		log.Printf("[captcha] verify failed: id=%s err=%v", trimmedID, err)
 		return false
 	}
-
-	delete(captchaStore.data, captchaID)
-	if now.After(entry.ExpiresAt) {
+	if !found {
 		return false
 	}
-
 	return strings.EqualFold(entry.Code, provided)
 }
 
-// storeCaptcha 保存验证码到内存，并设置 TTL。
-func storeCaptcha(captchaID, code string, ttl time.Duration) {
-	captchaStore.mu.Lock()
-	defer captchaStore.mu.Unlock()
-	captchaStore.data[captchaID] = captchaEntry{
-		Code:      strings.ToUpper(code),
-		ExpiresAt: time.Now().Add(ttl),
+// storeCaptcha 保存验证码到 Redis，并设置 TTL。
+func storeCaptcha(captchaID, code string, ttl time.Duration) error {
+	trimmedID := strings.TrimSpace(captchaID)
+	if trimmedID == "" {
+		return fmt.Errorf("captcha id is empty")
 	}
+
+	entry := captchaEntry{
+		Code: strings.ToUpper(strings.TrimSpace(code)),
+	}
+	return cache.SetJSON(captchaCacheKey(trimmedID), entry, ttl)
+}
+
+func captchaCacheKey(captchaID string) string {
+	return captchaCachePrefix + strings.TrimSpace(captchaID)
 }
 
 // generateCaptchaCode 生成随机验证码 ID 与验证码文本。

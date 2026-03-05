@@ -13,7 +13,7 @@
 
 - 语言与框架：Go `1.25`、Gin
 - ORM 与数据库：GORM + SQLite
-- 缓存：Redis（聊天上下文）
+- 缓存：Redis（统一缓存层：验证码、限流桶、向量库管理侧缓存、聊天上下文）
 - 鉴权：JWT（`github.com/golang-jwt/jwt/v5`）
 - 模型接口：OpenAI 兼容协议（项目内自定义 `llm` 客户端）
 
@@ -54,20 +54,32 @@ go run .
 
 主配置文件：`config/config.json`
 
-包含配置：
+配置职责：
 
-- `agents.main / image / video / audio`：各智能体模型参数
-- `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
-- `prompts.main / image / video / audio`：提示词
-- `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
+- `config/config.json`：
+  - `agents.main / image / video / audio`：多智能体模型参数
+  - `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
+  - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
+  - `redis`：统一缓存配置（`addr`、`password`、`db`）
+  - `prompts.main / image / video / audio`：提示词
+  - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
-聊天模块单独读取：`chat_system/config/config.json`
+说明：聊天模块配置已并入主配置文件（`chat_system/config/config.go` 已移除），聊天上下文存取统一走 `cache/` 模块，实际 Redis 连接由 `config/config.json` 的 `redis` 节点决定。
+
+### 4.1 Redis 缓存键规范（当前实现）
+
+- `cache:captcha:<captcha_id>`：验证码缓存，TTL=`3` 分钟（一次性消费）
+- `cache:rate_limit:ip:<ip>:<window_ms>`：限流计数桶，TTL=`RateLimitWindow`
+- `cache:case_library:vector_records`：历史案件向量缓存（Hash）
+- `cache:case_library:vector_records_ready`：向量缓存就绪标记
+- `chat:context:<user_id>`：聊天会话上下文，TTL=`5` 分钟
 
 ---
 
 ## 5. 项目结构（核心目录）
 
 - `main.go`：服务入口、路由挂载、中间件注册
+- `cache/`：统一 Redis 缓存函数（少参数读写、计数窗口、Hash 管理）
 - `login_system/`：注册登录、用户管理、JWT 中间件、限流
 - `chat_system/`：聊天 SSE、工具调用、Redis 上下文
 - `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
@@ -87,7 +99,8 @@ flowchart LR
     G --> M[多智能体编排<br/>multi_agent]
     G --> L[案件库管理 API<br/>multi_agent/httpapi/historical_case_handler]
 
-    C --> R[(Redis<br/>会话上下文)]
+    C --> R[(Redis<br/>统一缓存层)]
+    A --> R
     C --> O[LLM 客户端<br/>llm]
 
     M --> Q[任务队列<br/>multi_agent/queue]
@@ -97,6 +110,7 @@ flowchart LR
     M --> O
     T --> O
     CL --> O
+    CL --> R
 
     A --> DB1[(SQLite: auth_system.db)]
     S --> DB1
@@ -111,7 +125,8 @@ flowchart LR
 - API 层统一接入鉴权、聊天、多模态分析、案件库管理。
 - 多模态任务走“入队 -> 子智能体并发分析 -> 主智能体工具闭环 -> 归档”流程。
 - 数据层双库隔离：业务库（用户/任务）与案件知识库（结构化字段 + 向量）分离。
-- 聊天上下文放 Redis；模型调用统一走 `llm` 客户端，支持 Chat / Embedding / SSE。
+- Redis 统一缓存层承载验证码、限流桶、向量库管理侧缓存与聊天上下文。
+- 模型调用统一走 `llm` 客户端，支持 Chat / Embedding / SSE。
 
 ---
 
@@ -201,11 +216,11 @@ flowchart LR
 - 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `config/config.json` 读取
 - 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
 
-### 8.4 向量检索优化（当前实现）
+### 8.4 向量检索与缓存优化（当前实现）
 
 `search_similar_cases` 工具已经接入真实数据库检索链路：
 
-- 查询流程：`query -> embedding -> 向量相似度排序 -> topK 返回`
+- 查询流程：`query -> embedding -> Redis 快照读取(缺失时回源 DB) -> 向量相似度排序 -> topK 返回`
 - 算法细节：
   - `L2` 归一化（query 与 case 向量）
   - 清洗 `NaN/Inf`
@@ -214,15 +229,15 @@ flowchart LR
 - `top_k` 规格化：默认 `5`，最大 `20`
 - 排序规则：相似度降序；同分按创建时间降序
 
-### 内存驻留优化
+### 分布式缓存优化（新增）
 
-为避免每次检索全量扫库，已实现“懒加载 + 增量刷新”：
+向量库缓存已由进程内内存迁移到 Redis，当前策略：
 
-- 首次检索时全量加载到内存缓存
-- 后续检索直接读取内存快照
-- 新增案件后增量 `upsert` 缓存
-- 删除案件后增量 `remove` 缓存
-- 冷启动并发保护：若首次加载与写入并发，使用 `pendingUpserts/pendingDeletes` 合并，避免丢更新
+- 首次检索时若缓存未就绪，回源 DB 并回填 Redis Hash
+- 后续检索直接读取 Redis 快照
+- 新增案件后增量 `HSET` 同步缓存
+- 删除案件后增量 `HDEL` 同步缓存
+- Redis 异常时查询自动回源 DB，避免级联故障
 
 ### 8.5 输入质量与一致性优化（新增）
 
@@ -251,12 +266,12 @@ flowchart LR
 
 - 子智能体：`ImageAgent`、`VideoAgent`、`AudioAgent`
 - 主智能体：`MainAgent`
-- 队列调度：`queue/processTask`
+- 队列调度：`queue/processTask`（当前为进程内异步执行）
 
 流程：
 
 1. API 入队创建任务
-2. 后台 goroutine 标记 `processing`
+2. 后台异步执行并标记 `processing`
 3. 子智能体并发分析各模态
 4. 主智能体聚合并进入工具调用循环
 5. 生成最终报告并归档历史
@@ -289,7 +304,7 @@ flowchart LR
 
 - SSE 流式输出
 - 工具调用（`chat_query_user_info`、`chat_query_user_case_history`）
-- Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟
+- Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `cache/` 统一函数读写）
 - 会话可刷新：`POST /api/chat/refresh`
 
 ### 9.6 用户风险趋势总览（创新点）
@@ -319,7 +334,7 @@ flowchart LR
 - 管理员权限：
   - `GET /api/users`
   - 历史案件库上传/查询/删除接口
-- 全局限流：按 IP + 时间窗口限制请求速率
+- 全局限流：按 IP + 时间窗口限制请求速率（计数存储于 Redis）
 - 注册安全策略：
   - 密码复杂度校验（大写+小写+符号）
   - 注册时年龄默认 `28`，不接受注册请求中直接传 `age`
@@ -387,6 +402,12 @@ flowchart LR
 go test ./...
 ```
 
+启动前检查（建议）：
+
+1. 确认 Redis 可用，并与 `config/config.json -> redis` 一致。
+2. 确认数据库文件目录可写（`DB_PATH`、`HISTORICAL_CASE_DB_PATH`）。
+3. 生产环境必须设置 `JWT_SECRET` 与 `INVITE_CODE_ADMIN`。
+
 本地联调建议：
 
 1. 先注册/登录拿 JWT
@@ -398,7 +419,29 @@ go test ./...
 
 ## 14. 可继续优化方向
 
-- 向量检索可升级为 ANN 索引（当前为内存全量余弦）
+- 向量检索可升级为 ANN 索引（当前为 Redis 快照 + 全量余弦）
 - `historical_case_library` 可引入按字段加权重排
 - 任务队列可引入 worker 池和持久队列（当前为进程内 goroutine）
 - 增加数据库观测指标（QPS、慢查询、缓存命中率）
+
+---
+
+## 15. 工程优化进展（2026-03）
+
+### 15.1 已完成优化
+
+- 新增统一缓存模块 `cache/`，减少业务侧重复缓存代码。
+- 验证码从进程内 `map` 迁移到 Redis，支持多实例一致校验与一次性消费。
+- 限流桶从进程内 `map` 迁移到 Redis 计数窗口，支持多实例共享限流配额。
+- 向量库管理侧缓存迁移到 Redis Hash，支持多实例共享检索快照。
+- 聊天上下文读写迁移到 `cache/` 通用函数，缓存访问路径统一。
+- 主配置新增 `redis` 节点，统一缓存连接参数收敛在 `config/config.json`。
+
+### 15.2 当前边界
+
+- 多模态任务队列仍是进程内异步执行模型（`go processTask`），还不是分布式 Worker 架构。
+
+### 15.3 下一阶段建议（低改动优先）
+
+- 先引入 DB 抢占式 Worker（`ClaimNextTask`），将任务消费从“本地 goroutine”升级为“多实例共享任务池”。
+- 再补充任务租约心跳（`lease_until`）与重试上限（`retry_count`），降低长任务与异常任务引发的级联风险。

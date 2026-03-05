@@ -1,19 +1,26 @@
 package case_library
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
+	"antifraud/cache"
 	"antifraud/database"
 )
 
 const (
 	defaultSimilarCaseTopK = 5
 	maxSimilarCaseTopK     = 20
+)
+
+const (
+	historicalCaseVectorCacheHashKey  = "cache:case_library:vector_records"
+	historicalCaseVectorCacheReadyKey = "cache:case_library:vector_records_ready"
 )
 
 // SimilarCaseResult represents one ranked case from vector search.
@@ -28,22 +35,6 @@ type SimilarCaseResult struct {
 	ViolatedLaw     string
 	Similarity      float64
 	CreatedAt       time.Time
-}
-
-type historicalCaseVectorCache struct {
-	mu             sync.RWMutex
-	loaded         bool
-	byID           map[string]HistoricalCaseRecord
-	list           []HistoricalCaseRecord
-	pendingUpserts map[string]HistoricalCaseRecord
-	pendingDeletes map[string]struct{}
-}
-
-var caseVectorCache = historicalCaseVectorCache{
-	byID:           map[string]HistoricalCaseRecord{},
-	list:           []HistoricalCaseRecord{},
-	pendingUpserts: map[string]HistoricalCaseRecord{},
-	pendingDeletes: map[string]struct{}{},
 }
 
 // QueryAllHistoricalCases keeps the full database query behavior for non-search callers.
@@ -69,7 +60,7 @@ func queryAllHistoricalCasesFromDB() ([]HistoricalCaseRecord, error) {
 	return records, nil
 }
 
-// SearchTopKSimilarCasesByVector executes cosine similarity search from in-memory cache.
+// SearchTopKSimilarCasesByVector executes cosine similarity search from distributed Redis cache.
 // Cache behavior:
 // 1) first search lazily loads all records from DB once;
 // 2) after cache is loaded, writes are incrementally synced by create/delete paths.
@@ -125,124 +116,139 @@ func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarC
 }
 
 func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {
-	if err := ensureHistoricalCaseVectorCacheLoaded(); err != nil {
-		return nil, err
+	records, ready, err := loadHistoricalCaseVectorCacheFromRedis()
+	if err != nil {
+		log.Printf("[case_library] load vector cache from redis failed: %v", err)
+	} else if ready {
+		return cloneHistoricalCaseRecords(records), nil
 	}
 
-	caseVectorCache.mu.RLock()
-	defer caseVectorCache.mu.RUnlock()
-
-	snapshot := make([]HistoricalCaseRecord, 0, len(caseVectorCache.list))
-	for _, item := range caseVectorCache.list {
-		snapshot = append(snapshot, cloneHistoricalCaseRecord(item))
+	recordsFromDB, dbErr := queryAllHistoricalCasesFromDB()
+	if dbErr != nil {
+		// Redis 异常与 DB 异常不叠加传播，优先返回明确的 DB 错误。
+		return nil, dbErr
 	}
-	return snapshot, nil
+
+	if cacheErr := replaceHistoricalCaseVectorCache(recordsFromDB); cacheErr != nil {
+		log.Printf("[case_library] refresh vector cache to redis failed: %v", cacheErr)
+	}
+	return cloneHistoricalCaseRecords(recordsFromDB), nil
 }
 
-func ensureHistoricalCaseVectorCacheLoaded() error {
-	caseVectorCache.mu.RLock()
-	loaded := caseVectorCache.loaded
-	caseVectorCache.mu.RUnlock()
-	if loaded {
-		return nil
+func loadHistoricalCaseVectorCacheFromRedis() ([]HistoricalCaseRecord, bool, error) {
+	var ready bool
+	readyFound, err := cache.GetJSON(historicalCaseVectorCacheReadyKey, &ready)
+	if err != nil {
+		return nil, false, err
 	}
 
-	records, err := queryAllHistoricalCasesFromDB()
+	values, err := cache.HashGetAll(historicalCaseVectorCacheHashKey)
 	if err != nil {
+		return nil, false, err
+	}
+	if len(values) == 0 {
+		return []HistoricalCaseRecord{}, readyFound && ready, nil
+	}
+
+	records := make([]HistoricalCaseRecord, 0, len(values))
+	for caseID, raw := range values {
+		var item HistoricalCaseRecord
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			return nil, false, fmt.Errorf("decode redis vector cache failed: case_id=%s err=%w", strings.TrimSpace(caseID), err)
+		}
+		records = append(records, cloneHistoricalCaseRecord(item))
+	}
+	return records, true, nil
+}
+
+func replaceHistoricalCaseVectorCache(records []HistoricalCaseRecord) error {
+	if err := cache.Delete(historicalCaseVectorCacheHashKey); err != nil {
 		return err
 	}
 
-	caseVectorCache.mu.Lock()
-	defer caseVectorCache.mu.Unlock()
-
-	if caseVectorCache.loaded {
-		return nil
-	}
-	caseVectorCache.byID = make(map[string]HistoricalCaseRecord, len(records))
-	caseVectorCache.list = make([]HistoricalCaseRecord, 0, len(records))
 	for _, item := range records {
-		upsertHistoricalCaseVectorCacheUnsafe(item)
+		trimmedCaseID := strings.TrimSpace(item.CaseID)
+		if trimmedCaseID == "" {
+			continue
+		}
+		normalized := cloneHistoricalCaseRecord(item)
+		normalized.CaseID = trimmedCaseID
+		if err := cache.HashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
+			return err
+		}
 	}
 
-	for caseID := range caseVectorCache.pendingDeletes {
-		removeHistoricalCaseVectorCacheUnsafe(caseID)
+	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+		return err
 	}
-	for _, item := range caseVectorCache.pendingUpserts {
-		upsertHistoricalCaseVectorCacheUnsafe(item)
-	}
-	caseVectorCache.pendingUpserts = map[string]HistoricalCaseRecord{}
-	caseVectorCache.pendingDeletes = map[string]struct{}{}
-	caseVectorCache.loaded = true
 	return nil
 }
 
-// upsertHistoricalCaseVectorCache incrementally updates one record in memory.
-// It only runs after cache is already loaded; before that, first search will full-load from DB.
+// upsertHistoricalCaseVectorCache incrementally updates one record in Redis.
 func upsertHistoricalCaseVectorCache(record HistoricalCaseRecord) {
 	trimmedCaseID := strings.TrimSpace(record.CaseID)
 	if trimmedCaseID == "" {
 		return
 	}
 
-	caseVectorCache.mu.Lock()
-	defer caseVectorCache.mu.Unlock()
-	if !caseVectorCache.loaded {
-		delete(caseVectorCache.pendingDeletes, trimmedCaseID)
-		caseVectorCache.pendingUpserts[trimmedCaseID] = cloneHistoricalCaseRecord(record)
+	ensureHistoricalCaseVectorCacheReady()
+
+	normalized := cloneHistoricalCaseRecord(record)
+	normalized.CaseID = trimmedCaseID
+	if err := cache.HashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
+		log.Printf("[case_library] upsert vector cache failed: case_id=%s err=%v", trimmedCaseID, err)
 		return
 	}
-	upsertHistoricalCaseVectorCacheUnsafe(record)
+	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+		log.Printf("[case_library] mark vector cache ready failed: case_id=%s err=%v", trimmedCaseID, err)
+	}
 }
 
-func upsertHistoricalCaseVectorCacheUnsafe(record HistoricalCaseRecord) {
-	trimmedCaseID := strings.TrimSpace(record.CaseID)
-	if trimmedCaseID == "" {
-		return
-	}
-
-	normalizedRecord := cloneHistoricalCaseRecord(record)
-	normalizedRecord.CaseID = trimmedCaseID
-	caseVectorCache.byID[trimmedCaseID] = normalizedRecord
-
-	for index := range caseVectorCache.list {
-		if strings.TrimSpace(caseVectorCache.list[index].CaseID) == trimmedCaseID {
-			caseVectorCache.list[index] = normalizedRecord
-			return
-		}
-	}
-	caseVectorCache.list = append(caseVectorCache.list, normalizedRecord)
-}
-
-// removeHistoricalCaseVectorCache incrementally removes one record in memory.
+// removeHistoricalCaseVectorCache incrementally removes one record from Redis.
 func removeHistoricalCaseVectorCache(caseID string) {
 	trimmedCaseID := strings.TrimSpace(caseID)
 	if trimmedCaseID == "" {
 		return
 	}
 
-	caseVectorCache.mu.Lock()
-	defer caseVectorCache.mu.Unlock()
-	if !caseVectorCache.loaded {
-		delete(caseVectorCache.pendingUpserts, trimmedCaseID)
-		caseVectorCache.pendingDeletes[trimmedCaseID] = struct{}{}
+	ensureHistoricalCaseVectorCacheReady()
+
+	if err := cache.HashDelete(historicalCaseVectorCacheHashKey, trimmedCaseID); err != nil {
+		log.Printf("[case_library] remove vector cache failed: case_id=%s err=%v", trimmedCaseID, err)
 		return
 	}
-
-	removeHistoricalCaseVectorCacheUnsafe(trimmedCaseID)
+	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+		log.Printf("[case_library] mark vector cache ready failed: case_id=%s err=%v", trimmedCaseID, err)
+	}
 }
 
-func removeHistoricalCaseVectorCacheUnsafe(trimmedCaseID string) {
-	if _, exists := caseVectorCache.byID[trimmedCaseID]; !exists {
+func ensureHistoricalCaseVectorCacheReady() {
+	var ready bool
+	found, err := cache.GetJSON(historicalCaseVectorCacheReadyKey, &ready)
+	if err != nil {
+		log.Printf("[case_library] read vector cache ready flag failed: %v", err)
 		return
 	}
-	delete(caseVectorCache.byID, trimmedCaseID)
-
-	for index := range caseVectorCache.list {
-		if strings.TrimSpace(caseVectorCache.list[index].CaseID) == trimmedCaseID {
-			caseVectorCache.list = append(caseVectorCache.list[:index], caseVectorCache.list[index+1:]...)
-			break
-		}
+	if found && ready {
+		return
 	}
+
+	records, err := queryAllHistoricalCasesFromDB()
+	if err != nil {
+		log.Printf("[case_library] query all cases for cache warmup failed: %v", err)
+		return
+	}
+	if err := replaceHistoricalCaseVectorCache(records); err != nil {
+		log.Printf("[case_library] warmup vector cache failed: %v", err)
+	}
+}
+
+func cloneHistoricalCaseRecords(records []HistoricalCaseRecord) []HistoricalCaseRecord {
+	cloned := make([]HistoricalCaseRecord, 0, len(records))
+	for _, item := range records {
+		cloned = append(cloned, cloneHistoricalCaseRecord(item))
+	}
+	return cloned
 }
 
 func cloneHistoricalCaseRecord(record HistoricalCaseRecord) HistoricalCaseRecord {
@@ -252,6 +258,7 @@ func cloneHistoricalCaseRecord(record HistoricalCaseRecord) HistoricalCaseRecord
 		Title:              strings.TrimSpace(record.Title),
 		TargetGroup:        strings.TrimSpace(record.TargetGroup),
 		RiskLevel:          strings.TrimSpace(record.RiskLevel),
+		ScamType:           strings.TrimSpace(record.ScamType),
 		CaseDescription:    strings.TrimSpace(record.CaseDescription),
 		TypicalScripts:     append([]string{}, record.TypicalScripts...),
 		Keywords:           append([]string{}, record.Keywords...),

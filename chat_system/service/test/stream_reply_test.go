@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	chatcfg "antifraud/chat_system/config"
 	chatservice "antifraud/chat_system/service"
+	appcfg "antifraud/config"
 	openai "antifraud/llm"
 )
 
@@ -42,9 +42,9 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &chatcfg.Config{
-		BaseURL:   server.URL,
-		ChatModel: "test-model",
+	cfg := &appcfg.ChatConfig{
+		BaseURL: server.URL,
+		Model:   "test-model",
 	}
 	svc := chatservice.NewChatService(cfg)
 
@@ -119,9 +119,9 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &chatcfg.Config{
-		BaseURL:   server.URL,
-		ChatModel: "test-model",
+	cfg := &appcfg.ChatConfig{
+		BaseURL: server.URL,
+		Model:   "test-model",
 	}
 	svc := chatservice.NewChatService(cfg)
 

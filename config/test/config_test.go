@@ -31,6 +31,12 @@ func validConfig() appcfg.Config {
 			APIKey:  "ekey",
 			BaseURL: "https://example.com/v1",
 		},
+		Chat: appcfg.ChatConfig{
+			Prompt:  "chat prompt",
+			Model:   "chat-model",
+			APIKey:  "ckey",
+			BaseURL: "https://chat.example.com/v1",
+		},
 		Prompts: appcfg.PromptConfig{
 			Main:  "m",
 			Image: "i",
@@ -85,6 +91,27 @@ func TestConfigNormalize(t *testing.T) {
 	}
 }
 
+func TestConfigChatFallbackToMainModel(t *testing.T) {
+	cfg := validConfig()
+	cfg.Chat = appcfg.ChatConfig{Prompt: "chat prompt"}
+
+	file := writeConfigFile(t, cfg)
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.Chat.Model != cfg.Agents.Main.Model {
+		t.Fatalf("expected chat model fallback to agents.main.model, got %q", loaded.Chat.Model)
+	}
+	if loaded.Chat.APIKey != cfg.Agents.Main.APIKey {
+		t.Fatalf("expected chat api_key fallback to agents.main.api_key, got %q", loaded.Chat.APIKey)
+	}
+	if loaded.Chat.BaseURL != cfg.Agents.Main.BaseURL {
+		t.Fatalf("expected chat base_url fallback to agents.main.base_url, got %q", loaded.Chat.BaseURL)
+	}
+}
+
 func TestConfigValidate(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -132,6 +159,13 @@ func TestConfigValidate(t *testing.T) {
 				c.Prompts.Audio = "   "
 			},
 			wantInErr: "prompts.audio",
+		},
+		{
+			name: "empty chat prompt",
+			modify: func(c *appcfg.Config) {
+				c.Chat.Prompt = "   "
+			},
+			wantInErr: "chat.prompt",
 		},
 	}
 

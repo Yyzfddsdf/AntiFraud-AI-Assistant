@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	chatcfg "antifraud/chat_system/config"
 	chatservice "antifraud/chat_system/service"
+	appcfg "antifraud/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,20 +41,20 @@ func ChatHandle(c *gin.Context) {
 		return
 	}
 
-	cfg, err := chatcfg.LoadConfig("chat_system/config/config.json")
+	cfg, err := appcfg.LoadConfig("config/config.json")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "加载聊天配置失败: " + err.Error()})
 		return
 	}
 
 	userID := getCurrentUserID(c)
-	messages, err := chatservice.BuildMessagesForUser(cfg, userID, message)
+	messages, err := chatservice.BuildMessagesForUser(cfg.Chat.Prompt, userID, message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "加载Redis上下文失败: " + err.Error()})
 		return
 	}
 
-	service := chatservice.NewChatService(cfg)
+	service := chatservice.NewChatService(&cfg.Chat)
 	streamCtx := c.Request.Context()
 
 	c.Header("Content-Type", "text/event-stream")
@@ -76,7 +76,7 @@ func ChatHandle(c *gin.Context) {
 		return
 	}
 
-	if err := chatservice.PersistConversation(cfg, userID, turnMessages); err != nil {
+	if err := chatservice.PersistConversation(userID, turnMessages); err != nil {
 		emitSSE("error", map[string]interface{}{"error": err.Error()})
 		return
 	}
@@ -86,14 +86,14 @@ func ChatHandle(c *gin.Context) {
 
 // RefreshChatContextHandle 清空当前用户在 Redis 中的会话上下文。
 func RefreshChatContextHandle(c *gin.Context) {
-	cfg, err := chatcfg.LoadConfig("chat_system/config/config.json")
+	_, err := appcfg.LoadConfig("config/config.json")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "加载聊天配置失败: " + err.Error()})
 		return
 	}
 
 	userID := getCurrentUserID(c)
-	if err := chatservice.ClearConversation(cfg, userID); err != nil {
+	if err := chatservice.ClearConversation(userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "刷新对话失败: " + err.Error()})
 		return
 	}
@@ -106,14 +106,14 @@ func RefreshChatContextHandle(c *gin.Context) {
 
 // GetChatContextHandle 读取当前用户会话上下文和剩余 TTL。
 func GetChatContextHandle(c *gin.Context) {
-	cfg, err := chatcfg.LoadConfig("chat_system/config/config.json")
+	_, err := appcfg.LoadConfig("config/config.json")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "加载聊天配置失败: " + err.Error()})
 		return
 	}
 
 	userID := getCurrentUserID(c)
-	messages, ttlSeconds, hasContext, err := chatservice.GetConversationContext(cfg, userID)
+	messages, ttlSeconds, hasContext, err := chatservice.GetConversationContext(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询对话上下文失败: " + err.Error()})
 		return

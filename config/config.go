@@ -25,6 +25,21 @@ type EmbeddingConfig struct {
 	BaseURL string `json:"base_url"`
 }
 
+// ChatConfig 定义聊天系统模型配置。
+type ChatConfig struct {
+	Prompt  string `json:"prompt"`
+	Model   string `json:"model"`
+	APIKey  string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+}
+
+// RedisConfig 定义统一 Redis 连接配置。
+type RedisConfig struct {
+	Addr     string `json:"addr"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
+}
+
 // RetryConfig 定义通用重试策略。
 type RetryConfig struct {
 	MaxRetries   int `json:"max_retries"`
@@ -51,6 +66,8 @@ type PromptConfig struct {
 type Config struct {
 	Agents    AgentModelConfig `json:"agents"`
 	Embedding EmbeddingConfig  `json:"embedding"`
+	Chat      ChatConfig       `json:"chat"`
+	Redis     RedisConfig      `json:"redis"`
 	Prompts   PromptConfig     `json:"prompts"`
 	Retry     RetryConfig      `json:"retry"`
 }
@@ -118,6 +135,8 @@ func (c *Config) normalize() {
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
 	c.Embedding = normalizeEmbedding(c.Embedding)
+	c.Chat = normalizeChat(c.Chat, c.Agents.Main)
+	c.Redis = normalizeRedis(c.Redis)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
@@ -137,6 +156,36 @@ func normalizeEmbedding(embeddingCfg EmbeddingConfig) EmbeddingConfig {
 	embeddingCfg.BaseURL = strings.TrimSpace(embeddingCfg.BaseURL)
 	embeddingCfg.Model = strings.TrimSpace(embeddingCfg.Model)
 	return embeddingCfg
+}
+
+func normalizeChat(chatCfg ChatConfig, mainModelCfg ModelConfig) ChatConfig {
+	chatCfg.Prompt = strings.TrimSpace(chatCfg.Prompt)
+	chatCfg.APIKey = strings.TrimSpace(chatCfg.APIKey)
+	chatCfg.BaseURL = strings.TrimSpace(chatCfg.BaseURL)
+	chatCfg.Model = strings.TrimSpace(chatCfg.Model)
+
+	if chatCfg.APIKey == "" {
+		chatCfg.APIKey = strings.TrimSpace(mainModelCfg.APIKey)
+	}
+	if chatCfg.BaseURL == "" {
+		chatCfg.BaseURL = strings.TrimSpace(mainModelCfg.BaseURL)
+	}
+	if chatCfg.Model == "" {
+		chatCfg.Model = strings.TrimSpace(mainModelCfg.Model)
+	}
+	return chatCfg
+}
+
+func normalizeRedis(redisCfg RedisConfig) RedisConfig {
+	redisCfg.Addr = strings.TrimSpace(redisCfg.Addr)
+	redisCfg.Password = strings.TrimSpace(redisCfg.Password)
+	if redisCfg.Addr == "" {
+		redisCfg.Addr = "127.0.0.1:6379"
+	}
+	if redisCfg.DB < 0 {
+		redisCfg.DB = 0
+	}
+	return redisCfg
 }
 
 // validate 校验整体配置完整性。
@@ -161,6 +210,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validateEmbedding("embedding", c.Embedding); err != nil {
+		return err
+	}
+	if err := validateChat("chat", c.Chat); err != nil {
 		return err
 	}
 	if err := validatePrompt("prompts.main", c.Prompts.Main); err != nil {
@@ -209,6 +261,22 @@ func validateEmbedding(name string, embeddingCfg EmbeddingConfig) error {
 		return fmt.Errorf("%s.api_key is required", name)
 	}
 	if embeddingCfg.BaseURL == "" {
+		return fmt.Errorf("%s.base_url is required", name)
+	}
+	return nil
+}
+
+func validateChat(name string, chatCfg ChatConfig) error {
+	if chatCfg.Prompt == "" {
+		return fmt.Errorf("%s.prompt is required", name)
+	}
+	if chatCfg.Model == "" {
+		return fmt.Errorf("%s.model is required", name)
+	}
+	if chatCfg.APIKey == "" {
+		return fmt.Errorf("%s.api_key is required", name)
+	}
+	if chatCfg.BaseURL == "" {
 		return fmt.Errorf("%s.base_url is required", name)
 	}
 	return nil
