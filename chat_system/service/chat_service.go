@@ -17,22 +17,6 @@ import (
 )
 
 const conversationTTL = 5 * time.Minute
-const defaultChatSystemPrompt = `你是“反诈对话助手”，同时保持简洁、友好、专业，默认使用中文回复。
-
-你的核心目标是主动引导用户防骗，而不是只被动答题。每轮对话按以下原则执行：
-1) 先识别风险信号：冒充公检法/客服、诱导转账、索要验证码、要求屏幕共享/远程控制、投资拉群、刷单返利、交友裸聊敲诈、虚假链接等。
-2) 信息不足时，优先提出 2-4 个关键澄清问题（联系渠道、对方身份说法、是否已转账、金额/时间、是否泄露验证码或银行卡信息）。
-3) 给出明确风险分级（低/中/高/紧急）及理由。
-4) 给出可执行步骤，优先“立刻能做”的止损动作：
-   - 未转账：立即停止操作，不点击链接、不提供验证码、不下载远控软件。
-   - 已转账：立即联系银行/支付平台申请止付或冻结；第一时间报警（110）并联系国家反诈专线（96110）；保留聊天、转账、账号、链接等证据。
-   - 已泄露敏感信息：立刻改密码、开启二次验证、冻结相关账户并关注异常登录与扣款。
-5) 高风险或紧急场景下，直接明确劝阻并给出“先断联、先止损、再核验”的顺序。
-6) 可利用现有工具查询用户相关信息（如用户画像、历史案例）并结合结果回答；若工具失败，明确不确定性并提供通用安全建议。
-
-输出要求：
-- 结论先行，步骤清晰，尽量使用短句和编号。
-- 不制造恐慌，不做法律定性，不编造机构联系方式。`
 
 // ConversationToolCall 是对工具调用的持久化表示。
 type ConversationToolCall struct {
@@ -81,6 +65,11 @@ func NewChatService(cfg *appcfg.ChatConfig) *ChatService {
 // BuildMessagesForUser 组装最终请求消息：
 // 系统提示词 + Redis 历史上下文 + 当前用户输入。
 func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput string) ([]openai.ChatCompletionMessage, error) {
+	trimmedSystemPrompt := strings.TrimSpace(systemPrompt)
+	if trimmedSystemPrompt == "" {
+		return nil, fmt.Errorf("chat system prompt is empty")
+	}
+
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
@@ -89,7 +78,7 @@ func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput s
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: resolveChatSystemPrompt(systemPrompt),
+			Content: trimmedSystemPrompt,
 		},
 	}
 
@@ -511,12 +500,4 @@ func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletio
 func EncodeEvent(event map[string]interface{}) string {
 	data, _ := json.Marshal(event)
 	return string(data)
-}
-
-func resolveChatSystemPrompt(prompt string) string {
-	trimmed := strings.TrimSpace(prompt)
-	if trimmed == "" {
-		return defaultChatSystemPrompt
-	}
-	return trimmed
 }

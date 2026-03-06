@@ -184,6 +184,16 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 	}
 }
 
+func TestBuildMessagesForUser_EmptySystemPromptReturnsError(t *testing.T) {
+	_, err := chatservice.BuildMessagesForUser("   ", "u1", "你好")
+	if err == nil {
+		t.Fatal("expected error for empty system prompt")
+	}
+	if !strings.Contains(err.Error(), "chat system prompt is empty") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func decodeJSONBody(t *testing.T, r *http.Request) map[string]interface{} {
 	t.Helper()
 	defer r.Body.Close()
