@@ -32,7 +32,7 @@
 
 ### 7. 用户行为异常检测 + WebSocket 实时警报
 
-- **实现方式**：新增独立的 `GET /api/alert/ws` WebSocket 接口，连接存在时启动 goroutine 每 30 秒轮询一次 `history_cases` 表，触发条件（如1小时内高风险记录 ≥ 2 次）时主动推送警报，断开连接后 goroutine 自动退出，不改动任何现有分析接口  已完成
+- **实现方式**：新增独立的 `GET /api/alert/ws` WebSocket 接口，连接存在时启动 goroutine 每 30 秒轮询一次 `history_cases` 表，触发条件（如1小时内高风险记录 ≥ 2 次）时主动推送警报，断开连接后 goroutine 自动退出，不改动任何现有分析接口  已完成  已完成
 
 ---
 
