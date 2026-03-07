@@ -654,13 +654,21 @@
 
 ```json
 {
-  "message": "你好，帮我总结一下我最近的风险情况"
+  "message": "请帮我看看这些图片是否可疑",
+  "images": [
+    "data:image/png;base64,iVBORw0KGgoAAA...",
+    "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
+  ]
 }
 ```
 
 ### 说明
 
-- 纯聊天接口，不调用任何 tool。
+- `message` 与 `images` 至少要提供一个。
+- `images` 为可选数组，支持多张图片，元素内容为 Base64 Data URL。
+- 服务端内部使用 Responses API。
+- 系统提示词会映射为 `developer` 角色。
+- 用户文本与图片会映射为 `message.content[]` 中的 `input_text` 与 `input_image`。
 - 服务端将每个用户当前会话上下文存入 Redis 缓存，不做持久化落库。
 - 响应为 SSE 流式输出：`content` 分片返回，最后返回 `done`。
 - Redis 上下文键：`chat:context:<user_id>`。
@@ -724,6 +732,7 @@ data:{"type":"done","reason":"stop"}
 - 返回当前用户 Redis 中缓存的会话上下文与剩余有效期。
 - `messages` 中会保留完整对话轨迹字段：
   - 普通消息：`role` + `content`
+  - 用户图片消息：额外包含 `image_urls`
   - 工具调用消息（assistant）：额外包含 `tool_calls`（`id/name/arguments`）
   - 工具结果消息（tool）：额外包含 `tool_call_id`
 - 可用于前端判断是否为新对话：
@@ -740,7 +749,11 @@ data:{"type":"done","reason":"stop"}
   "messages": [
     {
       "role": "user",
-      "content": "帮我看下我的账号风险情况"
+      "content": "帮我看下这些图片",
+      "image_urls": [
+        "data:image/png;base64,iVBORw0KGgoAAA...",
+        "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
+      ]
     },
     {
       "role": "assistant",
@@ -1131,7 +1144,11 @@ curl -N -X POST "http://localhost:8081/api/chat" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
-    "message": "你好，帮我总结一下我最近的风险情况"
+    "message": "请分析这些图片",
+    "images": [
+      "data:image/png;base64,iVBORw0KGgoAAA...",
+      "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
+    ]
   }'
 ```
 

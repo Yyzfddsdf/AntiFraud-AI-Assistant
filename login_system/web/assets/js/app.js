@@ -1220,6 +1220,7 @@ createApp({
             { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
         ]);
         const chatInput = ref('');
+        const chatImages = ref([]);
         const isChatting = ref(false);
         const chatHistoryLoaded = ref(false);
 
@@ -1238,7 +1239,7 @@ createApp({
                             // If there are tool calls, add them as tool status messages
                             if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
                                 for (const call of msg.tool_calls) {
-                                    const toolName = call.function?.name || 'unknown';
+                                    const toolName = call.name || call.function?.name || 'unknown';
                                     history.push({
                                         type: 'tool',
                                         content: `正在调用工具: ${toolName}...`
@@ -1264,9 +1265,16 @@ createApp({
                         }
                         // Handle user messages
                         else if (msg.role === 'user') {
+                            const imageUrls = Array.isArray(msg.image_urls)
+                                ? msg.image_urls.filter(item => typeof item === 'string' && item.trim())
+                                : [];
+                            if (!msg.content && imageUrls.length === 0) {
+                                continue;
+                            }
                             history.push({
                                 type: 'user',
-                                content: msg.content
+                                content: msg.content || '',
+                                images: imageUrls
                             });
                         }
                     }
@@ -1409,12 +1417,41 @@ createApp({
             if (container) container.scrollTop = container.scrollHeight;
         };
 
+        const triggerChatImagePicker = () => {
+            if (isChatting.value) return;
+            const input = document.getElementById('chat-image-input');
+            if (input) input.click();
+        };
+
+        const handleChatImageSelect = async (event) => {
+            const files = Array.from(event.target.files || []).filter(file => String(file.type || '').startsWith('image/'));
+            event.target.value = '';
+            if (files.length === 0) return;
+
+            try {
+                const results = await Promise.all(files.map(file => fileToBase64(file)));
+                chatImages.value = [...chatImages.value, ...results];
+                showToast(`已添加 ${files.length} 张图片`);
+            } catch (e) {
+                console.error('Read chat images failed:', e);
+                showToast('图片读取失败', 'error');
+            }
+        };
+
+        const removeChatImage = (index) => {
+            chatImages.value = chatImages.value.filter((_, idx) => idx !== index);
+        };
+
         const sendChatMessage = async () => {
-            if (!chatInput.value.trim() || isChatting.value) return;
+            if (isChatting.value) return;
             
             const message = chatInput.value.trim();
-            chatMessages.value.push({ type: 'user', content: message });
+            const images = [...chatImages.value];
+            if (!message && images.length === 0) return;
+
+            chatMessages.value.push({ type: 'user', content: message, images });
             chatInput.value = '';
+            chatImages.value = [];
             isChatting.value = true;
             scrollToBottom();
 
@@ -1425,7 +1462,7 @@ createApp({
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token.value}`
                     },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, images })
                 });
 
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -1532,6 +1569,8 @@ createApp({
                 chatMessages.value = [
                     { type: 'ai', content: '对话历史已清除。' }
                 ];
+                chatInput.value = '';
+                chatImages.value = [];
                 chatHistoryLoaded.value = true;
                 showToast('对话历史已重置');
             } catch (e) {
@@ -1618,7 +1657,8 @@ createApp({
             deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase, debouncedFetchUsers,
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
             updateAge, deleteAccount, upgradeAccount, inviteCode, openImage, exportData, printReport,
-            showChat, chatMessages, chatInput, isChatting, toggleChat, sendChatMessage, clearChatHistory,
+            showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
+            triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,

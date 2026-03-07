@@ -30,6 +30,7 @@ type ConversationToolCall struct {
 type ConversationMessage struct {
 	Role       string                 `json:"role"`
 	Content    string                 `json:"content"`
+	ImageURLs  []string               `json:"image_urls,omitempty"`
 	ToolCallID string                 `json:"tool_call_id,omitempty"`
 	ToolCalls  []ConversationToolCall `json:"tool_calls,omitempty"`
 }
@@ -62,7 +63,7 @@ func NewChatService(cfg *appcfg.ChatConfig) *ChatService {
 
 // BuildMessagesForUser 组装最终请求消息：
 // 系统提示词 + Redis 历史上下文 + 当前用户输入。
-func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput string) ([]openai.ChatCompletionMessage, error) {
+func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput string, currentUserImageURLs []string) ([]openai.ChatCompletionMessage, error) {
 	trimmedSystemPrompt := strings.TrimSpace(systemPrompt)
 	if trimmedSystemPrompt == "" {
 		return nil, fmt.Errorf("chat system prompt is empty")
@@ -101,19 +102,21 @@ func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput s
 		messages = append(messages, msg)
 	}
 
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleUser,
-		Content: strings.TrimSpace(currentUserInput),
-	})
+	currentMessage, ok := buildUserChatMessage(currentUserInput, currentUserImageURLs)
+	if !ok {
+		return nil, fmt.Errorf("chat message and images are both empty")
+	}
+	messages = append(messages, currentMessage)
 
 	return messages, nil
 }
 
 // StreamReply 使用全流式回合处理：首轮即 stream=true，边接收边向前端推送内容；
 // 若出现 tool_calls，则在参数拼接完成后执行工具并继续下一轮流式请求。
-func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (string, []ConversationMessage, error) {
+func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput string, userImageURLs []string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (string, []ConversationMessage, error) {
 	responseInput := chatMessagesToResponsesInput(messages)
 	recorded := make([]ConversationMessage, 0)
+	normalizedUserImageURLs := normalizeImageURLs(userImageURLs)
 
 	const maxRounds = 8
 	for round := 0; round < maxRounds; round++ {
@@ -139,8 +142,9 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 			finalReply := strings.TrimSpace(assistantMessage.Content)
 			turnMessages := make([]ConversationMessage, 0, len(recorded)+2)
 			turnMessages = append(turnMessages, ConversationMessage{
-				Role:    openai.ChatMessageRoleUser,
-				Content: strings.TrimSpace(userInput),
+				Role:      openai.ChatMessageRoleUser,
+				Content:   strings.TrimSpace(userInput),
+				ImageURLs: normalizedUserImageURLs,
 			})
 			turnMessages = append(turnMessages, recorded...)
 			turnMessages = append(turnMessages, ConversationMessage{
@@ -313,8 +317,8 @@ func chatMessagesToResponsesInput(messages []openai.ChatCompletionMessage) []any
 				result = append(result, newResponsesInputMessage(responsesMessageRoleDeveloper, message.Content))
 			}
 		case openai.ChatMessageRoleUser:
-			if strings.TrimSpace(message.Content) != "" {
-				result = append(result, newResponsesInputMessage(openai.ChatMessageRoleUser, message.Content))
+			if responseMessage, ok := newResponsesUserMessage(message); ok {
+				result = append(result, responseMessage)
 			}
 		case openai.ChatMessageRoleAssistant:
 			if strings.TrimSpace(message.Content) != "" {
@@ -340,16 +344,66 @@ func chatMessagesToResponsesInput(messages []openai.ChatCompletionMessage) []any
 }
 
 func newResponsesInputMessage(role string, text string) openai.Message {
+	trimmedText := strings.TrimSpace(text)
 	return openai.Message{
 		Type: "message",
 		Role: role,
 		Content: []any{
 			openai.InputText{
 				Type: "input_text",
-				Text: text,
+				Text: trimmedText,
 			},
 		},
 	}
+}
+
+func newResponsesUserMessage(message openai.ChatCompletionMessage) (openai.Message, bool) {
+	content := make([]any, 0, len(message.MultiContent)+1)
+	if len(message.MultiContent) > 0 {
+		for _, part := range message.MultiContent {
+			switch strings.TrimSpace(part.Type) {
+			case "text":
+				trimmedText := strings.TrimSpace(part.Text)
+				if trimmedText == "" {
+					continue
+				}
+				content = append(content, openai.InputText{
+					Type: "input_text",
+					Text: trimmedText,
+				})
+			case "image_url":
+				if part.ImageURL == nil {
+					continue
+				}
+				imageURL := strings.TrimSpace(part.ImageURL.URL)
+				if imageURL == "" {
+					continue
+				}
+				content = append(content, openai.InputImage{
+					Type:     "input_image",
+					ImageURL: imageURL,
+				})
+			}
+		}
+	} else {
+		trimmedText := strings.TrimSpace(message.Content)
+		if trimmedText != "" {
+			content = append(content, openai.InputText{
+				Type: "input_text",
+				Text: trimmedText,
+			})
+		}
+	}
+
+	if len(content) == 0 {
+		return openai.Message{}, false
+	}
+
+	return openai.Message{
+		Type:    "message",
+		Role:    openai.ChatMessageRoleUser,
+		Content: content,
+	}, true
 }
 
 func newResponsesAssistantMessage(text string) openai.Message {
@@ -500,6 +554,55 @@ func parseResponsesAnyOutputItems(items []any) (string, []openai.ResponseFunctio
 	return textBuilder.String(), functionCalls
 }
 
+func buildUserChatMessage(text string, imageURLs []string) (openai.ChatCompletionMessage, bool) {
+	trimmedText := strings.TrimSpace(text)
+	normalizedImageURLs := normalizeImageURLs(imageURLs)
+	if trimmedText == "" && len(normalizedImageURLs) == 0 {
+		return openai.ChatCompletionMessage{}, false
+	}
+
+	message := openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: trimmedText,
+	}
+	if len(normalizedImageURLs) == 0 {
+		return message, true
+	}
+
+	multiContent := make([]openai.ChatMessagePart, 0, len(normalizedImageURLs)+1)
+	if trimmedText != "" {
+		multiContent = append(multiContent, openai.ChatMessagePart{
+			Type: "text",
+			Text: trimmedText,
+		})
+	}
+	for _, imageURL := range normalizedImageURLs {
+		multiContent = append(multiContent, openai.ChatMessagePart{
+			Type:     "image_url",
+			ImageURL: &openai.ChatMessageImageURL{URL: imageURL},
+		})
+	}
+	message.MultiContent = multiContent
+	return message, true
+}
+
+func normalizeImageURLs(imageURLs []string) []string {
+	result := make([]string, 0, len(imageURLs))
+	seen := map[string]struct{}{}
+	for _, imageURL := range imageURLs {
+		trimmed := strings.TrimSpace(imageURL)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+	return result
+}
+
 func parseResponsesMessageText(item map[string]any) string {
 	contentItems, _ := item["content"].([]any)
 	var textBuilder strings.Builder
@@ -611,6 +714,7 @@ func sanitizeConversationMessages(items []ConversationMessage) []ConversationMes
 		trimmed := ConversationMessage{
 			Role:       role,
 			Content:    strings.TrimSpace(item.Content),
+			ImageURLs:  normalizeImageURLs(item.ImageURLs),
 			ToolCallID: strings.TrimSpace(item.ToolCallID),
 			ToolCalls:  append([]ConversationToolCall{}, item.ToolCalls...),
 		}
@@ -666,7 +770,7 @@ func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletio
 	role := strings.TrimSpace(item.Role)
 	switch role {
 	case openai.ChatMessageRoleUser:
-		return openai.ChatCompletionMessage{Role: role, Content: item.Content}, true
+		return buildUserChatMessage(item.Content, item.ImageURLs)
 	case openai.ChatMessageRoleAssistant:
 		msg := openai.ChatCompletionMessage{Role: role, Content: item.Content}
 		if len(item.ToolCalls) > 0 {

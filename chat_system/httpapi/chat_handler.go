@@ -12,7 +12,8 @@ import (
 )
 
 type ChatRequest struct {
-	Message string `json:"message" binding:"required"`
+	Message string   `json:"message"`
+	Images  []string `json:"images,omitempty"`
 }
 
 // ChatContextResponse 返回当前用户的会话上下文快照。
@@ -36,8 +37,8 @@ func ChatHandle(c *gin.Context) {
 	}
 
 	message := strings.TrimSpace(req.Message)
-	if message == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "message 不能为空"})
+	if message == "" && len(req.Images) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message 和 images 不能同时为空"})
 		return
 	}
 
@@ -48,7 +49,7 @@ func ChatHandle(c *gin.Context) {
 	}
 
 	userID := getCurrentUserID(c)
-	messages, err := chatservice.BuildMessagesForUser(cfg.Chat.Prompt, userID, message)
+	messages, err := chatservice.BuildMessagesForUser(cfg.Chat.Prompt, userID, message, req.Images)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "加载Redis上下文失败: " + err.Error()})
 		return
@@ -67,7 +68,7 @@ func ChatHandle(c *gin.Context) {
 		c.Writer.Flush()
 	}
 
-	assistantReply, turnMessages, err := service.StreamReply(streamCtx, userID, message, messages, func(event map[string]interface{}) error {
+	assistantReply, turnMessages, err := service.StreamReply(streamCtx, userID, message, req.Images, messages, func(event map[string]interface{}) error {
 		emitSSE("event", event)
 		return nil
 	})

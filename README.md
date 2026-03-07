@@ -309,6 +309,7 @@ flowchart LR
 - SSE 流式输出
 - 工具调用（`chat_query_user_info`、`chat_query_user_case_history`）
 - Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `cache/` 统一函数读写）
+- 聊天接口支持可选多图输入：前端将图片编码为 Base64 Data URL，后端按 Responses API 的 `input_text` + `input_image` 格式转发
 - 会话可刷新：`POST /api/chat/refresh`
 
 ### 9.6 用户风险趋势总览（创新点）
@@ -421,7 +422,7 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 
 聊天：
 
-- `POST /api/chat`
+- `POST /api/chat`：支持文本，或文本 + 多张图片（`images` 传 Base64 Data URL 数组）
 - `GET /api/chat/context`
 - `POST /api/chat/refresh`
 

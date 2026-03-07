@@ -891,9 +891,9 @@
                     <!-- Chat Window -->
                     <transition name="fade">
                         <div v-if="showChat" class="relative">
-                            <div class="bg-white w-[360px] h-[500px] rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up ring-1 ring-slate-900/5 absolute bottom-20 right-0">
+                            <div class="bg-white/95 backdrop-blur-xl w-[480px] max-w-[calc(100vw-2rem)] h-[660px] max-h-[calc(100vh-7rem)] rounded-[28px] shadow-[0_32px_80px_rgba(15,23,42,0.28)] border border-white/70 flex flex-col overflow-hidden animate-slide-up ring-1 ring-slate-900/5 absolute bottom-20 right-0">
                                 <!-- Header -->
-                                <div class="bg-slate-900 p-5 flex justify-between items-center text-white cursor-move" @mousedown="startDrag">
+                                <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 flex justify-between items-center text-white cursor-move border-b border-white/10" @mousedown="startDrag">
                                     <div class="flex items-center gap-3">
                                         <div class="relative">
                                             <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
@@ -912,17 +912,28 @@
                                 </div>
                                 
                                 <!-- Messages -->
-                                <div id="chat-container" class="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50">
+                                <div id="chat-container" class="flex-1 overflow-y-auto px-5 py-5 space-y-5 bg-gradient-to-b from-slate-50 via-white to-slate-100/80">
                                     <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex', msg.type === 'user' ? 'justify-end' : msg.type === 'tool' ? 'justify-center' : 'justify-start']">
-                                        <div v-if="msg.type === 'tool'" class="text-xs font-mono text-slate-400 my-2 px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
-                                            <span class="animate-pulse mr-1">⚡</span> {{ msg.content }}
+                                        <div v-if="msg.type === 'tool'" class="text-[11px] font-mono text-slate-500 my-2 px-3 py-1.5 bg-white/90 rounded-full border border-slate-200 shadow-sm">
+                                            <span class="animate-pulse mr-1">*</span> {{ msg.content }}
                                         </div>
-                                        <div v-else :class="['max-w-[85%] rounded-2xl p-4 text-sm shadow-sm leading-relaxed select-text', msg.type === 'user' ? 'bg-brand-600 text-white rounded-br-none' : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none']">
-                                            <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                                        <div v-else :class="['max-w-[86%] rounded-[22px] px-4 py-3.5 text-[13px] shadow-sm leading-6 select-text transition-all', msg.type === 'user' ? 'bg-gradient-to-br from-brand-500 via-brand-600 to-indigo-600 text-white rounded-br-md shadow-lg shadow-brand-500/25 border border-white/10' : 'bg-white/92 backdrop-blur text-slate-700 border border-slate-200/80 rounded-bl-md shadow-md shadow-slate-200/70']">
+                                            <div v-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
+                                            <div v-if="msg.images && msg.images.length" :class="[msg.content ? 'mt-3' : '', 'grid grid-cols-2 gap-2']">
+                                                <button
+                                                    v-for="(image, imageIdx) in msg.images"
+                                                    :key="`${idx}-${imageIdx}`"
+                                                    type="button"
+                                                    @click="openImage(image)"
+                                                    class="overflow-hidden rounded-2xl border border-white/20 bg-white/10 hover:opacity-90 transition-all shadow-sm hover:shadow-md"
+                                                >
+                                                    <img :src="image" alt="chat image" class="w-full h-32 object-cover block">
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div v-if="isChatting" class="flex justify-start">
-                                        <div class="bg-white text-slate-500 border border-slate-200 rounded-2xl p-4 rounded-bl-none shadow-sm flex gap-1.5 items-center h-12">
+                                        <div class="bg-white/92 backdrop-blur text-slate-500 border border-slate-200 rounded-[22px] px-4 py-3 rounded-bl-md shadow-md flex gap-1.5 items-center h-12">
                                             <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
                                             <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
                                             <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
@@ -931,10 +942,20 @@
                                 </div>
 
                                 <!-- Input -->
-                                <div class="p-4 bg-white border-t border-slate-100">
-                                    <form @submit.prevent="sendChatMessage" class="flex gap-3">
-                                        <input v-model="chatInput" type="text" placeholder="输入您的问题..." class="flex-1 bg-slate-50 border-transparent rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
-                                        <button type="submit" :disabled="!chatInput.trim() || isChatting" class="bg-brand-600 text-white p-3 rounded-xl hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-lg shadow-brand-500/20">
+                                <div class="px-5 py-4 bg-white/92 backdrop-blur-xl border-t border-slate-200/80">
+                                    <input id="chat-image-input" type="file" accept="image/*" multiple class="hidden" @change="handleChatImageSelect">
+                                    <div v-if="chatImages.length" class="mb-3 flex flex-wrap gap-2">
+                                        <div v-for="(image, idx) in chatImages" :key="`chat-image-${idx}`" class="relative w-[72px] h-[72px] rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                                            <img :src="image" alt="selected chat image" class="w-full h-full object-cover">
+                                            <button type="button" @click="removeChatImage(idx)" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-slate-900">×</button>
+                                        </div>
+                                    </div>
+                                    <form @submit.prevent="sendChatMessage" class="flex gap-3 items-end">
+                                        <button type="button" @click="triggerChatImagePicker" :disabled="isChatting" class="shrink-0 bg-white text-slate-600 p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 transition-all" title="添加图片">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-10h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        </button>
+                                        <input v-model="chatInput" type="text" placeholder="输入您的问题..." class="flex-1 min-h-[52px] bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-400 outline-none transition-all font-medium shadow-sm">
+                                        <button type="submit" :disabled="(!chatInput.trim() && chatImages.length === 0) || isChatting" class="bg-gradient-to-br from-brand-500 to-indigo-600 text-white p-3.5 rounded-2xl hover:from-brand-600 hover:to-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-brand-500/25">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                                         </button>
                                     </form>
@@ -944,7 +965,7 @@
                     </transition>
 
                     <!-- Bubble Button -->
-                    <button @mousedown="startDrag" @click="toggleChat" class="w-16 h-16 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-2xl shadow-slate-900/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group relative cursor-move">
+                    <button @mousedown="startDrag" @click="toggleChat" class="w-16 h-16 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 hover:from-slate-800 hover:to-indigo-800 text-white rounded-full shadow-[0_18px_40px_rgba(15,23,42,0.35)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 group relative cursor-move ring-1 ring-white/10">
                         <span v-if="!showChat" class="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></span>
                         <svg v-if="!showChat" class="w-7 h-7 group-hover:animate-wiggle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                         <svg v-else class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
