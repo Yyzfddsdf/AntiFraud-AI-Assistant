@@ -37,6 +37,12 @@ type SimilarCaseResult struct {
 	CreatedAt       time.Time
 }
 
+// SimilarCaseRecallFilter defines optional exact-match filters for vector recall.
+type SimilarCaseRecallFilter struct {
+	TargetGroup string
+	ScamType    string
+}
+
 // QueryAllHistoricalCases keeps the full database query behavior for non-search callers.
 func QueryAllHistoricalCases() ([]HistoricalCaseRecord, error) {
 	return queryAllHistoricalCasesFromDB()
@@ -65,6 +71,21 @@ func queryAllHistoricalCasesFromDB() ([]HistoricalCaseRecord, error) {
 // 1) first search lazily loads all records from DB once;
 // 2) after cache is loaded, writes are incrementally synced by create/delete paths.
 func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarCaseResult, int, error) {
+	return SearchTopKSimilarCasesByVectorWithFilter(queryVector, topK, SimilarCaseRecallFilter{})
+}
+
+// SearchTopKSimilarCasesByVectorWithConditions executes vector recall with optional
+// target group and scam type restrictions.
+func SearchTopKSimilarCasesByVectorWithConditions(queryVector []float64, topK int, targetGroup, scamType string) ([]SimilarCaseResult, int, error) {
+	return SearchTopKSimilarCasesByVectorWithFilter(queryVector, topK, SimilarCaseRecallFilter{
+		TargetGroup: targetGroup,
+		ScamType:    scamType,
+	})
+}
+
+// SearchTopKSimilarCasesByVectorWithFilter executes cosine similarity search from
+// distributed Redis cache with optional exact-match filters.
+func SearchTopKSimilarCasesByVectorWithFilter(queryVector []float64, topK int, filter SimilarCaseRecallFilter) ([]SimilarCaseResult, int, error) {
 	normalizedQuery, ok := normalizeL2Vector(queryVector)
 	if !ok {
 		return nil, 0, fmt.Errorf("query embedding vector is empty or invalid")
@@ -80,8 +101,21 @@ func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarC
 		return []SimilarCaseResult{}, appliedTopK, nil
 	}
 
+	results := collectSimilarCaseResults(normalizedQuery, cases, normalizeSimilarCaseRecallFilter(filter))
+	sortSimilarCaseResults(results)
+	if len(results) > appliedTopK {
+		results = results[:appliedTopK]
+	}
+	return results, appliedTopK, nil
+}
+
+func collectSimilarCaseResults(normalizedQuery []float64, cases []HistoricalCaseRecord, filter SimilarCaseRecallFilter) []SimilarCaseResult {
 	results := make([]SimilarCaseResult, 0, len(cases))
 	for _, item := range cases {
+		if !matchSimilarCaseRecallFilter(item, filter) {
+			continue
+		}
+
 		normalizedCaseVector, ok := normalizeL2Vector(item.EmbeddingVector)
 		if !ok {
 			continue
@@ -101,18 +135,33 @@ func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarC
 			CreatedAt:       item.CreatedAt,
 		})
 	}
+	return results
+}
 
+func sortSimilarCaseResults(results []SimilarCaseResult) {
 	sort.Slice(results, func(i, j int) bool {
 		if math.Abs(results[i].Similarity-results[j].Similarity) > 1e-12 {
 			return results[i].Similarity > results[j].Similarity
 		}
 		return results[i].CreatedAt.After(results[j].CreatedAt)
 	})
+}
 
-	if len(results) > appliedTopK {
-		results = results[:appliedTopK]
+func normalizeSimilarCaseRecallFilter(filter SimilarCaseRecallFilter) SimilarCaseRecallFilter {
+	return SimilarCaseRecallFilter{
+		TargetGroup: strings.TrimSpace(filter.TargetGroup),
+		ScamType:    strings.TrimSpace(filter.ScamType),
 	}
-	return results, appliedTopK, nil
+}
+
+func matchSimilarCaseRecallFilter(record HistoricalCaseRecord, filter SimilarCaseRecallFilter) bool {
+	if filter.TargetGroup != "" && strings.TrimSpace(record.TargetGroup) != filter.TargetGroup {
+		return false
+	}
+	if filter.ScamType != "" && strings.TrimSpace(record.ScamType) != filter.ScamType {
+		return false
+	}
+	return true
 }
 
 func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {

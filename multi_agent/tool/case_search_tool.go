@@ -15,8 +15,10 @@ import (
 const CaseSearchToolName = "search_similar_cases"
 
 type CaseSearchInput struct {
-	Query string `json:"query"`
-	TopK  int    `json:"top_k,omitempty"`
+	Query       string `json:"query"`
+	TopK        int    `json:"top_k,omitempty"`
+	TargetGroup string `json:"target_group,omitempty"`
+	ScamType    string `json:"scam_type,omitempty"`
 }
 
 var CaseSearchTool = openai.Tool{
@@ -35,6 +37,8 @@ var CaseSearchTool = openai.Tool{
 					"type":        "integer",
 					"description": "返回结果数量，默认 5，最大 20。",
 				},
+				"target_group": buildTargetGroupSchema("可选，按目标人群精确过滤后再做向量召回。必须来自 config/target_groups.json 配置。"),
+				"scam_type":    buildScamTypeSchema("可选，按诈骗类型精确过滤后再做向量召回。必须来自 config/scam_types.json 配置。"),
 			},
 			"required": []string{"query"},
 		},
@@ -46,6 +50,10 @@ var CaseSearchTool = openai.Tool{
 // 2) 向量与历史案件库全量向量做余弦相似度排序；
 // 3) 按 topK 返回格式化后的案件摘要。
 func SearchSimilarCases(query string, topK int) ([]string, int, error) {
+	return SearchSimilarCasesWithFilters(query, topK, "", "")
+}
+
+func SearchSimilarCasesWithFilters(query string, topK int, targetGroup, scamType string) ([]string, int, error) {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
 		return nil, 0, fmt.Errorf("query is empty")
@@ -56,7 +64,12 @@ func SearchSimilarCases(query string, topK int) ([]string, int, error) {
 		return nil, 0, err
 	}
 
-	results, appliedTopK, err := case_library.SearchTopKSimilarCasesByVector(queryVector, topK)
+	results, appliedTopK, err := case_library.SearchTopKSimilarCasesByVectorWithConditions(
+		queryVector,
+		topK,
+		strings.TrimSpace(targetGroup),
+		strings.TrimSpace(scamType),
+	)
 	if err != nil {
 		return nil, appliedTopK, err
 	}
@@ -153,7 +166,7 @@ func (h *CaseSearchHandler) Handle(ctx context.Context, args string) (ToolRespon
 		return ToolResponse{Payload: map[string]interface{}{"error": err.Error()}}, nil
 	}
 
-	cases, appliedTopK, err := SearchSimilarCases(input.Query, input.TopK)
+	cases, appliedTopK, err := SearchSimilarCasesWithFilters(input.Query, input.TopK, input.TargetGroup, input.ScamType)
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{
 			"query":           input.Query,
