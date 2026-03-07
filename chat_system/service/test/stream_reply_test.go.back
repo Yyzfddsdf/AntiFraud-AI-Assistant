@@ -1,4 +1,4 @@
-package service_test
+﻿package service_test
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestCount++
-		if r.URL.Path != "/responses" {
+		if r.URL.Path != "/chat/completions" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 
@@ -35,26 +35,9 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 			t.Fatalf("unexpected request count: %d", requestCount)
 		}
 
-		input := mustArray(t, payload, "input")
-		if len(input) != 2 {
-			t.Fatalf("unexpected input count: %d", len(input))
-		}
-		tools := mustArray(t, payload, "tools")
-		if len(tools) == 0 {
-			t.Fatalf("expected responses tools, got empty list")
-		}
-		firstTool := mustObject(t, tools[0])
-		if firstTool["type"] != "web_search" {
-			t.Fatalf("expected first tool web_search, got: %#v", firstTool)
-		}
-		firstMessage := mustObject(t, input[0])
-		if firstMessage["role"] != "developer" {
-			t.Fatalf("expected developer role for prompt, got: %#v", firstMessage["role"])
-		}
-
 		writeSSEResponse(t, w,
-			`{"type":"response.output_text.delta","delta":"浣犲ソ"}`,
-			`{"type":"response.output_text.delta","delta":"锛屼笘鐣?"}`,
+			`{"choices":[{"delta":{"content":"你好"}}]}`,
+			`{"choices":[{"delta":{"content":"，世界"}}]}`,
 		)
 	}))
 	defer server.Close()
@@ -69,10 +52,10 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 	reply, turnMessages, err := svc.StreamReply(
 		context.Background(),
 		"u1",
-		"浣犲ソ",
+		"你好",
 		[]openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: "sys"},
-			{Role: openai.ChatMessageRoleUser, Content: "浣犲ソ"},
+			{Role: openai.ChatMessageRoleUser, Content: "你好"},
 		},
 		func(event map[string]interface{}) error {
 			events = append(events, event)
@@ -83,7 +66,7 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 		t.Fatalf("StreamReply failed: %v", err)
 	}
 
-	if reply != "浣犲ソ锛屼笘鐣?" {
+	if reply != "你好，世界" {
 		t.Fatalf("unexpected reply: %q", reply)
 	}
 	if requestCount != 1 {
@@ -97,7 +80,7 @@ func TestStreamReply_AllRoundsUseStreamMode(t *testing.T) {
 	if len(turnMessages) != 2 {
 		t.Fatalf("unexpected turn message count: %d", len(turnMessages))
 	}
-	if turnMessages[1].Role != openai.ChatMessageRoleAssistant || turnMessages[1].Content != "浣犲ソ锛屼笘鐣?" {
+	if turnMessages[1].Role != openai.ChatMessageRoleAssistant || turnMessages[1].Content != "你好，世界" {
 		t.Fatalf("unexpected final turn message: %+v", turnMessages[1])
 	}
 }
@@ -108,7 +91,7 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestCount++
-		if r.URL.Path != "/responses" {
+		if r.URL.Path != "/chat/completions" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 
@@ -121,42 +104,14 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 
 		switch requestCount {
 		case 1:
-			input := mustArray(t, payload, "input")
-			if len(input) != 2 {
-				t.Fatalf("unexpected first-round input: %#v", payload["input"])
-			}
-			tools := mustArray(t, payload, "tools")
-			if len(tools) == 0 {
-				t.Fatalf("expected responses tools, got empty list")
-			}
-			firstTool := mustObject(t, tools[0])
-			if firstTool["type"] != "web_search" {
-				t.Fatalf("expected first tool web_search, got: %#v", firstTool)
-			}
-			firstMessage := mustObject(t, input[0])
-			if firstMessage["role"] != "developer" {
-				t.Fatalf("expected first-round developer prompt, got: %#v", firstMessage)
-			}
-
 			writeSSEResponse(t, w,
-				`{"type":"response.output_item.done","item":{"type":"function_call","call_id":"call_1","name":"unknown_tool","arguments":"{}"}}`,
+				`{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"unknown_tool"}}]}}]}`,
+				`{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{"}}]}}]}`,
+				`{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"}"}}]}}]}`,
 			)
 		case 2:
-			input := mustArray(t, payload, "input")
-			if len(input) != 4 {
-				t.Fatalf("unexpected second-round input: %#v", payload["input"])
-			}
-			functionCallItem := mustObject(t, input[2])
-			if functionCallItem["type"] != "function_call" || functionCallItem["call_id"] != "call_1" {
-				t.Fatalf("unexpected function_call continuation item: %#v", functionCallItem)
-			}
-			functionOutputItem := mustObject(t, input[3])
-			if functionOutputItem["type"] != "function_call_output" || functionOutputItem["call_id"] != "call_1" {
-				t.Fatalf("unexpected function_call_output continuation item: %#v", functionOutputItem)
-			}
-
 			writeSSEResponse(t, w,
-				`{"type":"response.output_text.delta","delta":"宸茶褰曪紝寤鸿绔嬪嵆鎶ヨ骞跺喕缁撴敮浠樻笭閬撱€?"}`,
+				`{"choices":[{"delta":{"content":"已记录，建议立即报警并冻结支付渠道。"}}]}`,
 			)
 		default:
 			t.Fatalf("unexpected extra round: %d", requestCount)
@@ -174,10 +129,10 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 	reply, turnMessages, err := svc.StreamReply(
 		context.Background(),
 		"u1",
-		"鎴戝彲鑳借楠椾簡",
+		"我可能被骗了",
 		[]openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: "sys"},
-			{Role: openai.ChatMessageRoleUser, Content: "鎴戝彲鑳借楠椾簡"},
+			{Role: openai.ChatMessageRoleUser, Content: "我可能被骗了"},
 		},
 		func(event map[string]interface{}) error {
 			events = append(events, event)
@@ -188,7 +143,7 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 		t.Fatalf("StreamReply failed: %v", err)
 	}
 
-	if reply != "宸茶褰曪紝寤鸿绔嬪嵆鎶ヨ骞跺喕缁撴敮浠樻笭閬撱€?" {
+	if reply != "已记录，建议立即报警并冻结支付渠道。" {
 		t.Fatalf("unexpected reply: %q", reply)
 	}
 	if requestCount != 2 {
@@ -230,7 +185,7 @@ func TestStreamReply_StreamToolCallsRemainComplete(t *testing.T) {
 }
 
 func TestBuildMessagesForUser_EmptySystemPromptReturnsError(t *testing.T) {
-	_, err := chatservice.BuildMessagesForUser("   ", "u1", "浣犲ソ")
+	_, err := chatservice.BuildMessagesForUser("   ", "u1", "你好")
 	if err == nil {
 		t.Fatal("expected error for empty system prompt")
 	}
@@ -269,24 +224,6 @@ func writeSSEResponse(t *testing.T, w http.ResponseWriter, chunks ...string) {
 		t.Fatalf("write sse done failed: %v", err)
 	}
 	flusher.Flush()
-}
-
-func mustArray(t *testing.T, payload map[string]interface{}, key string) []interface{} {
-	t.Helper()
-	value, ok := payload[key].([]interface{})
-	if !ok {
-		t.Fatalf("expected array field %q, got: %#v", key, payload[key])
-	}
-	return value
-}
-
-func mustObject(t *testing.T, value interface{}) map[string]interface{} {
-	t.Helper()
-	obj, ok := value.(map[string]interface{})
-	if !ok {
-		t.Fatalf("expected object, got: %#v", value)
-	}
-	return obj
 }
 
 func assertEventTypes(t *testing.T, events []map[string]interface{}, expected []string) {

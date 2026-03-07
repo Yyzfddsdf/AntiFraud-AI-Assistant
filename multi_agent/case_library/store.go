@@ -73,7 +73,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 		return HistoricalCaseRecord{}, err
 	}
 
-	embeddingText := buildEmbeddingInput(normalizedInput)
+	embeddingText := BuildEmbeddingInput(normalizedInput)
 	vector, modelName, err := generateEmbeddingVector(ctx, embeddingText)
 	if err != nil {
 		return HistoricalCaseRecord{}, fmt.Errorf("generate embedding failed: %w", err)
@@ -428,25 +428,67 @@ func normalizeStringList(items []string) []string {
 	return normalized
 }
 
-// buildEmbeddingInput 将结构化字段转换为 embedding 输入文本。
-func buildEmbeddingInput(input CreateHistoricalCaseInput) string {
+// BuildEmbeddingInput 将结构化字段转换为 embedding 输入文本。
+func BuildEmbeddingInput(input CreateHistoricalCaseInput) string {
 	segments := []string{}
 	segments = appendEmbeddingSegment(segments, "标题", input.Title)
-	segments = appendEmbeddingSegment(segments, "目标人群", input.TargetGroup)
-	segments = appendEmbeddingSegment(segments, "风险等级", input.RiskLevel)
 	segments = appendEmbeddingSegment(segments, "诈骗类型", input.ScamType)
 	segments = appendEmbeddingSegment(segments, "案件描述", input.CaseDescription)
-
-	if len(input.TypicalScripts) > 0 {
-		segments = appendEmbeddingSegment(segments, "典型话术", strings.Join(input.TypicalScripts, "；"))
+	if keywords := selectEmbeddingKeywords(input.Keywords); len(keywords) > 0 {
+		segments = appendEmbeddingSegment(segments, "关键词", strings.Join(keywords, "、"))
 	}
-	if len(input.Keywords) > 0 {
-		segments = appendEmbeddingSegment(segments, "关键词", strings.Join(input.Keywords, "、"))
-	}
-	segments = appendEmbeddingSegment(segments, "违反法律", input.ViolatedLaw)
-	segments = appendEmbeddingSegment(segments, "建议", input.Suggestion)
 
 	return strings.Join(segments, "\n")
+}
+
+func selectEmbeddingKeywords(keywords []string) []string {
+	normalized := normalizeStringList(keywords)
+	if len(normalized) == 0 || len(normalized) > 8 {
+		return nil
+	}
+
+	filtered := make([]string, 0, len(normalized))
+	for _, keyword := range normalized {
+		if isHighQualityEmbeddingKeyword(keyword) {
+			filtered = append(filtered, keyword)
+		}
+	}
+
+	if len(filtered) == 0 {
+		return nil
+	}
+	if len(filtered)*2 < len(normalized) {
+		return nil
+	}
+	return filtered
+}
+
+func isHighQualityEmbeddingKeyword(keyword string) bool {
+	trimmed := strings.Join(strings.Fields(strings.TrimSpace(keyword)), " ")
+	if trimmed == "" {
+		return false
+	}
+
+	runes := []rune(trimmed)
+	if len(runes) < 2 || len(runes) > 16 {
+		return false
+	}
+	if strings.ContainsAny(trimmed, "，。；！？、;!?\r\n\t") {
+		return false
+	}
+
+	hasAlphaNumeric := false
+	for _, r := range runes {
+		switch {
+		case unicode.IsLetter(r), unicode.IsNumber(r):
+			hasAlphaNumeric = true
+		case unicode.IsSpace(r), r == '-', r == '_', r == '/', r == '&', r == '+':
+			continue
+		default:
+			return false
+		}
+	}
+	return hasAlphaNumeric
 }
 
 func appendEmbeddingSegment(segments []string, key string, value string) []string {
