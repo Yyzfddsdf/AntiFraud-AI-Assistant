@@ -178,10 +178,9 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 					"id":   toolCall.ID,
 				})
 				_ = emit(map[string]interface{}{
-					"type":   "tool_result",
-					"tool":   toolCall.Function.Name,
-					"id":     toolCall.ID,
-					"result": toolPayload,
+					"type": "tool_result",
+					"tool": toolCall.Function.Name,
+					"id":   toolCall.ID,
 				})
 			}
 

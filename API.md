@@ -685,11 +685,11 @@
   ```
 - `tool_call`：模型触发工具调用通知
   ```json
-  {"type": "tool_call", "tool": "chat_query_user_info", "id": "call_xxx", "arguments": "{}"}
+  {"type": "tool_call", "tool": "chat_query_user_info", "id": "call_xxx"}
   ```
 - `tool_result`：工具执行结果
   ```json
-  {"type": "tool_result", "tool": "chat_query_user_info", "id": "call_xxx", "result": {"user": {...}}}
+  {"type": "tool_result", "tool": "chat_query_user_info", "id": "call_xxx"}
   ```
 - `done`：当前轮结束
   ```json

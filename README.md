@@ -216,7 +216,21 @@ flowchart LR
   - 列表字段去空、去重
   - 必填字段统一验证并返回结构化错误
   - 案件描述质量门禁（描述过短或疑似随机字符串直接拒绝入库）
-- embedding 自动化：上传案件后自动拼接结构化文本并调用 embedding 模型
+- embedding 自动化：上传案件后统一通过 `BuildEmbeddingInput` 构造 embedding 文本并调用 embedding 模型
+- 当前真正参与向量化的字段只有 4 类：
+  - `title`
+  - `scam_type`
+  - `case_description`
+  - 高质量 `keywords`
+- 为避免语义噪声，以下字段当前不进入 embedding 文本：
+  - `target_group`
+  - `risk_level`
+  - `typical_scripts`
+  - `violated_law`
+  - `suggestion`
+- `keywords` 不是无条件进入向量：
+  - 会先做去空、去重与长度/字符质量过滤
+  - 只有关键词整体质量足够时才会拼入 embedding 文本
 - 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `config/config.json` 读取
 - 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
 
@@ -225,6 +239,11 @@ flowchart LR
 `search_similar_cases` 工具已经接入真实数据库检索链路：
 
 - 查询流程：`query -> embedding -> Redis 快照读取(缺失时回源 DB) -> 向量相似度排序 -> topK 返回`
+- 检索实现已解耦为“向量召回核心 + 过滤/排序 helper”，避免聊天系统与多智能体系统各自维护一套相似度逻辑
+- 原始无条件接口仍保留；新增过滤版接口支持：
+  - `target_group` 精确过滤后再做向量召回
+  - `scam_type` 精确过滤后再做向量召回
+  - 两个条件都为空时，行为与原始检索函数完全一致
 - 算法细节：
   - `L2` 归一化（query 与 case 向量）
   - 清洗 `NaN/Inf`
@@ -232,6 +251,10 @@ flowchart LR
   - 相似度数值夹逼到 `[-1, 1]`
 - `top_k` 规格化：默认 `5`，最大 `20`
 - 排序规则：相似度降序；同分按创建时间降序
+- 检索阶段的工程优化：
+  - 查询向量无效时直接返回明确错误，避免后续空跑
+  - 个别案件向量无效时跳过该记录，不影响整体召回
+  - 结果格式统一为 `SimilarCaseResult`，上层工具只负责格式化展示，不重复实现排序/过滤
 
 ### 分布式缓存优化（新增）
 
@@ -242,6 +265,7 @@ flowchart LR
 - 新增案件后增量 `HSET` 同步缓存
 - 删除案件后增量 `HDEL` 同步缓存
 - Redis 异常时查询自动回源 DB，避免级联故障
+- 缓存记录统一走克隆副本，避免调用方误修改共享快照数据
 
 ### 8.5 输入质量与一致性优化（新增）
 
