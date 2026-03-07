@@ -331,9 +331,16 @@ flowchart LR
 ### 9.5 Chat 智能体侧能力
 
 - SSE 流式输出
-- 工具调用（`chat_query_user_info`、`chat_query_user_case_history`）
+- 基于 Responses API 的工具调用闭环：支持 `function_call` / `function_call_output` 续接，系统提示词按 `developer` 角色注入
+- 多模态交互：聊天接口除文本外还支持可选多图输入，前端将图片编码为 Base64 Data URL，后端按 Responses API 的 `input_text` + `input_image` 格式转发
+- 联网能力：内置 `web_search` 工具，可在聊天轮次中触发联网检索；`web_search_call` 不写回下一轮上下文，避免污染会话历史
+- 用户信息深度交互：
+  - `chat_query_user_info`：查询当前登录用户画像、账号状态、历史风险概览
+  - `chat_query_user_case_history`：查询当前用户历史案件记录与数量
+- 系统内信息深度交互：
+  - `search_similar_cases`：访问系统内历史案件库，支持向量召回，并可按 `target_group` / `scam_type` 先精确过滤再检索
+  - 聊天系统会结合 Redis 会话上下文、系统内案件库和工具返回结果做多轮推理，而不是单轮纯文本问答
 - Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `cache/` 统一函数读写）
-- 聊天接口支持可选多图输入：前端将图片编码为 Base64 Data URL，后端按 Responses API 的 `input_text` + `input_image` 格式转发
 - 会话可刷新：`POST /api/chat/refresh`
 
 ### 9.6 用户风险趋势总览（创新点）
