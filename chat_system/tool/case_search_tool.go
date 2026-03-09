@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
-	appcfg "antifraud/config"
+	"antifraud/embedding"
 	openai "antifraud/llm"
 	"antifraud/multi_agent/case_library"
 )
@@ -142,7 +141,7 @@ func SearchSimilarCasesForChatWithFilters(ctx context.Context, query string, top
 		return nil, 0, fmt.Errorf("query is empty")
 	}
 
-	queryVector, err := generateQueryEmbeddingForChat(ctx, trimmedQuery)
+	queryVector, _, err := embedding.GenerateVector(ctx, trimmedQuery)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -186,54 +185,6 @@ func SearchSimilarCasesForChatWithFilters(ctx context.Context, query string, top
 
 	return cases, appliedTopK, nil
 }
-
-func generateQueryEmbeddingForChat(ctx context.Context, query string) ([]float64, error) {
-	trimmedQuery := strings.TrimSpace(query)
-	if trimmedQuery == "" {
-		return nil, fmt.Errorf("query is empty")
-	}
-
-	cfg, err := appcfg.LoadConfig("config/config.json")
-	if err != nil {
-		return nil, fmt.Errorf("load config failed: %w", err)
-	}
-
-	client := openai.NewClientWithConfig(openai.Config{
-		APIKey:  cfg.Embedding.APIKey,
-		BaseURL: cfg.Embedding.BaseURL,
-	})
-
-	req := openai.EmbeddingRequest{
-		Model:          cfg.Embedding.Model,
-		Input:          []string{trimmedQuery},
-		EncodingFormat: "float",
-	}
-	req.SetField("truncate", "NONE")
-
-	callCtx := ctx
-	if callCtx == nil {
-		callCtx = context.Background()
-	}
-	resp, err := client.CreateEmbeddings(callCtx, req)
-	if err != nil {
-		return nil, fmt.Errorf("create query embedding failed: %w", err)
-	}
-	if len(resp.Data) == 0 {
-		return nil, fmt.Errorf("embedding response is empty")
-	}
-
-	sort.Slice(resp.Data, func(i, j int) bool {
-		return resp.Data[i].Index < resp.Data[j].Index
-	})
-
-	vector := resp.Data[0].Embedding
-	if len(vector) == 0 {
-		return nil, fmt.Errorf("embedding vector is empty")
-	}
-
-	return vector, nil
-}
-
 func noneFallback(text string) string {
 	trimmed := strings.TrimSpace(text)
 	if trimmed == "" {

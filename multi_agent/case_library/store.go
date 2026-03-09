@@ -10,14 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 	"unicode"
 
-	"antifraud/config"
 	"antifraud/database"
-	openai "antifraud/llm"
+	"antifraud/embedding"
 	model "antifraud/multi_agent/case_library/model"
 )
 
@@ -63,7 +61,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 	}
 
 	embeddingText := BuildEmbeddingInput(normalizedInput)
-	vector, modelName, err := generateEmbeddingVector(ctx, embeddingText)
+	vector, modelName, err := embedding.GenerateVector(ctx, embeddingText)
 	if err != nil {
 		return HistoricalCaseRecord{}, fmt.Errorf("generate embedding failed: %w", err)
 	}
@@ -487,51 +485,6 @@ func appendEmbeddingSegment(segments []string, key string, value string) []strin
 		return segments
 	}
 	return append(segments, trimmedKey+": "+trimmedValue)
-}
-
-func generateEmbeddingVector(ctx context.Context, inputText string) ([]float64, string, error) {
-	cfg, err := config.LoadConfig("config/config.json")
-	if err != nil {
-		return nil, "", fmt.Errorf("load config failed: %w", err)
-	}
-
-	client := openai.NewClientWithConfig(openai.Config{
-		APIKey:  cfg.Embedding.APIKey,
-		BaseURL: cfg.Embedding.BaseURL,
-	})
-
-	req := openai.EmbeddingRequest{
-		Model:          cfg.Embedding.Model,
-		Input:          []string{inputText},
-		EncodingFormat: "float",
-	}
-	req.SetField("truncate", "NONE")
-
-	callCtx := ctx
-	if callCtx == nil {
-		callCtx = context.Background()
-	}
-	resp, err := client.CreateEmbeddings(callCtx, req)
-	if err != nil {
-		return nil, "", err
-	}
-	if len(resp.Data) == 0 {
-		return nil, "", fmt.Errorf("embedding response is empty")
-	}
-	sort.Slice(resp.Data, func(i, j int) bool {
-		return resp.Data[i].Index < resp.Data[j].Index
-	})
-
-	vector := append([]float64{}, resp.Data[0].Embedding...)
-	if len(vector) == 0 {
-		return nil, "", fmt.Errorf("embedding vector is empty")
-	}
-
-	modelName := strings.TrimSpace(resp.Model)
-	if modelName == "" {
-		modelName = strings.TrimSpace(cfg.Embedding.Model)
-	}
-	return vector, modelName, nil
 }
 
 func newHistoricalCaseID() string {

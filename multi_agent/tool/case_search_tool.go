@@ -3,10 +3,9 @@ package tool
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 
-	"antifraud/config"
+	"antifraud/embedding"
 	"antifraud/multi_agent/case_library"
 
 	openai "antifraud/llm"
@@ -59,7 +58,7 @@ func SearchSimilarCasesWithFilters(query string, topK int, targetGroup, scamType
 		return nil, 0, fmt.Errorf("query is empty")
 	}
 
-	queryVector, err := GenerateQueryEmbedding(trimmedQuery)
+	queryVector, _, err := embedding.GenerateVector(context.Background(), trimmedQuery)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -109,49 +108,6 @@ func noneFallback(text string) string {
 		return "none"
 	}
 	return trimmed
-}
-
-// GenerateQueryEmbedding 将 query 文本发送到 embeddings 接口并返回向量。
-func GenerateQueryEmbedding(query string) ([]float64, error) {
-	trimmedQuery := strings.TrimSpace(query)
-	if trimmedQuery == "" {
-		return nil, fmt.Errorf("query is empty")
-	}
-
-	cfg, err := config.LoadConfig("config/config.json")
-	if err != nil {
-		return nil, fmt.Errorf("load config failed: %w", err)
-	}
-
-	client := openai.NewClientWithConfig(openai.Config{
-		APIKey:  cfg.Embedding.APIKey,
-		BaseURL: cfg.Embedding.BaseURL,
-	})
-
-	req := openai.EmbeddingRequest{
-		Model:          cfg.Embedding.Model,
-		Input:          []string{trimmedQuery},
-		EncodingFormat: "float",
-	}
-	req.SetField("truncate", "NONE")
-
-	resp, err := client.CreateEmbeddings(context.Background(), req)
-	if err != nil {
-		return nil, fmt.Errorf("create query embedding failed: %w", err)
-	}
-	if len(resp.Data) == 0 {
-		return nil, fmt.Errorf("embedding response is empty")
-	}
-
-	sort.Slice(resp.Data, func(i, j int) bool {
-		return resp.Data[i].Index < resp.Data[j].Index
-	})
-
-	vector := resp.Data[0].Embedding
-	if len(vector) == 0 {
-		return nil, fmt.Errorf("embedding vector is empty")
-	}
-	return vector, nil
 }
 
 func ParseCaseSearchInput(arguments string) (CaseSearchInput, error) {
