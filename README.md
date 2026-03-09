@@ -3,7 +3,8 @@
 一个基于 Go 的反诈智能助手服务，覆盖两条主线能力：
 
 - 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
-- 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档、相似案件检索）
+- 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档）
+- **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
 - 主分析流程按需自动更新案件库（典型案例自动向量化入库）
 - 实时高风险告警（WebSocket 连接下的主动预警推送）
 
@@ -334,12 +335,14 @@ flowchart LR
 - 基于 Responses API 的工具调用闭环：支持 `function_call` / `function_call_output` 续接，系统提示词按 `developer` 角色注入
 - 多模态交互：聊天接口除文本外还支持可选多图输入，前端将图片编码为 Base64 Data URL，后端按 Responses API 的 `input_text` + `input_image` 格式转发
 - 联网能力：内置 `web_search` 工具，可在聊天轮次中触发联网检索；`web_search_call` 不写回下一轮上下文，避免污染会话历史
+- **双重召回能力**：
+  - **防诈知识库**：通过 `search_similar_cases` 访问全局历史案件库，支持向量召回，并可按 `target_group` / `scam_type` 过滤。
+  - **个性化记忆系统**：通过 `search_user_history` 基于语义召回该用户过往遇到的相似骗局，实现跨时空关联。
 - 用户信息深度交互：
   - `chat_query_user_info`：查询当前登录用户画像、账号状态、历史风险概览
   - `chat_query_user_case_history`：查询当前用户历史案件记录与数量
 - 系统内信息深度交互：
-  - `search_similar_cases`：访问系统内历史案件库，支持向量召回，并可按 `target_group` / `scam_type` 先精确过滤再检索
-  - 聊天系统会结合 Redis 会话上下文、系统内案件库和工具返回结果做多轮推理，而不是单轮纯文本问答
+  - 聊天系统会结合 Redis 会话上下文、知识库和记忆系统、工具返回结果做多轮推理。
 - Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `cache/` 统一函数读写）
 - 会话可刷新：`POST /api/chat/refresh`
 

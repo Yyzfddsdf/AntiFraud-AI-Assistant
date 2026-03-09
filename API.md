@@ -538,6 +538,7 @@
   "image_finding": "string",
   "video_finding": "string",
   "audio_finding": "string",
+  "scam_type": "string",
   "risk_signals": ["string"],
   "risk_level": "低|中|高",
   "risk_reason": "string",
@@ -598,6 +599,7 @@
 
 4. 风险等级与理由
 - 风险等级: 低 | 中 | 高
+- 诈骗类型: {scam_type}
 - 理由: {risk_reason}
 
 5. 建议的下一步动作

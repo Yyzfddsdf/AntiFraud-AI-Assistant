@@ -32,17 +32,6 @@ const (
 	randomLikeAlnumChunkLimit = 16
 )
 
-// FixedTargetGroups 为上传历史案件时允许的人群枚举。
-// 如果后续需要扩展，新增值应同步更新 API 文档。
-var FixedTargetGroups = []string{
-	"老人",
-	"青年",
-	"中年",
-	"未成年",
-	"学生",
-	"其他",
-}
-
 // FixedRiskLevels 为上传历史案件时允许的风险等级枚举。
 var FixedRiskLevels = []string{
 	"高",

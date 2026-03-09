@@ -17,6 +17,7 @@ import (
 const QueryUserHistoryCasesToolName = "query_user_history_cases"
 const QueryUserInfoToolName = "query_user_info"
 const WriteUserHistoryCaseToolName = "write_user_history_case"
+const SearchUserHistoryToolName = "search_user_history"
 
 type QueryUserHistoryCasesInput struct{}
 
@@ -27,6 +28,10 @@ type WriteUserHistoryCaseInput struct {
 	CaseSummary string `json:"case_summary"`
 	ScamType    string `json:"scam_type"`
 	RiskLevel   string `json:"risk_level"`
+}
+
+type SearchUserHistoryInput struct {
+	Query string `json:"query"`
 }
 
 var QueryUserHistoryCasesTool = openai.Tool{
@@ -81,6 +86,24 @@ var WriteUserHistoryCaseTool = openai.Tool{
 	},
 }
 
+var SearchUserHistoryTool = openai.Tool{
+	Type: openai.ToolTypeFunction,
+	Function: &openai.FunctionDefinition{
+		Name:        SearchUserHistoryToolName,
+		Description: "基于语义搜索当前用户的历史案件（向量化召回）。",
+		Parameters: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"query": map[string]interface{}{
+					"type":        "string",
+					"description": "搜索关键词或案件描述（语义搜索）。",
+				},
+			},
+			"required": []string{"query"},
+		},
+	},
+}
+
 func ParseQueryUserHistoryCasesInput(arguments string) (QueryUserHistoryCasesInput, error) {
 	return ParseArgs[QueryUserHistoryCasesInput](arguments)
 }
@@ -91,6 +114,10 @@ func ParseQueryUserInfoInput(arguments string) (QueryUserInfoInput, error) {
 
 func ParseWriteUserHistoryCaseInput(arguments string) (WriteUserHistoryCaseInput, error) {
 	return ParseArgs[WriteUserHistoryCaseInput](arguments)
+}
+
+func ParseSearchUserHistoryInput(arguments string) (SearchUserHistoryInput, error) {
+	return ParseArgs[SearchUserHistoryInput](arguments)
 }
 
 func QueryUserHistoryCases(ctx context.Context) ([]string, error) {
@@ -274,4 +301,16 @@ func (h *WriteUserHistoryCaseHandler) Handle(ctx context.Context, args string) (
 		"message":            "user history case persisted",
 		"system_instruction": "CRITICAL: Case archiving is the FINAL step. All tasks are completed. You MUST STOP calling any tools now and end the conversation immediately.",
 	}}, nil
+}
+
+type SearchUserHistoryHandler struct{}
+
+func (h *SearchUserHistoryHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	// TODO: 实现用户历史案件的向量化召回逻辑
+	return ToolResponse{
+		Payload: map[string]interface{}{
+			"status":  "todo",
+			"message": "用户历史案件向量化召回功能正在开发中，暂不可用。",
+		},
+	}, nil
 }
