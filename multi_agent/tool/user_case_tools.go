@@ -181,7 +181,6 @@ func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
 
 		if itemRisk == "\u9ad8" {
 			risk = "\u9ad8"
-			break
 		}
 		if risk != "\u9ad8" && itemRisk == "\u4e2d" {
 			risk = "\u4e2d"
