@@ -53,22 +53,26 @@ func buildHistoricalCaseGraph(focusType string, topK int) (apimodel.HistoricalCa
 		return cached, nil
 	}
 
-	records, err := case_library.QueryAllHistoricalCases()
+	aggregates := make(map[string]*historicalCaseGraphAggregate)
+	err := case_library.StreamAllHistoricalCases(func(record case_library.HistoricalCaseRecord) error {
+		updateHistoricalCaseGraphAggregate(aggregates, record)
+		return nil
+	})
 	if err != nil {
 		return apimodel.HistoricalCaseGraphResponse{}, err
 	}
-	result := BuildHistoricalCaseGraphFromRecords(records, normalizedFocusType, appliedTopK)
+
+	result := BuildHistoricalCaseGraphFromAggregates(aggregates, normalizedFocusType, appliedTopK)
 	if cacheErr := cache.SetJSON(cacheKey, result, historicalCaseGraphCacheTTL); cacheErr != nil {
 		// 缓存失败不影响主流程，保持只读分析接口可用。
 	}
 	return result, nil
 }
 
-// BuildHistoricalCaseGraphFromRecords 基于案件记录构建诈骗类型画像与相似关系图谱。
-func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRecord, focusType string, topK int) apimodel.HistoricalCaseGraphResponse {
+// BuildHistoricalCaseGraphFromAggregates 基于预先聚合的数据构建诈骗类型画像与相似关系图谱。
+func BuildHistoricalCaseGraphFromAggregates(aggregates map[string]*historicalCaseGraphAggregate, focusType string, topK int) apimodel.HistoricalCaseGraphResponse {
 	appliedTopK := normalizeHistoricalCaseGraphTopK(topK)
 	focus := strings.TrimSpace(focusType)
-	aggregates := buildHistoricalCaseGraphAggregates(records)
 	filtered := filterHistoricalCaseGraphAggregates(aggregates, focus)
 	profiles, graph, targetGroupCount, keywordCount := buildHistoricalCaseGraphArtifacts(filtered, appliedTopK)
 
@@ -84,6 +88,12 @@ func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRe
 		Profiles: profiles,
 		Graph:    graph,
 	}
+}
+
+// BuildHistoricalCaseGraphFromRecords 基于案件记录构建诈骗类型画像与相似关系图谱（仅用于向后兼容或测试）。
+func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRecord, focusType string, topK int) apimodel.HistoricalCaseGraphResponse {
+	aggregates := buildHistoricalCaseGraphAggregates(records)
+	return BuildHistoricalCaseGraphFromAggregates(aggregates, focusType, topK)
 }
 
 func buildHistoricalCaseGraphCacheKey(focusType string, topK int, version string) string {
@@ -102,54 +112,58 @@ func buildHistoricalCaseGraphCacheKey(focusType string, topK int, version string
 func buildHistoricalCaseGraphAggregates(records []case_library.HistoricalCaseRecord) map[string]*historicalCaseGraphAggregate {
 	aggregates := make(map[string]*historicalCaseGraphAggregate)
 	for _, record := range records {
-		scamType := strings.TrimSpace(record.ScamType)
-		if scamType == "" {
-			scamType = historicalCaseStatsUnknownCategory
-		}
-		agg, exists := aggregates[scamType]
-		if !exists {
-			agg = &historicalCaseGraphAggregate{
-				ScamType:         scamType,
-				TargetGroupCount: map[string]int{},
-				KeywordCount:     map[string]int{},
-				KeywordSet:       map[string]struct{}{},
-				TargetGroupSet:   map[string]struct{}{},
-				EmbeddingVectors: make([][]float64, 0),
-			}
-			aggregates[scamType] = agg
-		}
-
-		agg.CaseCount++
-		switch strings.TrimSpace(record.RiskLevel) {
-		case "高":
-			agg.High++
-		case "低":
-			agg.Low++
-		default:
-			agg.Medium++
-		}
-
-		targetGroup := strings.TrimSpace(record.TargetGroup)
-		if targetGroup == "" {
-			targetGroup = historicalCaseStatsUnknownCategory
-		}
-		agg.TargetGroupCount[targetGroup]++
-		agg.TargetGroupSet[targetGroup] = struct{}{}
-
-		for _, keyword := range record.Keywords {
-			trimmedKeyword := strings.TrimSpace(keyword)
-			if trimmedKeyword == "" {
-				continue
-			}
-			agg.KeywordCount[trimmedKeyword]++
-			agg.KeywordSet[trimmedKeyword] = struct{}{}
-		}
-
-		if len(record.EmbeddingVector) > 0 {
-			agg.EmbeddingVectors = append(agg.EmbeddingVectors, append([]float64{}, record.EmbeddingVector...))
-		}
+		updateHistoricalCaseGraphAggregate(aggregates, record)
 	}
 	return aggregates
+}
+
+func updateHistoricalCaseGraphAggregate(aggregates map[string]*historicalCaseGraphAggregate, record case_library.HistoricalCaseRecord) {
+	scamType := strings.TrimSpace(record.ScamType)
+	if scamType == "" {
+		scamType = historicalCaseStatsUnknownCategory
+	}
+	agg, exists := aggregates[scamType]
+	if !exists {
+		agg = &historicalCaseGraphAggregate{
+			ScamType:         scamType,
+			TargetGroupCount: map[string]int{},
+			KeywordCount:     map[string]int{},
+			KeywordSet:       map[string]struct{}{},
+			TargetGroupSet:   map[string]struct{}{},
+			EmbeddingVectors: make([][]float64, 0),
+		}
+		aggregates[scamType] = agg
+	}
+
+	agg.CaseCount++
+	switch strings.TrimSpace(record.RiskLevel) {
+	case "高":
+		agg.High++
+	case "低":
+		agg.Low++
+	default:
+		agg.Medium++
+	}
+
+	targetGroup := strings.TrimSpace(record.TargetGroup)
+	if targetGroup == "" {
+		targetGroup = historicalCaseStatsUnknownCategory
+	}
+	agg.TargetGroupCount[targetGroup]++
+	agg.TargetGroupSet[targetGroup] = struct{}{}
+
+	for _, keyword := range record.Keywords {
+		trimmedKeyword := strings.TrimSpace(keyword)
+		if trimmedKeyword == "" {
+			continue
+		}
+		agg.KeywordCount[trimmedKeyword]++
+		agg.KeywordSet[trimmedKeyword] = struct{}{}
+	}
+
+	if len(record.EmbeddingVector) > 0 {
+		agg.EmbeddingVectors = append(agg.EmbeddingVectors, append([]float64{}, record.EmbeddingVector...))
+	}
 }
 
 func filterHistoricalCaseGraphAggregates(aggregates map[string]*historicalCaseGraphAggregate, focusType string) []*historicalCaseGraphAggregate {

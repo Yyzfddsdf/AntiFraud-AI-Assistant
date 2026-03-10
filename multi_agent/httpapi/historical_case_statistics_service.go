@@ -38,16 +38,35 @@ func buildHistoricalCaseStatistics(interval string) (apimodel.HistoricalCaseStat
 		normalized = historicalCaseStatsIntervalDay
 	}
 
-	previews, err := case_library.ListHistoricalCasePreviews()
+	byScamTypeCounter := map[string]int{}
+	byTargetGroupCounter := map[string]int{}
+	trendCounter := map[string]int{}
+	total := 0
+
+	err := case_library.StreamHistoricalCasePreviews(func(p case_library.HistoricalCasePreview) error {
+		byScamTypeCounter[normalizeHistoricalCaseStatisticsDimension(p.ScamType)]++
+		byTargetGroupCounter[normalizeHistoricalCaseStatisticsDimension(p.TargetGroup)]++
+		trendCounter[buildHistoricalCaseStatisticsTimeBucket(p.CreatedAt, normalized)]++
+		total++
+		return nil
+	})
 	if err != nil {
 		return apimodel.HistoricalCaseStatisticsOverviewResponse{}, err
 	}
-	return buildHistoricalCaseStatisticsFromPreviews(previews, normalized), nil
+
+	return apimodel.HistoricalCaseStatisticsOverviewResponse{
+		Interval:      normalized,
+		Total:         total,
+		ByScamType:    sortedHistoricalCaseStatisticsDimensions(byScamTypeCounter),
+		ByTargetGroup: sortedHistoricalCaseStatisticsDimensions(byTargetGroupCounter),
+		Trend:         sortedHistoricalCaseStatisticsTrend(trendCounter),
+	}, nil
 }
 
+// buildHistoricalCaseStatisticsFromPreviews 基于预览列表构建统计（仅用于测试或向后兼容）。
 func buildHistoricalCaseStatisticsFromPreviews(previews []case_library.HistoricalCasePreview, interval string) apimodel.HistoricalCaseStatisticsOverviewResponse {
-	normalized, ok := normalizeHistoricalCaseStatisticsInterval(interval)
-	if !ok {
+	normalized, _ := normalizeHistoricalCaseStatisticsInterval(interval)
+	if normalized == "" {
 		normalized = historicalCaseStatsIntervalDay
 	}
 

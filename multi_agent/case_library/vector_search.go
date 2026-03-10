@@ -48,6 +48,31 @@ func QueryAllHistoricalCases() ([]HistoricalCaseRecord, error) {
 	return queryAllHistoricalCasesFromDB()
 }
 
+// StreamAllHistoricalCases executes a streaming query to avoid loading all records into memory at once.
+func StreamAllHistoricalCases(callback func(HistoricalCaseRecord) error) error {
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		return err
+	}
+
+	rows, err := db.Model(&historicalCaseEntity{}).Rows()
+	if err != nil {
+		return fmt.Errorf("stream historical cases failed: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entity historicalCaseEntity
+		if err := db.ScanRows(rows, &entity); err != nil {
+			return fmt.Errorf("scan historical case row failed: %w", err)
+		}
+		if err := callback(recordFromEntity(entity)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func queryAllHistoricalCasesFromDB() ([]HistoricalCaseRecord, error) {
 	db, err := database.GetHistoricalCaseDB()
 	if err != nil {

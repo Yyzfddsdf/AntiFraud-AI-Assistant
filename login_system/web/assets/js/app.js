@@ -1,4 +1,4 @@
-﻿const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch } = Vue;
+const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch } = Vue;
 
 createApp({
     setup() {
@@ -59,9 +59,11 @@ createApp({
         const adminStatsCache = reactive({});
         const adminGraphData = ref(null);
         const adminGraphCache = ref(null);
+        const showGraphModal = ref(false);
         let adminTrendChart = null;
         let adminTypeChart = null;
         let adminTargetChart = null;
+        let adminNetworkInstance = null;
 
         // Draggable Chat State
         const chatPosition = reactive({ left: 0, top: 0 });
@@ -1019,6 +1021,153 @@ createApp({
             }
         };
 
+        const openGraphModal = () => {
+            showGraphModal.value = true;
+            setTimeout(() => renderAdminGraphNetwork(), 300);
+        };
+
+        const renderAdminGraphNetwork = () => {
+            if (!adminGraphData.value || !adminGraphData.value.graph) return;
+            const container = document.getElementById('adminGraphNetwork');
+            if (!container) return;
+
+            const { nodes, edges } = adminGraphData.value.graph;
+
+            const visNodes = new vis.DataSet(nodes.map(node => {
+                let background = '#6366f1'; // Default Indigo-500
+                let border = '#818cf8'; // Indigo-400
+                let size = 20;
+
+                if (node.node_type === 'scam_type') {
+                    background = '#d946ef'; // Fuchsia-500
+                    border = '#f0abfc'; // Fuchsia-300
+                    size = 35;
+                } else if (node.node_type === 'target_group') {
+                    background = '#10b981'; // Emerald-500
+                    border = '#6ee7b7'; // Emerald-300
+                    size = 42; // Larger to act as an anchor
+                } else if (node.node_type === 'keyword') {
+                    background = '#818cf8'; // Indigo-400
+                    border = '#c7d2fe'; // Indigo-200
+                    size = 18;
+                }
+
+                return {
+                    id: node.id,
+                    label: node.label,
+                    nodeType: node.node_type, // Custom property for interaction
+                    title: `类型: ${node.node_type}\n名称: ${node.label}${node.properties?.case_count ? '\n案件数: ' + node.properties.case_count : ''}`,
+                    color: {
+                        background: background,
+                        border: border,
+                        highlight: { background: background, border: '#000' },
+                        hover: { background: background, border: border }
+                    },
+                    font: { color: '#475569', size: 14, face: 'Plus Jakarta Sans', weight: '800' },
+                    size: size,
+                    shape: node.node_type === 'target_group' ? 'diamond' : 'dot', // Diamond shape for people anchors
+                    borderWidth: node.node_type === 'target_group' ? 6 : 4,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.1)',
+                        size: 12,
+                        x: 0,
+                        y: 4
+                    }
+                };
+            }));
+
+            const visEdges = new vis.DataSet(edges.map(edge => {
+                let label = '';
+                let dashes = false;
+                let color = '#e2e8f0'; // Slate-200
+
+                if (edge.relation_type === 'similar_to') {
+                    label = '相似';
+                    dashes = true;
+                    color = '#fbcfe8'; // Pink-200
+                } else if (edge.relation_type === 'target_of') {
+                    label = '针对';
+                    color = '#d1fae5'; // Emerald-100
+                } else if (edge.relation_type === 'has_keyword') {
+                    label = '关键词';
+                    color = '#e0e7ff'; // Indigo-100
+                }
+
+                return {
+                    from: edge.source,
+                    to: edge.target,
+                    label: label,
+                    arrows: { to: { enabled: true, scaleFactor: 0.5, type: 'arrow' } },
+                    font: { size: 11, align: 'middle', color: '#94a3b8', strokeWidth: 0 },
+                    color: { color: color, highlight: color, hover: color },
+                    width: edge.weight ? Math.max(1.5, edge.weight * 4) : 1.5,
+                    dashes: dashes,
+                    smooth: { type: 'curvedCW', roundness: 0.2 }
+                };
+            }));
+
+            const data = { nodes: visNodes, edges: visEdges };
+            const options = {
+                nodes: {
+                    borderWidthSelected: 2
+                },
+                edges: {
+                    hoverWidth: 1.5,
+                    selectionWidth: 2
+                },
+                physics: {
+                    forceAtlas2Based: {
+                        gravitationalConstant: -80,
+                        centralGravity: 0.005,
+                        springLength: 180,
+                        springConstant: 0.04,
+                        avoidOverlap: 1
+                    },
+                    maxVelocity: 45,
+                    solver: 'forceAtlas2Based',
+                    timestep: 0.35,
+                    stabilization: { iterations: 200, updateInterval: 25 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    navigationButtons: false,
+                    keyboard: true,
+                    zoomView: true,
+                    dragView: true
+                }
+            };
+
+            if (adminNetworkInstance) {
+                adminNetworkInstance.destroy();
+            }
+            adminNetworkInstance = new vis.Network(container, data, options);
+
+            // Click interaction for "People-oriented" perspective
+            adminNetworkInstance.on('click', (params) => {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const node = visNodes.get(nodeId);
+                    
+                    if (node && node.nodeType === 'target_group') {
+                        // If it's a "Target Group", select all associated "Scam Types"
+                        const connectedNodeIds = adminNetworkInstance.getConnectedNodes(nodeId);
+                        const allToSelect = [nodeId, ...connectedNodeIds];
+                        adminNetworkInstance.selectNodes(allToSelect);
+                        
+                        showToast(`已切换至【${node.label}】人群视角，关联 ${connectedNodeIds.length} 种诈骗手法`, 'success');
+                    }
+                }
+            });
+        };
+
+        const resetGraphZoom = () => {
+            if (adminNetworkInstance) {
+                adminNetworkInstance.fit({ animation: true });
+            }
+        };
+
         const formatGraphScore = (score) => {
             const value = Number(score);
             if (!Number.isFinite(value)) return '--';
@@ -1722,6 +1871,7 @@ createApp({
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
+            showGraphModal, openGraphModal, resetGraphZoom,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
             acknowledgeActiveAlert, openAlertHistory

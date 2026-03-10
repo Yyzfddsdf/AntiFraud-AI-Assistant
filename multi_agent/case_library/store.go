@@ -101,6 +101,48 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 
 // ListHistoricalCasePreviews 返回历史案件预览数据，用于列表页展示。
 func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
+	return listHistoricalCasePreviewsFromDB()
+}
+
+// StreamHistoricalCasePreviews executes a streaming query for case previews to avoid memory pressure.
+func StreamHistoricalCasePreviews(callback func(HistoricalCasePreview) error) error {
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		return err
+	}
+
+	rows, err := db.Model(&historicalCaseEntity{}).
+		Select("case_id", "title", "target_group", "risk_level", "scam_type", "created_at").
+		Rows()
+	if err != nil {
+		return fmt.Errorf("stream historical case previews failed: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entity historicalCaseEntity
+		if err := db.ScanRows(rows, &entity); err != nil {
+			return fmt.Errorf("scan historical case preview row failed: %w", err)
+		}
+
+		normalizedRiskLevel := normalizeRiskLevel(entity.RiskLevel)
+		if normalizedRiskLevel == "" {
+			normalizedRiskLevel = strings.TrimSpace(entity.RiskLevel)
+		}
+
+		callback(HistoricalCasePreview{
+			CaseID:      strings.TrimSpace(entity.CaseID),
+			Title:       strings.TrimSpace(entity.Title),
+			TargetGroup: strings.TrimSpace(entity.TargetGroup),
+			RiskLevel:   normalizedRiskLevel,
+			ScamType:    strings.TrimSpace(entity.ScamType),
+			CreatedAt:   entity.CreatedAt,
+		})
+	}
+	return nil
+}
+
+func listHistoricalCasePreviewsFromDB() ([]HistoricalCasePreview, error) {
 	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return nil, err
