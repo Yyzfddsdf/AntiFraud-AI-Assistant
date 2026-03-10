@@ -163,6 +163,37 @@
 - `typical_scripts`、`keywords`、`embedding_vector` 都是 JSON 字符串列。
 - `embedding_vector` 示例（截断）：`[0.0123,-0.0456,...]`。
 
+### 3.2 历史案件库枚举与校验补充
+
+说明：
+
+- `historical_case_library` 的完整字段定义以上方 `3.1` 表格为准。
+- 本节只补充固定枚举和值校验规则，避免重复列出整张表结构。
+
+#### `scam_type` 固定 15 类
+
+1. 冒充客服类
+2. 冒充公检法类
+3. 刷单返利类
+4. 虚假投资理财类
+5. 虚假网络贷款类
+6. 虚假征信类
+7. 冒充领导熟人类
+8. 婚恋交友类
+9. 博彩赌博类
+10. 虚假购物服务类
+11. 机票退改签类
+12. 兼职招聘类
+13. 网络游戏交易类
+14. 直播打赏类
+15. 其他诈骗类
+
+#### 校验规则（重点）
+
+- `title`、`target_group`、`risk_level`、`scam_type`、`case_description` 必填。
+- `scam_type` 不在上述 15 类内：直接校验失败，不写入数据库。
+- 不会自动把非法值改成默认值。
+
 ## 4. 快速核对 SQL（演示）
 
 ### 4.1 查看 `auth_system.db` 所有表
@@ -196,51 +227,3 @@ sqlite3 DB/auth_system.db "PRAGMA table_info(history_cases);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(user_history_vectors);"
 sqlite3 DB/historical_case_library.db "PRAGMA table_info(historical_case_library);"
 ```
-
----
-
-## 历史案件库字段总览（更新）
-
-表名：`historical_case_library`
-
-1. `id`：主键（自增）
-2. `case_id`：案件 ID（唯一）
-3. `created_by`：创建人用户 ID
-4. `title`：案件标题（必填）
-5. `target_group`：目标人群（必填，固定枚举）
-6. `risk_level`：风险等级（必填，固定枚举）
-7. `scam_type`：诈骗类型（必填，固定 15 类）
-8. `case_description`：案件描述（必填，12~400 字符）
-9. `typical_scripts`：典型话术列表（可选，JSON 字符串）
-10. `keywords`：关键词列表（可选，JSON 字符串）
-11. `violated_law`：违反法律（可选）
-12. `suggestion`：建议（可选）
-13. `embedding_vector`：向量（JSON 字符串）
-14. `embedding_model`：向量模型名
-15. `embedding_dimension`：向量维度
-16. `created_at`：创建时间
-17. `updated_at`：更新时间
-
-### `scam_type` 固定 15 类
-
-1. 冒充客服类
-2. 冒充公检法类
-3. 刷单返利类
-4. 虚假投资理财类
-5. 虚假网络贷款类
-6. 虚假征信类
-7. 冒充领导熟人类
-8. 婚恋交友类
-9. 博彩赌博类
-10. 虚假购物服务类
-11. 机票退改签类
-12. 兼职招聘类
-13. 网络游戏交易类
-14. 直播打赏类
-15. 其他诈骗类
-
-### 校验规则（重点）
-
-- `title`、`target_group`、`risk_level`、`scam_type`、`case_description` 必填。
-- `scam_type` 不在上述 15 类内：直接校验失败，不写入数据库。
-- 不会自动把非法值改成默认值。
