@@ -23,6 +23,11 @@ const (
 	// RateLimitMaxRequests: 单个 IP 在窗口期内允许的最大请求数。
 	RateLimitMaxRequests = 100
 
+	// ActiveTokenLimit: 单用户允许同时保留的最近活跃 token 数量上限。
+	ActiveTokenLimit = 2
+	// ActiveTokenTTL: 活跃 token 在 Redis 中的续活窗口。
+	ActiveTokenTTL = 5 * time.Minute
+
 	// DefaultJWTSecret: JWT 签名密钥的默认值。
 	// 当环境变量 JWT_SECRET 未设置时，将使用此值。
 	// 生产环境请务必设置环境变量以保证安全。

@@ -9,11 +9,7 @@ import (
 	"time"
 
 	"antifraud/cache"
-)
-
-const (
-	defaultActiveTokenLimit = 2
-	defaultActiveTokenTTL   = 5 * time.Minute
+	"antifraud/login_system/settings"
 )
 
 // ActiveTokenManager 定义活跃 token 管理所需的最小能力。
@@ -29,16 +25,16 @@ type redisActiveTokenManager struct {
 
 // NewDefaultRedisActiveTokenManager 创建默认活跃 token 管理器。
 func NewDefaultRedisActiveTokenManager() ActiveTokenManager {
-	return NewRedisActiveTokenManager(defaultActiveTokenLimit, defaultActiveTokenTTL)
+	return NewRedisActiveTokenManager(settings.ActiveTokenLimit, settings.ActiveTokenTTL)
 }
 
 // NewRedisActiveTokenManager 创建基于 Redis 的活跃 token 管理器。
 func NewRedisActiveTokenManager(maxTokens int, ttl time.Duration) ActiveTokenManager {
 	if maxTokens <= 0 {
-		maxTokens = defaultActiveTokenLimit
+		maxTokens = settings.ActiveTokenLimit
 	}
 	if ttl <= 0 {
-		ttl = defaultActiveTokenTTL
+		ttl = settings.ActiveTokenTTL
 	}
 	return &redisActiveTokenManager{maxTokens: maxTokens, ttl: ttl}
 }
