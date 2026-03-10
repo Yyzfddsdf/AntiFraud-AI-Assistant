@@ -6,7 +6,7 @@
 
 | 数据库 | 默认路径 | 环境变量覆盖 | 主要用途 |
 |---|---|---|---|
-| 业务主库 | `DB/auth_system.db` | `DB_PATH` | 用户认证数据 + 多模态任务状态/历史 |
+| 业务主库 | `DB/auth_system.db` | `DB_PATH` | 用户认证数据 + 多模态任务状态/历史 + 用户历史向量索引 |
 | 历史案件向量库 | `DB/historical_case_library.db` | `HISTORICAL_CASE_DB_PATH` | 历史案件结构化数据 + embedding 向量 |
 
 说明：
@@ -99,6 +99,35 @@
 | `created_at` | `time.Time` / `datetime` | 索引, `not null` | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 索引, `not null` | 更新时间 |
 
+### 2.4 `user_history_vectors`（用户历史语义索引表）
+
+来源：
+
+- 首次调用 `write_user_history_case` 或 `search_user_history` 时，由 `multi_agent/user_history_index` 执行 `AutoMigrate(&userHistoryVectorEntity{})` 自动创建。
+- 该表与 `history_cases` 同属业务主库 `auth_system.db`，但职责独立：
+  - `history_cases` 保存业务归档事实；
+  - `user_history_vectors` 保存语义检索索引。
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `record_id` | `string` / `varchar(64)` | 复合主键 | 对应 `history_cases.record_id` |
+| `user_id` | `string` / `varchar(64)` | 复合主键, 索引, `not null` | 对应 `history_cases.user_id` |
+| `embedding_vector` | `string` / `text` | `not null` | embedding 向量（JSON 数组字符串） |
+| `embedding_model` | `string` / `varchar(128)` | `not null` | 生成向量所用模型名 |
+| `embedding_dimension` | `int` / `integer` | `not null` | 向量维度 |
+| `created_at` | `time.Time` / `datetime` | 索引, `not null` | 继承归档记录创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 索引, `not null` | 索引最近更新时间 |
+
+说明：
+
+- 该表通过 `record_id + user_id` 与 `history_cases` 关联。
+- 该表只承担“语义索引”职责，案件标题、摘要、风险等级等详情统一回 `history_cases` 读取。
+- 向量写入失败不会回滚 `history_cases` 归档；工具层会返回 `vector_index_status=failed`，避免连环报错。
+- 当前召回范围仅限“当前用户”的索引记录，不会跨用户搜索。
+- 当前 embedding 输入仅使用：`title`、`case_summary`、`scam_type`。
+
 ## 3. 历史案件向量库 `historical_case_library.db`
 
 ### 3.1 `historical_case_library`（历史案件语义检索表）
@@ -148,6 +177,7 @@ sqlite3 DB/auth_system.db ".tables"
 sqlite3 DB/auth_system.db ".schema users"
 sqlite3 DB/auth_system.db ".schema pending_tasks"
 sqlite3 DB/auth_system.db ".schema history_cases"
+sqlite3 DB/auth_system.db ".schema user_history_vectors"
 ```
 
 ### 4.3 查看 `historical_case_library.db` 所有表和结构
@@ -163,6 +193,7 @@ sqlite3 DB/historical_case_library.db ".schema historical_case_library"
 sqlite3 DB/auth_system.db "PRAGMA table_info(users);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(pending_tasks);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(history_cases);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(user_history_vectors);"
 sqlite3 DB/historical_case_library.db "PRAGMA table_info(historical_case_library);"
 ```
 

@@ -10,6 +10,7 @@ import (
 	"antifraud/database"
 	"antifraud/login_system/models"
 	"antifraud/multi_agent/state"
+	"antifraud/multi_agent/user_history_index"
 
 	openai "antifraud/llm"
 )
@@ -18,6 +19,8 @@ const QueryUserHistoryCasesToolName = "query_user_history_cases"
 const QueryUserInfoToolName = "query_user_info"
 const WriteUserHistoryCaseToolName = "write_user_history_case"
 const SearchUserHistoryToolName = "search_user_history"
+
+const defaultUserHistorySearchTopK = 5
 
 type QueryUserHistoryCasesInput struct{}
 
@@ -32,6 +35,7 @@ type WriteUserHistoryCaseInput struct {
 
 type SearchUserHistoryInput struct {
 	Query string `json:"query"`
+	TopK  int    `json:"top_k,omitempty"`
 }
 
 var QueryUserHistoryCasesTool = openai.Tool{
@@ -97,6 +101,10 @@ var SearchUserHistoryTool = openai.Tool{
 				"query": map[string]interface{}{
 					"type":        "string",
 					"description": "搜索关键词或案件描述（语义搜索）。",
+				},
+				"top_k": map[string]interface{}{
+					"type":        "integer",
+					"description": "返回结果数量，默认 5，最大 20。",
 				},
 			},
 			"required": []string{"query"},
@@ -227,7 +235,7 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 
 	payload := CurrentTaskPayload(ctx)
 	insights := CurrentTaskInsights(ctx)
-	state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, normalizedScamType, input.RiskLevel, state.TaskPayload{
+	record := state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, normalizedScamType, input.RiskLevel, state.TaskPayload{
 		Text:          payload.Text,
 		Videos:        append([]string{}, payload.Videos...),
 		Audios:        append([]string{}, payload.Audios...),
@@ -236,18 +244,94 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 		AudioInsights: append([]string{}, insights.AudioInsights...),
 		ImageInsights: append([]string{}, insights.ImageInsights...),
 	}, CurrentFinalReport(ctx))
-	return map[string]interface{}{
+
+	result := map[string]interface{}{
 		"status":       "success",
-		"record_id":    "CASE-WRITE-" + CurrentUserID(ctx),
-		"user_id":      CurrentUserID(ctx),
+		"record_id":    record.RecordID,
+		"user_id":      record.UserID,
 		"message":      "history case persisted",
-		"title":        input.Title,
-		"created_at":   time.Now().Format(time.RFC3339),
-		"case_summary": input.CaseSummary,
-		"scam_type":    normalizedScamType,
-		"report":       CurrentFinalReport(ctx),
-		"stored_level": strings.TrimSpace(input.RiskLevel),
-	}, nil
+		"title":        record.Title,
+		"created_at":   record.CreatedAt.Format(time.RFC3339),
+		"case_summary": record.CaseSummary,
+		"scam_type":    record.ScamType,
+		"report":       record.Report,
+		"stored_level": record.RiskLevel,
+	}
+
+	indexRecord, indexErr := user_history_index.UpsertHistoryVector(ctx, user_history_index.ArchiveInput{
+		RecordID:    record.RecordID,
+		UserID:      record.UserID,
+		Title:       record.Title,
+		CaseSummary: record.CaseSummary,
+		ScamType:    record.ScamType,
+		CreatedAt:   record.CreatedAt,
+	})
+	if indexErr != nil {
+		result["message"] = "history case persisted, but vector index is unavailable"
+		result["vector_index_status"] = "failed"
+		result["vector_index_error"] = indexErr.Error()
+		return result, nil
+	}
+
+	result["vector_index_status"] = "success"
+	result["embedding_model"] = indexRecord.EmbeddingModel
+	result["embedding_dimension"] = indexRecord.EmbeddingDimension
+	result["vector_index_updated_at"] = indexRecord.UpdatedAt.Format(time.RFC3339)
+	return result, nil
+}
+
+func SearchUserHistory(ctx context.Context, input SearchUserHistoryInput) ([]string, int, error) {
+	trimmedQuery := strings.TrimSpace(input.Query)
+	if trimmedQuery == "" {
+		return nil, 0, fmt.Errorf("query is empty")
+	}
+
+	requestedTopK := input.TopK
+	if requestedTopK <= 0 {
+		requestedTopK = defaultUserHistorySearchTopK
+	}
+
+	results, appliedTopK, err := user_history_index.SearchTopKSimilarHistoryByQuery(ctx, CurrentUserID(ctx), trimmedQuery, requestedTopK)
+	if err != nil {
+		return nil, appliedTopK, err
+	}
+	if len(results) == 0 {
+		return []string{}, appliedTopK, nil
+	}
+
+	historyRecords := state.GetCaseHistory(CurrentUserID(ctx))
+	historyByRecordID := make(map[string]state.CaseHistoryRecord, len(historyRecords))
+	for _, item := range historyRecords {
+		trimmedRecordID := strings.TrimSpace(item.RecordID)
+		if trimmedRecordID == "" {
+			continue
+		}
+		historyByRecordID[trimmedRecordID] = item
+	}
+
+	formatted := make([]string, 0, len(results))
+	for index, item := range results {
+		record, ok := historyByRecordID[strings.TrimSpace(item.RecordID)]
+		if !ok {
+			continue
+		}
+		report := strings.TrimSpace(record.Report)
+		if report == "" {
+			report = "none"
+		}
+		formatted = append(formatted, fmt.Sprintf(
+			"TOP%d | score:%.4f | %s | title: %s | summary: %s | scam_type: %s | risk: %s | report: %s",
+			index+1,
+			item.Similarity,
+			record.CreatedAt.Format("2006-01-02 15:04:05"),
+			noneIfEmpty(record.Title),
+			noneIfEmpty(record.CaseSummary),
+			noneIfEmpty(record.ScamType),
+			noneIfEmpty(record.RiskLevel),
+			report,
+		))
+	}
+	return formatted, appliedTopK, nil
 }
 
 type QueryUserHistoryCasesHandler struct{}
@@ -289,27 +373,43 @@ func (h *WriteUserHistoryCaseHandler) Handle(ctx context.Context, args string) (
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid write user history case args: %v", err), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "invalid input"}}}, nil
 	}
-	_, writeErr := WriteUserHistoryCase(ctx, input)
+	payload, writeErr := WriteUserHistoryCase(ctx, input)
 	if writeErr != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": writeErr.Error(), "status": "failed", "record": map[string]interface{}{"record_id": "CASE-WRITE-0001", "message": "persist failed"}}}, nil
 	}
-	boundUserID := CurrentUserID(ctx)
-	return ToolResponse{Payload: map[string]interface{}{
-		"status":             "success",
-		"user_id":            boundUserID,
-		"message":            "user history case persisted",
-		"system_instruction": "CRITICAL: Case archiving is the FINAL step. All tasks are completed. You MUST STOP calling any tools now and end the conversation immediately.",
-	}}, nil
+	payload["system_instruction"] = "CRITICAL: Case archiving is the FINAL step. All tasks are completed. You MUST STOP calling any tools now and end the conversation immediately."
+	return ToolResponse{Payload: payload}, nil
 }
 
 type SearchUserHistoryHandler struct{}
 
 func (h *SearchUserHistoryHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
-	// TODO: 实现用户历史案件的向量化召回逻辑
+	input, err := ParseSearchUserHistoryInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid search user history args: %v", err), "status": "failed", "cases": []string{}}}, nil
+	}
+
+	results, appliedTopK, searchErr := SearchUserHistory(ctx, input)
+	if searchErr != nil {
+		boundUserID := CurrentUserID(ctx)
+		return ToolResponse{Payload: map[string]interface{}{
+			"status":        "failed",
+			"user_id":       boundUserID,
+			"query":         strings.TrimSpace(input.Query),
+			"applied_top_k": appliedTopK,
+			"error":         searchErr.Error(),
+			"cases":         []string{},
+		}}, nil
+	}
+
+	boundUserID := CurrentUserID(ctx)
 	return ToolResponse{
 		Payload: map[string]interface{}{
-			"status":  "todo",
-			"message": "用户历史案件向量化召回功能正在开发中，暂不可用。",
+			"status":        "success",
+			"user_id":       boundUserID,
+			"query":         strings.TrimSpace(input.Query),
+			"applied_top_k": appliedTopK,
+			"cases":         results,
 		},
 	}, nil
 }

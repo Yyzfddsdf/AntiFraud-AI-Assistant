@@ -232,7 +232,7 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 		},
 	}
 
-	const maxRounds = 8
+	const maxRounds = 20
 	var finalResult string
 	finalReportSubmitted := false
 	historyCaseWritten := false

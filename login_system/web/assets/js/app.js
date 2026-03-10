@@ -114,6 +114,14 @@ createApp({
         });
 
         const recentHighRiskCases = computed(() => {
+            const recentAlertWindowMS = 60 * 60 * 1000;
+            const nowMS = Date.now();
+            const isWithinRecentAlertWindow = (rawTime) => {
+                const parsedTime = new Date(rawTime || '').getTime();
+                if (!Number.isFinite(parsedTime) || parsedTime <= 0) return false;
+                return parsedTime >= nowMS - recentAlertWindowMS && parsedTime <= nowMS;
+            };
+
             const unreadRecordIDs = new Set(
                 (alertEvents.value || [])
                     .filter((item) => item && !item.read)
@@ -129,6 +137,7 @@ createApp({
                 if (!recordID) continue;
                 const riskLevel = String(item.risk_level || '').trim();
                 if (riskLevel !== '高') continue;
+                if (!isWithinRecentAlertWindow(item.created_at)) continue;
 
                 merged.set(recordID, {
                     record_id: recordID,
@@ -147,6 +156,7 @@ createApp({
                 if (!event) continue;
                 const recordID = String(event.record_id || '').trim();
                 if (!recordID) continue;
+                if (!isWithinRecentAlertWindow(event.created_at)) continue;
                 if (!merged.has(recordID)) {
                     merged.set(recordID, {
                         record_id: recordID,
@@ -913,6 +923,19 @@ createApp({
             }
         };
 
+        const getRiskTrendAnalysisClass = (trendText) => {
+            switch ((trendText || '').trim()) {
+                case '上升':
+                    return 'bg-red-50 text-red-700 ring-1 ring-red-200';
+                case '下降':
+                    return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
+                case '平稳':
+                    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
+                default:
+                    return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
+            }
+        };
+
         const formatAdminChartLabel = (label) => {
             const interval = adminStatsInterval.value;
             if (interval === 'week' && label.includes('-W')) {
@@ -1663,7 +1686,7 @@ createApp({
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
-            riskInterval, fetchRiskTrend, riskData,
+            riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,

@@ -427,11 +427,12 @@ func expireStalePendingTasks(userID, taskID string) {
 	cutoff := time.Now().Add(-pendingTaskTTL)
 
 	query := db.Model(&pendingTaskEntity{}).
-		Where("user_id = ?", uid).
 		Where("created_at <= ?", cutoff).
 		Where("status IN ?", []string{TaskStatusPending, TaskStatusProcessing})
 	if tid != "" {
-		query = query.Where("task_id = ?", tid)
+		query = query.Where("user_id = ? AND task_id = ?", uid, tid)
+	} else {
+		query = query.Where("user_id = ?", uid)
 	}
 
 	staleRows := make([]pendingTaskEntity, 0)

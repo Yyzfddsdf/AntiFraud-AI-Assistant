@@ -653,6 +653,31 @@
                         </div>
                     </div>
 
+                    <div v-if="riskData && riskData.analysis" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                    <span class="w-1.5 h-4 bg-rose-500 rounded-full"></span>
+                                    中文趋势判断
+                                </h3>
+                                <p class="text-sm text-slate-600 leading-7">{{ riskData.analysis.summary || '暂无趋势分析结论。' }}</p>
+                                <p class="text-xs text-slate-400 mt-2" v-if="riskData.analysis.current_bucket">
+                                    对比窗口：{{ riskData.analysis.previous_bucket || '无上一窗口' }} → {{ riskData.analysis.current_bucket }}
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 lg:justify-end">
+                                <div class="px-4 py-3 rounded-xl min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.overall_trend)">
+                                    <div class="text-xs opacity-80 mb-1">整体风险</div>
+                                    <div class="text-base font-bold">{{ riskData.analysis.overall_trend }}</div>
+                                </div>
+                                <div class="px-4 py-3 rounded-xl min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.high_risk_trend)">
+                                    <div class="text-xs opacity-80 mb-1">高风险案件</div>
+                                    <div class="text-base font-bold">{{ riskData.analysis.high_risk_trend }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Pie Chart -->
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">

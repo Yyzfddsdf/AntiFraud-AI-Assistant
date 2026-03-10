@@ -68,4 +68,7 @@ func TestGetMultimodalRiskOverviewHandle_Success(t *testing.T) {
 	if payload.Trend == nil {
 		t.Fatalf("trend should not be nil")
 	}
+	if payload.Analysis.OverallTrend == "" || payload.Analysis.HighRiskTrend == "" || payload.Analysis.Summary == "" {
+		t.Fatalf("analysis should not be empty: %+v", payload.Analysis)
+	}
 }

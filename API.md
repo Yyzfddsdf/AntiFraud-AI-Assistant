@@ -297,6 +297,13 @@
     "low": 2,
     "total": 10
   },
+  "analysis": {
+    "current_bucket": "2026-03-01 ~ 2026-03-07",
+    "previous_bucket": "2026-02-22 ~ 2026-02-28",
+    "overall_trend": "上升",
+    "high_risk_trend": "上升",
+    "summary": "基于最近7天与上一窗口的对比，高风险案件上升（1→2），整体风险上升（3→4）。"
+  },
   "trend": [
     {
       "time_bucket": "2026-03-01",
@@ -318,11 +325,55 @@
 
 ### 说明
 
-- 该接口直接基于 `GetCaseHistory` 聚合，返回“风险变化趋势 + 高中低数量统计”两类总览信息。
+- 该接口直接基于 `GetCaseHistory` 聚合，返回“风险变化趋势 + 高中低数量统计 + 中文趋势分析”三类总览信息。
+- `analysis` 为轻量趋势判断，当前基于最近两个“活跃窗口”做比较：
+  - `day`：最近 `7` 天 vs 上一个 `7` 天
+  - `week`：最近 `2` 周 vs 上一个 `2` 周
+  - `month`：最近 `1` 个月 vs 上一个 `1` 个月
+  - `overall_trend`：比较两个窗口的 `total`
+  - `high_risk_trend`：比较两个窗口的 `high`
+  - 取值示例：`上升` / `下降` / `平稳` / `暂无足够数据` / `暂无数据`
+- 若最近窗口内没有任何案件，则直接返回：`近期无案件`，不再继续做趋势升降判断。
+
+### 近期无案件响应示例
+
+```json
+{
+  "stats": {
+    "high": 3,
+    "medium": 5,
+    "low": 2,
+    "total": 10
+  },
+  "analysis": {
+    "current_bucket": "2026-03-03 ~ 2026-03-09",
+    "previous_bucket": "2026-02-24 ~ 2026-03-02",
+    "overall_trend": "近期无案件",
+    "high_risk_trend": "近期无案件",
+    "summary": "最近7天内暂无新增案件，暂不进行风险趋势判断。"
+  },
+  "trend": [
+    {
+      "time_bucket": "2026-02-10",
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "total": 1
+    }
+  ]
+}
+```
 - `time_bucket` 格式：
   - `day`：`YYYY-MM-DD`
   - `week`：`YYYY-Www`（ISO 周，例如 `2026-W10`）
   - `month`：`YYYY-MM`
+- `current_bucket` / `previous_bucket` 格式：
+  - 不是单个时间桶，而是“分析窗口标签”
+  - 由窗口起止两个桶拼接而成：`<start_bucket> ~ <end_bucket>`
+  - 其中每个桶本身仍沿用 `time_bucket` 的格式规则：
+    - `day`：如 `2026-03-03 ~ 2026-03-09`
+    - `week`：如 `2026-W07 ~ 2026-W10`
+    - `month`：如 `2026-01 ~ 2026-03`
 
 ### 常见失败响应
 

@@ -186,6 +186,7 @@ flowchart LR
 - `users`
 - `pending_tasks`
 - `history_cases`
+- `user_history_vectors`
 
 关键实现与优化：
 
@@ -199,6 +200,49 @@ flowchart LR
   - 任务中的数组字段（视频/音频/图片/insights）使用 Base64 逗号串存储
   - 读取时对历史明文做兼容回退，避免旧数据读失败
 - 任务详情查询统一：`GetTaskDetailByID` 先查 pending，再查 history，前端一个接口覆盖“未完成+已完成”
+- 用户历史语义索引拆表：
+  - `history_cases` 保存业务归档事实
+  - `user_history_vectors` 保存用户历史案件的语义索引
+  - 索引表当前只保留 `record_id`、`user_id`、`embedding_vector`、`embedding_model`、`embedding_dimension` 与时间字段，避免和业务详情重复耦合
+
+#### 用户历史向量化（当前实现）
+
+- `write_user_history_case` 成功归档后，会额外为当前用户历史记录生成 embedding 并写入 `user_history_vectors`
+- 当前真正参与**用户历史向量化**的字段只有 3 个：
+  - `title`
+  - `case_summary`
+  - `scam_type`
+- 为避免噪声和旧业务改动扩散，以下字段**当前不进入**用户历史 embedding 文本：
+  - `risk_level`
+  - `report`
+  - 原始多模态输入（`payload_text/videos/audios/images`）
+  - 多模态洞察（`video/audio/image insights`）
+- 当前用户历史检索工具的语义召回链路为：
+  - `query -> embedding -> user_history_vectors 召回 topK`
+  - 工具层再按现有历史展示格式组装返回结果
+
+#### 用户历史向量回填脚本（存量数据初始化）
+
+- 脚本路径：`scripts/backfill_user_history_vectors.py`
+- 用途：把已有 `history_cases` 记录批量回填到 `user_history_vectors`
+- 运行环境：Python 标准库即可；可直接在 `conda` 的 `test` 环境中执行，无需额外第三方包
+- 默认行为：
+  - 只回填缺失的索引记录
+  - 向量化字段仍只使用 `title`、`case_summary`、`scam_type`
+  - 自动创建 `user_history_vectors` 表及索引（若尚未存在）
+- 示例命令：
+
+```bash
+conda activate test
+python scripts/backfill_user_history_vectors.py
+```
+
+- 常见可选参数：
+  - `--overwrite`：覆盖已存在的索引记录
+  - `--user-id 123`：只回填指定用户
+  - `--record-id TASK-001`：只回填指定历史记录
+  - `--batch-size 20`：控制单批 embedding 请求数量
+  - `--dry-run`：只查看待处理数量，不实际写入
 
 ### 8.3 历史案件库（`historical_case_library.db`）
 
@@ -352,6 +396,17 @@ flowchart LR
 - 面向“运营看盘 + 用户自查”场景，输出两类核心信息：
   - 风险变化趋势：按时间桶聚合（`day/week/month`）统计每个时间段的 `high/medium/low/total`。
   - 风险等级统计：返回用户历史总体 `high/medium/low/total` 数量，便于快速判断风险结构。
+- 在统计结果之上，新增轻量中文趋势分析：
+  - `overall_trend`：最近两个活跃窗口的整体风险变化（比较 `total`）
+  - `high_risk_trend`：最近两个活跃窗口的高风险变化（比较 `high`）
+  - `summary`：直接面向用户展示的中文总结语
+- 当前窗口规则：
+  - `day`：最近 `7` 天 vs 上一个 `7` 天
+  - `week`：最近 `2` 周 vs 上一个 `2` 周
+  - `month`：最近 `1` 个月 vs 上一个 `1` 个月
+- `trend[].time_bucket` 仍然是单个时间桶；
+- `analysis.current_bucket` / `analysis.previous_bucket` 则是窗口标签，格式为 `<start_bucket> ~ <end_bucket>`，其中每个桶沿用对应 `time_bucket` 的格式规则。
+- 若最近窗口内没有案件，则直接返回 `近期无案件`，不继续做趋势升降判断。
 - 接口：`GET /api/scam/multimodal/history/overview?interval=day|week|month`
 - 设计目标：与案件明细查询解耦，总览接口可独立扩展为报表、看板、告警订阅等上层业务能力。
 

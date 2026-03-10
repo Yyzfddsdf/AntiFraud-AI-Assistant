@@ -43,5 +43,12 @@ func GetMultimodalRiskOverviewHandle(c *gin.Context) {
 			Total:  result.Stats.Total,
 		},
 		Trend: trend,
+		Analysis: apimodel.MultimodalRiskTrendAnalysis{
+			CurrentBucket:  result.Analysis.CurrentBucket,
+			PreviousBucket: result.Analysis.PreviousBucket,
+			OverallTrend:   result.Analysis.OverallTrend,
+			HighRiskTrend:  result.Analysis.HighRiskTrend,
+			Summary:        result.Analysis.Summary,
+		},
 	})
 }

@@ -116,8 +116,18 @@ type MultimodalRiskTrendItem struct {
 	Total      int    `json:"total"`
 }
 
+// MultimodalRiskTrendAnalysis 风险趋势中文分析结果。
+type MultimodalRiskTrendAnalysis struct {
+	CurrentBucket  string `json:"current_bucket"`
+	PreviousBucket string `json:"previous_bucket,omitempty"`
+	OverallTrend   string `json:"overall_trend"`
+	HighRiskTrend  string `json:"high_risk_trend"`
+	Summary        string `json:"summary"`
+}
+
 // MultimodalRiskOverviewResponse 用户风险总览响应。
 type MultimodalRiskOverviewResponse struct {
-	Stats MultimodalRiskLevelStats  `json:"stats"`
-	Trend []MultimodalRiskTrendItem `json:"trend"`
+	Stats    MultimodalRiskLevelStats    `json:"stats"`
+	Trend    []MultimodalRiskTrendItem   `json:"trend"`
+	Analysis MultimodalRiskTrendAnalysis `json:"analysis"`
 }
