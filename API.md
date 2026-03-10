@@ -1456,6 +1456,145 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 
 ---
 
+## 18.2) 历史案件库图谱分析（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/cases/graph`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### Query 参数
+
+- `focus_type`（可选）：仅分析指定诈骗类型的画像与局部图谱。
+- `top_k`（可选）：每个诈骗类型返回多少个高频目标人群 / 高频关键词 / 相似类型，默认 `5`，最大 `10`。
+
+### 说明
+
+- 仅管理员可调用此接口。
+- V1 为**只读派生分析**，不改动数据库结构。
+- 数据来源完全来自 `historical_case_library` 现有字段：`scam_type`、`target_group`、`risk_level`、`keywords`、`embedding_vector` 等。
+- 返回两部分：
+  - `profiles`：每个诈骗类型的画像摘要；
+  - `graph`：节点与边组成的轻量图谱。
+- `focus_type` 的行为：
+  - 不传或传空字符串：返回**全库所有诈骗类型**的画像与图谱；
+  - 传入具体诈骗类型：当前 V1 会收缩为**该诈骗类型的局部画像**，`profiles` 只保留该类型，`graph` 也围绕该类型展开。
+- `top_k` 的行为：
+  - 对每个诈骗类型，分别最多保留 `top_k` 个高频目标人群、`top_k` 个高频关键词、`top_k` 个相似诈骗类型；
+  - 不是“案件 × 关键词”逐条连线，而是**先按诈骗类型聚合**，再从聚合结果里取 TopK。
+- `graph` 的阅读方式：
+  - `profiles` 是**给人直接看的画像摘要**；
+  - `graph` 是**给前端做图或后续交互可视化准备的底层结构**，更偏机器可读。
+- 当前类型相似度分数由三部分加权得到：
+  - 向量中心余弦相似度 `0.6`
+  - 关键词集合重合度 `0.25`
+  - 目标人群集合重合度 `0.15`
+
+### `graph` 字段详解
+
+#### `nodes`
+
+- `id`：节点唯一标识，格式为 `<node_type>:<label>`，例如 `scam_type:冒充客服类`
+- `node_type`：节点类别，当前 V1 支持：
+  - `scam_type`
+  - `target_group`
+  - `keyword`
+- `label`：给人看的节点名称
+- `weight`：节点权重，含义取决于节点类型：
+  - `scam_type`：该诈骗类型在知识库中的案例数
+  - `target_group` / `keyword`：该节点在当前图谱结果中的聚合计数
+
+#### `edges`
+
+- `source`：起点节点 ID
+- `target`：终点节点 ID
+- `relation`：关系类型，当前 V1 支持：
+  - `targets`：诈骗类型 → 目标人群
+  - `keyword`：诈骗类型 → 高频关键词
+  - `similar`：诈骗类型 → 相似诈骗类型
+- `score`：关系强度，含义按关系类型区分：
+  - `targets`：该目标人群在该诈骗类型中的出现占比
+  - `keyword`：该关键词在该诈骗类型中的出现占比
+  - `similar`：诈骗类型之间的综合相似度分数
+
+#### 一个最小理解例子
+
+- `{"source": "scam_type:冒充客服类", "target": "target_group:老人", "relation": "targets", "score": 0.6}`
+  - 表示：`冒充客服类` 的案例中，约 60% 聚合到 `老人` 这一目标人群标签。
+- `{"source": "scam_type:冒充客服类", "target": "keyword:退款", "relation": "keyword", "score": 0.8}`
+  - 表示：`退款` 是 `冒充客服类` 的高频关键词，出现占比约 80%。
+- `{"source": "scam_type:冒充客服类", "target": "scam_type:虚假征信类", "relation": "similar", "score": 0.8123}`
+  - 表示：这两个诈骗类型在知识特征上相似度较高。
+
+### 成功响应（200）
+
+```json
+{
+  "summary": {
+    "focus_type": "",
+    "top_k": 3,
+    "total_cases": 12,
+    "scam_type_count": 4,
+    "target_group_count": 5,
+    "keyword_count": 11
+  },
+  "profiles": [
+    {
+      "scam_type": "冒充客服类",
+      "case_count": 5,
+      "risk_distribution": {
+        "high": 3,
+        "medium": 1,
+        "low": 1,
+        "total": 5
+      },
+      "top_target_groups": [
+        {"name": "老人", "count": 3},
+        {"name": "中青年", "count": 2}
+      ],
+      "top_keywords": [
+        {"name": "退款", "count": 4},
+        {"name": "客服", "count": 4},
+        {"name": "征信", "count": 2}
+      ],
+      "similar_types": [
+        {"scam_type": "虚假征信类", "score": 0.8123},
+        {"scam_type": "冒充公检法类", "score": 0.4211}
+      ]
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {"id": "scam_type:冒充客服类", "node_type": "scam_type", "label": "冒充客服类", "weight": 5},
+      {"id": "target_group:老人", "node_type": "target_group", "label": "老人", "weight": 3},
+      {"id": "keyword:退款", "node_type": "keyword", "label": "退款", "weight": 4}
+    ],
+    "edges": [
+      {"source": "scam_type:冒充客服类", "target": "target_group:老人", "relation": "targets", "score": 0.6},
+      {"source": "scam_type:冒充客服类", "target": "keyword:退款", "relation": "keyword", "score": 0.8},
+      {"source": "scam_type:冒充客服类", "target": "scam_type:虚假征信类", "relation": "similar", "score": 0.8123}
+    ]
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` `top_k` 非整数。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 图谱分析失败。
+
+### cURL 示例
+
+```bash
+curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=冒充客服类&top_k=3" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
 ## 18.2) 获取可选诈骗类型列表（仅管理员）
 
 - **Method**: `GET`

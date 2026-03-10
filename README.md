@@ -420,6 +420,19 @@ python scripts/backfill_user_history_vectors.py
 - 接口：`GET /api/scam/case-library/cases/overview?interval=day|week|month`
 - 权限要求：仅管理员可访问（挂载在 `AdminMiddleware` 路由组下）。
 
+### 9.7.1 案件知识图谱画像（V1）
+
+- 新增管理员接口：`GET /api/scam/case-library/cases/graph`
+- V1 坚持只读分析，不改数据库结构，直接复用 `historical_case_library` 现有字段生成诈骗类型画像与轻量图谱。
+- 当前输出包括：
+  - `profiles`：每个诈骗类型的案例数、风险分布、高频目标人群、高频关键词、相似类型
+  - `graph.nodes / graph.edges`：类型、人群、关键词节点及其关联边
+- 当前相似分数由三部分加权：
+  - 向量中心余弦相似度 `0.6`
+  - 关键词重合度 `0.25`
+  - 目标人群重合度 `0.15`
+- 管理员前端“全景分析”页已接入 V1 画像卡片，先强调可解释性，后续再考虑图谱缓存与交互可视化。
+
 ### 9.8 实时高风险告警推送（WebSocket）
 
 - 新增接口：`GET /api/alert/ws`

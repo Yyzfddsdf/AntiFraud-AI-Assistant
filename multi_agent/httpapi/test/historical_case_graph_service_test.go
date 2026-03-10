@@ -1,0 +1,74 @@
+package httpapi_test
+
+import (
+	"testing"
+	"time"
+
+	"antifraud/multi_agent/case_library"
+	httpapi "antifraud/multi_agent/httpapi"
+)
+
+func TestBuildHistoricalCaseGraphFromRecords(t *testing.T) {
+	records := []case_library.HistoricalCaseRecord{
+		{
+			CaseID:          "HCASE-1",
+			Title:           "客服退款诈骗",
+			TargetGroup:     "老人",
+			RiskLevel:       "高",
+			ScamType:        "冒充客服类",
+			CaseDescription: "以退款为由诱导转账",
+			Keywords:        []string{"退款", "客服", "征信"},
+			EmbeddingVector: []float64{1, 0},
+			CreatedAt:       time.Now(),
+		},
+		{
+			CaseID:          "HCASE-2",
+			Title:           "征信修复诈骗",
+			TargetGroup:     "老人",
+			RiskLevel:       "高",
+			ScamType:        "虚假征信类",
+			CaseDescription: "声称征信受损需转账处理",
+			Keywords:        []string{"征信", "客服", "修复"},
+			EmbeddingVector: []float64{0.9, 0.1},
+			CreatedAt:       time.Now(),
+		},
+		{
+			CaseID:          "HCASE-3",
+			Title:           "投资理财诈骗",
+			TargetGroup:     "青年",
+			RiskLevel:       "中",
+			ScamType:        "虚假投资理财类",
+			CaseDescription: "诱导充值投资平台",
+			Keywords:        []string{"理财", "投资", "收益"},
+			EmbeddingVector: []float64{0, 1},
+			CreatedAt:       time.Now(),
+		},
+	}
+
+	result := httpapi.BuildHistoricalCaseGraphFromRecords(records, "", 3)
+	if result.Summary.TotalCases != 3 {
+		t.Fatalf("unexpected total cases: %+v", result.Summary)
+	}
+	if result.Summary.ScamTypeCount != 3 {
+		t.Fatalf("unexpected scam type count: %+v", result.Summary)
+	}
+	if len(result.Profiles) != 3 {
+		t.Fatalf("unexpected profiles size: %d", len(result.Profiles))
+	}
+	if len(result.Graph.Nodes) == 0 || len(result.Graph.Edges) == 0 {
+		t.Fatalf("graph should not be empty: %+v", result.Graph)
+	}
+
+	foundSimilarity := false
+	for _, profile := range result.Profiles {
+		if profile.ScamType == "冒充客服类" && len(profile.SimilarTypes) > 0 {
+			if profile.SimilarTypes[0].ScamType != "虚假征信类" {
+				t.Fatalf("unexpected top similar type: %+v", profile.SimilarTypes)
+			}
+			foundSimilarity = true
+		}
+	}
+	if !foundSimilarity {
+		t.Fatalf("expected similar types for 冒充客服类")
+	}
+}

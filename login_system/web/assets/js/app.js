@@ -57,6 +57,8 @@ createApp({
         const adminStatsData = ref(null);
         // Cache for admin stats: { 'day': data, 'week': data, 'month': data }
         const adminStatsCache = reactive({});
+        const adminGraphData = ref(null);
+        const adminGraphCache = ref(null);
         let adminTrendChart = null;
         let adminTypeChart = null;
         let adminTargetChart = null;
@@ -746,6 +748,7 @@ createApp({
                     showCaseModal.value = false;
                     fetchCaseLibrary();
                     fetchCaseOptionLists();
+                    fetchAdminStats(true);
                 }
             } catch (e) {
                 showToast('录入失败: ' + e.message, 'error');
@@ -770,6 +773,7 @@ createApp({
                  if (res) {
                      showToast(res.message || '案件已删除');
                      fetchCaseLibrary();
+                     fetchAdminStats(true);
                      if (selectedCase.value && selectedCase.value.case_id === item.case_id) {
                          selectedCase.value = null;
                      }
@@ -989,6 +993,36 @@ createApp({
             } catch (e) {
                 console.error('Fetch admin stats failed:', e);
             }
+
+            await fetchAdminCaseGraph(forceRefresh);
+        };
+
+        const fetchAdminCaseGraph = async (forceRefresh = false) => {
+            if (!isAuthenticated.value || user.value.role !== 'admin') return;
+
+            if (adminGraphCache.value) {
+                adminGraphData.value = adminGraphCache.value;
+            }
+
+            try {
+                const res = await request('/scam/case-library/cases/graph?top_k=5', 'GET', null, { silent: true });
+                if (res) {
+                    const cachedData = adminGraphCache.value;
+                    const hasChanged = !cachedData || stableJSONStringify(cachedData) !== stableJSONStringify(res);
+                    if (hasChanged || forceRefresh) {
+                        adminGraphData.value = res;
+                        adminGraphCache.value = res;
+                    }
+                }
+            } catch (e) {
+                console.error('Fetch admin graph failed:', e);
+            }
+        };
+
+        const formatGraphScore = (score) => {
+            const value = Number(score);
+            if (!Number.isFinite(value)) return '--';
+            return `${(value * 100).toFixed(1)}%`;
         };
 
         const renderAdminCharts = () => {
@@ -1687,7 +1721,7 @@ createApp({
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
-            adminStatsInterval, fetchAdminStats, adminStatsData,
+            adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
             acknowledgeActiveAlert, openAlertHistory
