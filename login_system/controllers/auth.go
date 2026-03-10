@@ -4,14 +4,21 @@ import (
 	"antifraud/database"
 	authcore "antifraud/login_system/auth"
 	"antifraud/login_system/models"
+	"antifraud/login_system/session"
 	"antifraud/login_system/settings"
+	"context"
 	"errors"
+	"log"
 	"net/http"
 	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type activeTokenRegistrar interface {
+	RegisterToken(ctx context.Context, userID uint, tokenString string) error
+}
 
 // RegisterHandle 处理用户注册：参数校验、验证码校验、密码强度校验、写库。
 func RegisterHandle(c *gin.Context) {
@@ -68,45 +75,59 @@ func RegisterHandle(c *gin.Context) {
 
 // LoginHandle 处理用户登录：参数校验、验证码校验、密码验证并签发 JWT。
 func LoginHandle(c *gin.Context) {
-	var payload models.LoginPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
-		return
+	LoginHandleWithActiveTokenManager(session.NewDefaultRedisActiveTokenManager())(c)
+}
+
+// LoginHandleWithActiveTokenManager 使用注入的活跃 token 管理器处理登录。
+func LoginHandleWithActiveTokenManager(activeTokenManager activeTokenRegistrar) gin.HandlerFunc {
+	if activeTokenManager == nil {
+		activeTokenManager = session.NewDefaultRedisActiveTokenManager()
 	}
 
-	if !verifyCaptcha(payload.CaptchaID, payload.CaptchaCode) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误或已过期"})
-		return
-	}
+	return func(c *gin.Context) {
+		var payload models.LoginPayload
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
+			return
+		}
 
-	var user models.User
-	if err := database.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码不正确"})
-		return
-	}
+		if !verifyCaptcha(payload.CaptchaID, payload.CaptchaCode) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误或已过期"})
+			return
+		}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码不正确"})
-		return
-	}
+		var user models.User
+		if err := database.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码不正确"})
+			return
+		}
 
-	tokenString, err := authcore.IssueToken(user.ID, user.Email, user.Username)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Token 失败"})
-		return
-	}
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码不正确"})
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "登录成功",
-		"token":   tokenString,
-		"user": models.UserResponse{
-			ID:       user.ID,
-			Username: user.Username,
-			Email:    user.Email,
-			Age:      user.Age,
-			Role:     user.Role,
-		},
-	})
+		tokenString, err := authcore.IssueToken(user.ID, user.Email, user.Username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Token 失败"})
+			return
+		}
+		if err := activeTokenManager.RegisterToken(c.Request.Context(), user.ID, tokenString); err != nil {
+			log.Printf("register active login token degraded, allow login: user_id=%d err=%v", user.ID, err)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "登录成功",
+			"token":   tokenString,
+			"user": models.UserResponse{
+				ID:       user.ID,
+				Username: user.Username,
+				Email:    user.Email,
+				Age:      user.Age,
+				Role:     user.Role,
+			},
+		})
+	}
 }
 
 // GetCurrentUserHandle 返回当前鉴权用户信息。

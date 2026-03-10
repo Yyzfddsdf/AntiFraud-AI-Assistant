@@ -467,6 +467,7 @@ python scripts/backfill_user_history_vectors.py
 ## 10. 安全与权限
 
 - JWT 鉴权：校验 token 后会二次校验用户是否存在、用户名/邮箱是否匹配
+- 活跃会话限制：基于 Redis 维护单用户最近活跃 token 队列，最多保留 `2` 个活跃 token，活跃 TTL 为 `5` 分钟；超出上限时按队列语义挤掉最旧 token
 - 鉴权中间件解耦：`AuthMiddleware/AdminMiddleware` 通过 `AuthUserReader` 接口注入用户读取能力，不再直接依赖全局 `database.DB`
 - 管理员权限：
   - `GET /api/users`

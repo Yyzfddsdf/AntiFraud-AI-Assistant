@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,11 +33,16 @@ type Claims struct {
 // IssueToken 生成包含用户基础标识的 JWT。
 func IssueToken(userID uint, email, username string) (string, error) {
 	now := time.Now()
+	tokenID, err := generateTokenID()
+	if err != nil {
+		return "", err
+	}
 	claims := &Claims{
 		UserID:   userID,
 		Email:    strings.TrimSpace(email),
 		Username: strings.TrimSpace(username),
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        tokenID,
 			ExpiresAt: jwt.NewNumericDate(now.Add(settings.JWTExpireDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
 		},
@@ -67,4 +74,12 @@ func ParseToken(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func generateTokenID() (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate token id failed: %w", err)
+	}
+	return hex.EncodeToString(buf), nil
 }

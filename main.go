@@ -10,6 +10,7 @@ import (
 	"antifraud/database"
 	"antifraud/login_system/controllers"
 	"antifraud/login_system/middleware"
+	"antifraud/login_system/session"
 	"antifraud/multi_agent/httpapi"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func main() {
 		log.Fatalf("init historical case db failed: %v", err)
 	}
 	authUserReader := middleware.NewGormAuthUserReader(database.DB)
+	activeTokenManager := session.NewDefaultRedisActiveTokenManager()
 
 	r := gin.Default()
 
@@ -59,12 +61,12 @@ func main() {
 	{
 		authRoutes.GET("/captcha", controllers.GetCaptchaHandle)
 		authRoutes.POST("/register", controllers.RegisterHandle)
-		authRoutes.POST("/login", controllers.LoginHandle)
+		authRoutes.POST("/login", controllers.LoginHandleWithActiveTokenManager(activeTokenManager))
 	}
 
 	// 业务接口（需要 JWT）。
 	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware(authUserReader))
+	api.Use(middleware.AuthMiddleware(authUserReader), middleware.ActiveTokenLimitMiddleware(activeTokenManager))
 	{
 		api.GET("/user", controllers.GetCurrentUserHandle)
 		api.DELETE("/user", controllers.DeleteCurrentUserHandle)

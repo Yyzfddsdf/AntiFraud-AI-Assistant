@@ -1,4 +1,4 @@
-﻿# API 文档（登录系统）
+# API 文档（登录系统）
 
 ## 基础信息
 
@@ -6,6 +6,7 @@
 - 统一前缀：`/api`
 - 数据格式：`application/json`
 - 鉴权方式：`Authorization: Bearer <token>`
+- 活跃会话策略：单用户最多保留 `2` 个最近活跃 token，活跃 TTL 为 `5` 分钟；超出后会按队列语义挤掉最旧 token
 
 ---
 

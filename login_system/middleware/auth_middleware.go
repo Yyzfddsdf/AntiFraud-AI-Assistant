@@ -75,6 +75,7 @@ func AuthMiddleware(userReader AuthUserReader) gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims.UserID)
+		c.Set("authToken", tokenString)
 		c.Next()
 	}
 }
