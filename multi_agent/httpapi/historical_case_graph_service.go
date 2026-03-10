@@ -43,10 +43,11 @@ func normalizeHistoricalCaseGraphTopK(topK int) int {
 	return topK
 }
 
-func buildHistoricalCaseGraph(focusType string, topK int) (apimodel.HistoricalCaseGraphResponse, error) {
+func buildHistoricalCaseGraph(focusType string, focusGroup string, topK int) (apimodel.HistoricalCaseGraphResponse, error) {
 	normalizedFocusType := strings.TrimSpace(focusType)
+	normalizedFocusGroup := strings.TrimSpace(focusGroup)
 	appliedTopK := normalizeHistoricalCaseGraphTopK(topK)
-	cacheKey := buildHistoricalCaseGraphCacheKey(normalizedFocusType, appliedTopK, case_library.HistoricalCaseGraphCacheVersion())
+	cacheKey := buildHistoricalCaseGraphCacheKey(normalizedFocusType, normalizedFocusGroup, appliedTopK, case_library.HistoricalCaseGraphCacheVersion())
 	var cached apimodel.HistoricalCaseGraphResponse
 	found, cacheErr := cache.GetJSON(cacheKey, &cached)
 	if cacheErr == nil && found {
@@ -62,7 +63,7 @@ func buildHistoricalCaseGraph(focusType string, topK int) (apimodel.HistoricalCa
 		return apimodel.HistoricalCaseGraphResponse{}, err
 	}
 
-	result := BuildHistoricalCaseGraphFromAggregates(aggregates, normalizedFocusType, appliedTopK)
+	result := BuildHistoricalCaseGraphFromAggregates(aggregates, normalizedFocusType, normalizedFocusGroup, appliedTopK)
 	if cacheErr := cache.SetJSON(cacheKey, result, historicalCaseGraphCacheTTL); cacheErr != nil {
 		// 缓存失败不影响主流程，保持只读分析接口可用。
 	}
@@ -70,43 +71,51 @@ func buildHistoricalCaseGraph(focusType string, topK int) (apimodel.HistoricalCa
 }
 
 // BuildHistoricalCaseGraphFromAggregates 基于预先聚合的数据构建诈骗类型画像与相似关系图谱。
-func BuildHistoricalCaseGraphFromAggregates(aggregates map[string]*historicalCaseGraphAggregate, focusType string, topK int) apimodel.HistoricalCaseGraphResponse {
+func BuildHistoricalCaseGraphFromAggregates(aggregates map[string]*historicalCaseGraphAggregate, focusType string, focusGroup string, topK int) apimodel.HistoricalCaseGraphResponse {
 	appliedTopK := normalizeHistoricalCaseGraphTopK(topK)
 	focus := strings.TrimSpace(focusType)
+	groupFocus := strings.TrimSpace(focusGroup)
 	filtered := filterHistoricalCaseGraphAggregates(aggregates, focus)
 	profiles, graph, targetGroupCount, keywordCount := buildHistoricalCaseGraphArtifacts(filtered, appliedTopK)
+	targetGroupTopScamTypes := buildHistoricalCaseTargetGroupTopScamTypes(filtered, groupFocus, appliedTopK)
 
 	return apimodel.HistoricalCaseGraphResponse{
 		Summary: apimodel.HistoricalCaseGraphSummary{
 			FocusType:        focus,
+			FocusGroup:       groupFocus,
 			TopK:             appliedTopK,
 			TotalCases:       countHistoricalCaseGraphCases(filtered),
 			ScamTypeCount:    len(filtered),
 			TargetGroupCount: targetGroupCount,
 			KeywordCount:     keywordCount,
 		},
-		Profiles: profiles,
-		Graph:    graph,
+		Profiles:                profiles,
+		Graph:                   graph,
+		TargetGroupTopScamTypes: targetGroupTopScamTypes,
 	}
 }
 
 // BuildHistoricalCaseGraphFromRecords 基于案件记录构建诈骗类型画像与相似关系图谱（仅用于向后兼容或测试）。
-func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRecord, focusType string, topK int) apimodel.HistoricalCaseGraphResponse {
+func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRecord, focusType string, focusGroup string, topK int) apimodel.HistoricalCaseGraphResponse {
 	aggregates := buildHistoricalCaseGraphAggregates(records)
-	return BuildHistoricalCaseGraphFromAggregates(aggregates, focusType, topK)
+	return BuildHistoricalCaseGraphFromAggregates(aggregates, focusType, focusGroup, topK)
 }
 
-func buildHistoricalCaseGraphCacheKey(focusType string, topK int, version string) string {
+func buildHistoricalCaseGraphCacheKey(focusType string, focusGroup string, topK int, version string) string {
 	normalizedFocusType := strings.TrimSpace(focusType)
 	if normalizedFocusType == "" {
 		normalizedFocusType = "all"
+	}
+	normalizedFocusGroup := strings.TrimSpace(focusGroup)
+	if normalizedFocusGroup == "" {
+		normalizedFocusGroup = "all_groups"
 	}
 	trimmedVersion := strings.TrimSpace(version)
 	if trimmedVersion == "" {
 		trimmedVersion = "0"
 	}
 	replacer := strings.NewReplacer(":", "_", " ", "_", "/", "_", "\\", "_")
-	return historicalCaseGraphCacheKeyPrefix + replacer.Replace(normalizedFocusType) + fmt.Sprintf(":topk:%d:version:%s", topK, trimmedVersion)
+	return historicalCaseGraphCacheKeyPrefix + replacer.Replace(normalizedFocusType) + fmt.Sprintf(":group:%s:topk:%d:version:%s", replacer.Replace(normalizedFocusGroup), topK, trimmedVersion)
 }
 
 func buildHistoricalCaseGraphAggregates(records []case_library.HistoricalCaseRecord) map[string]*historicalCaseGraphAggregate {
@@ -328,6 +337,81 @@ func topHistoricalCaseGraphNamedCounts(counter map[string]int, topK int) []apimo
 			return items[i].Name < items[j].Name
 		}
 		return items[i].Count > items[j].Count
+	})
+	if len(items) > topK {
+		items = items[:topK]
+	}
+	return items
+}
+
+func buildHistoricalCaseTargetGroupTopScamTypes(aggregates []*historicalCaseGraphAggregate, focusGroup string, topK int) []apimodel.HistoricalCaseGraphTargetGroupScamTypeTopKItem {
+	normalizedFocusGroup := strings.TrimSpace(focusGroup)
+	byTargetGroup := make(map[string]map[string]int)
+	totalCasesByTargetGroup := make(map[string]int)
+
+	for _, aggregate := range aggregates {
+		if aggregate == nil {
+			continue
+		}
+		for targetGroup, count := range aggregate.TargetGroupCount {
+			normalizedTargetGroup := strings.TrimSpace(targetGroup)
+			if normalizedTargetGroup == "" {
+				normalizedTargetGroup = historicalCaseStatsUnknownCategory
+			}
+			if count <= 0 {
+				continue
+			}
+			counter, exists := byTargetGroup[normalizedTargetGroup]
+			if !exists {
+				counter = make(map[string]int)
+				byTargetGroup[normalizedTargetGroup] = counter
+			}
+			counter[aggregate.ScamType] += count
+			totalCasesByTargetGroup[normalizedTargetGroup] += count
+		}
+	}
+
+	items := make([]apimodel.HistoricalCaseGraphTargetGroupScamTypeTopKItem, 0, len(byTargetGroup))
+	for targetGroup, counter := range byTargetGroup {
+		if normalizedFocusGroup != "" && targetGroup != normalizedFocusGroup {
+			continue
+		}
+		items = append(items, apimodel.HistoricalCaseGraphTargetGroupScamTypeTopKItem{
+			TargetGroup:  targetGroup,
+			TotalCases:   totalCasesByTargetGroup[targetGroup],
+			TopScamTypes: topHistoricalCaseGraphScamTypeScores(counter, totalCasesByTargetGroup[targetGroup], topK),
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].TotalCases == items[j].TotalCases {
+			return items[i].TargetGroup < items[j].TargetGroup
+		}
+		return items[i].TotalCases > items[j].TotalCases
+	})
+	return items
+}
+
+func topHistoricalCaseGraphScamTypeScores(counter map[string]int, totalCases int, topK int) []apimodel.HistoricalCaseGraphTargetGroupScamTypeScoreItem {
+	items := make([]apimodel.HistoricalCaseGraphTargetGroupScamTypeScoreItem, 0, len(counter))
+	for scamType, score := range counter {
+		trimmedScamType := strings.TrimSpace(scamType)
+		if trimmedScamType == "" {
+			trimmedScamType = historicalCaseStatsUnknownCategory
+		}
+		if score <= 0 {
+			continue
+		}
+		items = append(items, apimodel.HistoricalCaseGraphTargetGroupScamTypeScoreItem{
+			ScamType: trimmedScamType,
+			Score:    safeRatio(score, totalCases),
+		})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if math.Abs(items[i].Score-items[j].Score) < 1e-12 {
+			return items[i].ScamType < items[j].ScamType
+		}
+		return items[i].Score > items[j].Score
 	})
 	if len(items) > topK {
 		items = items[:topK]

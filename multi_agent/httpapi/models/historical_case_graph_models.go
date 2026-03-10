@@ -55,6 +55,7 @@ type HistoricalCaseGraphData struct {
 // HistoricalCaseGraphSummary 表示图谱总览信息。
 type HistoricalCaseGraphSummary struct {
 	FocusType        string `json:"focus_type,omitempty"`
+	FocusGroup       string `json:"focus_group,omitempty"`
 	TopK             int    `json:"top_k"`
 	TotalCases       int    `json:"total_cases"`
 	ScamTypeCount    int    `json:"scam_type_count"`
@@ -62,9 +63,23 @@ type HistoricalCaseGraphSummary struct {
 	KeywordCount     int    `json:"keyword_count"`
 }
 
+// HistoricalCaseGraphTargetGroupScamTypeScoreItem 表示某目标人群下的诈骗类型占比分数。
+type HistoricalCaseGraphTargetGroupScamTypeScoreItem struct {
+	ScamType string  `json:"scam_type"`
+	Score    float64 `json:"score"`
+}
+
+// HistoricalCaseGraphTargetGroupScamTypeTopKItem 表示某目标人群的诈骗类型 TopK 统计。
+type HistoricalCaseGraphTargetGroupScamTypeTopKItem struct {
+	TargetGroup  string                                            `json:"target_group"`
+	TotalCases   int                                               `json:"total_cases"`
+	TopScamTypes []HistoricalCaseGraphTargetGroupScamTypeScoreItem `json:"top_scam_types"`
+}
+
 // HistoricalCaseGraphResponse 表示案件知识库图谱分析响应。
 type HistoricalCaseGraphResponse struct {
-	Summary  HistoricalCaseGraphSummary   `json:"summary"`
-	Profiles []HistoricalCaseGraphProfile `json:"profiles"`
-	Graph    HistoricalCaseGraphData      `json:"graph"`
+	Summary                 HistoricalCaseGraphSummary                       `json:"summary"`
+	Profiles                []HistoricalCaseGraphProfile                     `json:"profiles"`
+	Graph                   HistoricalCaseGraphData                          `json:"graph"`
+	TargetGroupTopScamTypes []HistoricalCaseGraphTargetGroupScamTypeTopKItem `json:"target_group_top_scam_types"`
 }

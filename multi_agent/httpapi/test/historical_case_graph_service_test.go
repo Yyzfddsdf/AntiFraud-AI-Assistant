@@ -45,7 +45,7 @@ func TestBuildHistoricalCaseGraphFromRecords(t *testing.T) {
 		},
 	}
 
-	result := httpapi.BuildHistoricalCaseGraphFromRecords(records, "", 3)
+	result := httpapi.BuildHistoricalCaseGraphFromRecords(records, "", "", 3)
 	if result.Summary.TotalCases != 3 {
 		t.Fatalf("unexpected total cases: %+v", result.Summary)
 	}
@@ -58,8 +58,12 @@ func TestBuildHistoricalCaseGraphFromRecords(t *testing.T) {
 	if len(result.Graph.Nodes) == 0 || len(result.Graph.Edges) == 0 {
 		t.Fatalf("graph should not be empty: %+v", result.Graph)
 	}
+	if len(result.TargetGroupTopScamTypes) != 2 {
+		t.Fatalf("unexpected target group top scam types size: %d", len(result.TargetGroupTopScamTypes))
+	}
 
 	foundSimilarity := false
+	foundElderTopK := false
 	for _, profile := range result.Profiles {
 		if profile.ScamType == "冒充客服类" && len(profile.SimilarTypes) > 0 {
 			if profile.SimilarTypes[0].ScamType != "虚假征信类" {
@@ -70,5 +74,35 @@ func TestBuildHistoricalCaseGraphFromRecords(t *testing.T) {
 	}
 	if !foundSimilarity {
 		t.Fatalf("expected similar types for 冒充客服类")
+	}
+
+	for _, item := range result.TargetGroupTopScamTypes {
+		if item.TargetGroup != "老人" {
+			continue
+		}
+		foundElderTopK = true
+		if item.TotalCases != 2 {
+			t.Fatalf("unexpected 老人 total cases: %+v", item)
+		}
+		if len(item.TopScamTypes) != 2 {
+			t.Fatalf("unexpected 老人 top scam types: %+v", item.TopScamTypes)
+		}
+		if item.TopScamTypes[0].Score != 0.5 || item.TopScamTypes[1].Score != 0.5 {
+			t.Fatalf("unexpected 老人 top scam type scores: %+v", item.TopScamTypes)
+		}
+	}
+	if !foundElderTopK {
+		t.Fatalf("expected 老人 target group top scam types")
+	}
+
+	focusedByGroup := httpapi.BuildHistoricalCaseGraphFromRecords(records, "", "老人", 3)
+	if focusedByGroup.Summary.FocusGroup != "老人" {
+		t.Fatalf("unexpected focus group in summary: %+v", focusedByGroup.Summary)
+	}
+	if len(focusedByGroup.TargetGroupTopScamTypes) != 1 {
+		t.Fatalf("unexpected focused target group top scam types size: %d", len(focusedByGroup.TargetGroupTopScamTypes))
+	}
+	if focusedByGroup.TargetGroupTopScamTypes[0].TargetGroup != "老人" {
+		t.Fatalf("unexpected focused target group item: %+v", focusedByGroup.TargetGroupTopScamTypes[0])
 	}
 }

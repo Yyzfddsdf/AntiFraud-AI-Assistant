@@ -51,6 +51,7 @@ createApp({
         const riskCache = reactive({});
         let pieChartInstance = null;
         let lineChartInstance = null;
+        let hasWarnedMissingChartLibrary = false;
 
         // Admin Stats State
         const adminStatsInterval = ref('day');
@@ -59,10 +60,14 @@ createApp({
         const adminStatsCache = reactive({});
         const adminGraphData = ref(null);
         const adminGraphCache = ref(null);
+        const adminTargetGroupChartData = ref(null);
+        const adminTargetGroupChartCache = reactive({});
+        const selectedGraphTargetGroup = ref('');
         const showGraphModal = ref(false);
         let adminTrendChart = null;
         let adminTypeChart = null;
         let adminTargetChart = null;
+        let adminTargetGroupBarChart = null;
         let adminNetworkInstance = null;
 
         // Draggable Chat State
@@ -850,81 +855,89 @@ createApp({
 
         const renderCharts = () => {
             if (!riskData.value) return;
+            if (typeof window.echarts === 'undefined') {
+                console.warn('ECharts 未加载，已跳过用户侧图表渲染。');
+                return;
+            }
             const stats = riskData.value.stats;
             const trend = riskData.value.trend;
 
             // Destroy old charts
-            if (pieChartInstance) pieChartInstance.destroy();
-            if (lineChartInstance) lineChartInstance.destroy();
+            if (pieChartInstance && typeof pieChartInstance.dispose === 'function') pieChartInstance.dispose();
+            if (lineChartInstance && typeof lineChartInstance.dispose === 'function') lineChartInstance.dispose();
 
             // Pie Chart
-            const pieCtx = document.getElementById('riskPieChart');
-            if (pieCtx) {
-                pieChartInstance = new Chart(pieCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['高风险', '中风险', '低风险'],
-                        datasets: [{
-                            data: [stats.high, stats.medium, stats.low],
-                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' }
-                        }
-                    }
+            const pieDom = document.getElementById('riskPieChart');
+            if (pieDom) {
+                pieChartInstance = echarts.init(pieDom);
+                pieChartInstance.setOption({
+                    tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff' } },
+                    series: [{
+                        name: '风险分布',
+                        type: 'pie',
+                        radius: ['50%', '80%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+                        data: [
+                            { value: stats.high, name: '高风险', itemStyle: { color: '#ef4444' } },
+                            { value: stats.medium, name: '中风险', itemStyle: { color: '#f59e0b' } },
+                            { value: stats.low, name: '低风险', itemStyle: { color: '#10b981' } }
+                        ]
+                    }]
                 });
             }
 
             // Line Chart
-            const lineCtx = document.getElementById('riskLineChart');
-            if (lineCtx) {
-                lineChartInstance = new Chart(lineCtx, {
-                    type: 'line',
-                    data: {
-                        labels: trend.map(item => formatChartLabel(item.time_bucket)),
-                        datasets: [
-                            {
-                                label: '高风险',
-                                data: trend.map(item => item.high),
-                                borderColor: '#ef4444',
-                                backgroundColor: '#ef4444',
-                                tension: 0.4
-                            },
-                            {
-                                label: '中风险',
-                                data: trend.map(item => item.medium),
-                                borderColor: '#f59e0b',
-                                backgroundColor: '#f59e0b',
-                                tension: 0.4
-                            },
-                            {
-                                label: '低风险',
-                                data: trend.map(item => item.low),
-                                borderColor: '#10b981',
-                                backgroundColor: '#10b981',
-                                tension: 0.4
-                            }
-                        ]
+            const lineDom = document.getElementById('riskLineChart');
+            if (lineDom) {
+                lineChartInstance = echarts.init(lineDom);
+                lineChartInstance.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        textStyle: { color: '#fff' }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
+                    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+                    grid: { left: '3%', right: '4%', top: '10%', bottom: '15%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: trend.map(item => formatChartLabel(item.time_bucket)),
+                        axisLabel: { color: '#64748b' }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: { color: '#64748b' },
+                        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
+                    },
+                    series: [
+                        {
+                            name: '高风险',
+                            type: 'line',
+                            smooth: true,
+                            data: trend.map(item => item.high),
+                            itemStyle: { color: '#ef4444' },
+                            lineStyle: { width: 3 }
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
-                            }
+                        {
+                            name: '中风险',
+                            type: 'line',
+                            smooth: true,
+                            data: trend.map(item => item.medium),
+                            itemStyle: { color: '#f59e0b' },
+                            lineStyle: { width: 3 }
+                        },
+                        {
+                            name: '低风险',
+                            type: 'line',
+                            smooth: true,
+                            data: trend.map(item => item.low),
+                            itemStyle: { color: '#10b981' },
+                            lineStyle: { width: 3 }
                         }
-                    }
+                    ]
                 });
             }
         };
@@ -1016,8 +1029,74 @@ createApp({
                         adminGraphCache.value = res;
                     }
                 }
+
+                if (selectedGraphTargetGroup.value) {
+                    await fetchAdminTargetGroupChart(selectedGraphTargetGroup.value, forceRefresh);
+                }
             } catch (e) {
                 console.error('Fetch admin graph failed:', e);
+            }
+        };
+
+        const fetchAdminTargetGroupChart = async (targetGroup, forceRefresh = false) => {
+            if (!isAuthenticated.value || user.value.role !== 'admin') return;
+
+            const normalizedTargetGroup = String(targetGroup || '').trim();
+            if (!normalizedTargetGroup) {
+                clearAdminTargetGroupFocus();
+                return;
+            }
+
+            selectedGraphTargetGroup.value = normalizedTargetGroup;
+
+            if (adminTargetGroupChartCache[normalizedTargetGroup] && !forceRefresh) {
+                adminTargetGroupChartData.value = adminTargetGroupChartCache[normalizedTargetGroup];
+                setTimeout(() => renderAdminTargetGroupBarChart(), 0);
+                return;
+            }
+
+            // Show loading if instance exists
+            if (adminTargetGroupBarChart) {
+                adminTargetGroupBarChart.showLoading({
+                    text: '分析中...',
+                    color: '#6366f1',
+                    textColor: '#6366f1',
+                    maskColor: 'rgba(255, 255, 255, 0.2)',
+                    zlevel: 0
+                });
+            }
+
+            try {
+                const query = `/scam/case-library/cases/graph?top_k=5&focus_group=${encodeURIComponent(normalizedTargetGroup)}`;
+                const res = await request(query, 'GET', null, { silent: true });
+                const nextData = res && Array.isArray(res.target_group_top_scam_types)
+                    ? (res.target_group_top_scam_types[0] || null)
+                    : null;
+
+                adminTargetGroupChartData.value = nextData;
+                if (nextData) {
+                    adminTargetGroupChartCache[normalizedTargetGroup] = nextData;
+                    setTimeout(() => {
+                        renderAdminTargetGroupBarChart();
+                        if (adminTargetGroupBarChart) adminTargetGroupBarChart.hideLoading();
+                    }, 0);
+                } else if (adminTargetGroupBarChart) {
+                    adminTargetGroupBarChart.hideLoading();
+                    adminTargetGroupBarChart.destroy();
+                    adminTargetGroupBarChart = null;
+                }
+            } catch (e) {
+                console.error('Fetch admin target group chart failed:', e);
+                if (adminTargetGroupBarChart) adminTargetGroupBarChart.hideLoading();
+            }
+        };
+
+        const clearAdminTargetGroupFocus = () => {
+            selectedGraphTargetGroup.value = '';
+            adminTargetGroupChartData.value = null;
+            if (adminTargetGroupBarChart) {
+                adminTargetGroupBarChart.destroy();
+                adminTargetGroupBarChart = null;
             }
         };
 
@@ -1081,15 +1160,16 @@ createApp({
                 let label = '';
                 let dashes = false;
                 let color = '#e2e8f0'; // Slate-200
+                const relation = String(edge.relation || edge.relation_type || '').trim();
 
-                if (edge.relation_type === 'similar_to') {
+                if (relation === 'similar' || relation === 'similar_to') {
                     label = '相似';
                     dashes = true;
                     color = '#fbcfe8'; // Pink-200
-                } else if (edge.relation_type === 'target_of') {
+                } else if (relation === 'targets' || relation === 'target_of') {
                     label = '针对';
                     color = '#d1fae5'; // Emerald-100
-                } else if (edge.relation_type === 'has_keyword') {
+                } else if (relation === 'keyword' || relation === 'has_keyword') {
                     label = '关键词';
                     color = '#e0e7ff'; // Indigo-100
                 }
@@ -1155,6 +1235,7 @@ createApp({
                         const connectedNodeIds = adminNetworkInstance.getConnectedNodes(nodeId);
                         const allToSelect = [nodeId, ...connectedNodeIds];
                         adminNetworkInstance.selectNodes(allToSelect);
+                        fetchAdminTargetGroupChart(node.label);
                         
                         showToast(`已切换至【${node.label}】人群视角，关联 ${connectedNodeIds.length} 种诈骗手法`, 'success');
                     }
@@ -1174,106 +1255,241 @@ createApp({
             return `${(value * 100).toFixed(1)}%`;
         };
 
-        const renderAdminCharts = () => {
-            if (!adminStatsData.value) return;
-            const { trend, by_scam_type, by_target_group } = adminStatsData.value;
+        const availableGraphTargetGroups = computed(() => {
+            if (!adminGraphData.value || !Array.isArray(adminGraphData.value.target_group_top_scam_types)) {
+                return [];
+            }
+            return adminGraphData.value.target_group_top_scam_types;
+        });
 
-            // Destroy old charts
-            if (adminTrendChart) adminTrendChart.destroy();
-            if (adminTypeChart) adminTypeChart.destroy();
-            if (adminTargetChart) adminTargetChart.destroy();
+        const renderAdminTargetGroupBarChart = () => {
+            if (!adminTargetGroupChartData.value) return;
+            if (typeof window.echarts === 'undefined') {
+                console.warn('ECharts 未加载，已跳过人群案件柱状图渲染。');
+                return;
+            }
 
-            // 1. Trend Line Chart
-            const trendCtx = document.getElementById('adminTrendChart');
-            if (trendCtx) {
-                adminTrendChart = new Chart(trendCtx, {
-                    type: 'line',
-                    data: {
-                        labels: trend.map(item => formatAdminChartLabel(item.time_bucket)),
-                        datasets: [{
-                            label: '新增案件数',
-                            data: trend.map(item => item.count),
-                            borderColor: '#6366f1', // Indigo-500
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }]
+            const items = Array.isArray(adminTargetGroupChartData.value.top_scam_types)
+                ? adminTargetGroupChartData.value.top_scam_types
+                : [];
+            
+            // Calculate max value for scaling to fill space
+            const rawScores = items.map(item => Number((Number(item.score || 0) * 100).toFixed(2)));
+            const maxScore = rawScores.length > 0 ? Math.max(...rawScores) : 100;
+            const displayMax = Math.ceil(maxScore * 1.15 / 10) * 10; // Add some margin and round up to nearest 10
+
+            const targetDom = document.getElementById('adminTargetGroupBarChart');
+            if (!targetDom) return;
+
+            // Dispose old instance if exists
+            if (adminTargetGroupBarChart) {
+                adminTargetGroupBarChart.dispose();
+            }
+
+            adminTargetGroupBarChart = echarts.init(targetDom);
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    textStyle: { color: '#fff', fontSize: 12 },
+                    formatter: (params) => {
+                        const data = params.find(p => p.seriesName === '案件占比');
+                        if (!data) return '';
+                        return `<div class="font-bold mb-1">${data.name}</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full" style="background:${data.color}"></span>
+                                    <span>占比: ${data.value}%</span>
+                                </div>`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '15%', // Leave space for labels
+                    bottom: '3%',
+                    top: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    max: displayMax, // Dynamic max to fill horizontal space
+                    axisLabel: {
+                        formatter: '{value}%',
+                        color: '#64748b',
+                        fontWeight: 'bold'
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
+                    splitLine: {
+                        lineStyle: { color: 'rgba(148, 163, 184, 0.1)' }
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: items.map(item => item.scam_type).reverse(),
+                    axisLabel: {
+                        color: '#334155',
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    },
+                    axisLine: { show: false },
+                    axisTick: { show: false }
+                },
+                series: [
+                    {
+                        name: 'placeholder',
+                        type: 'bar',
+                        itemStyle: {
+                            color: 'rgba(148, 163, 184, 0.05)',
+                            borderRadius: [0, 20, 20, 0]
                         },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => `新增案件: ${ctx.raw} 例`
+                        barGap: '-100%',
+                        barWidth: 32,
+                        data: items.map(() => displayMax), 
+                        animation: false,
+                        tooltip: { show: false }
+                    },
+                    {
+                        name: '案件占比',
+                        type: 'bar',
+                        data: items.map((item, index) => {
+                            // Define a set of beautiful gradients
+                            const gradients = [
+                                ['#3b82f6', '#6366f1', '#d946ef'], // Blue-Indigo-Purple
+                                ['#10b981', '#3b82f6', '#6366f1'], // Emerald-Blue-Indigo
+                                ['#f59e0b', '#ef4444', '#d946ef'], // Amber-Red-Purple
+                                ['#6366f1', '#a855f7', '#ec4899'], // Indigo-Purple-Pink
+                                ['#0ea5e9', '#2dd4bf', '#10b981']  // Sky-Teal-Emerald
+                            ];
+                            const colors = gradients[index % gradients.length];
+                            
+                            return {
+                                value: Number((Number(item.score || 0) * 100).toFixed(2)),
+                                itemStyle: {
+                                    borderRadius: [0, 20, 20, 0],
+                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                        { offset: 0, color: colors[0] },
+                                        { offset: 0.5, color: colors[1] },
+                                        { offset: 1, color: colors[2] }
+                                    ])
                                 }
+                            };
+                        }).reverse(),
+                        barWidth: 32,
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: '{c}%',
+                            color: '#475569',
+                            fontWeight: 'bold',
+                            distance: 10
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 15,
+                                shadowColor: 'rgba(0,0,0,0.1)',
+                                shadowOffsetX: 5
                             }
                         }
                     }
+                ]
+            };
+
+            adminTargetGroupBarChart.setOption(option);
+        };
+
+        const renderAdminCharts = () => {
+            if (!adminStatsData.value) return;
+            if (typeof window.echarts === 'undefined') {
+                console.warn('ECharts 未加载，已跳过管理侧图表渲染。');
+                return;
+            }
+            const { trend, by_scam_type, by_target_group } = adminStatsData.value;
+
+            // Dispose old instances
+            if (adminTrendChart && typeof adminTrendChart.dispose === 'function') adminTrendChart.dispose();
+            if (adminTypeChart && typeof adminTypeChart.dispose === 'function') adminTypeChart.dispose();
+            if (adminTargetChart && typeof adminTargetChart.dispose === 'function') adminTargetChart.dispose();
+
+            // 1. Trend Line Chart
+            const trendDom = document.getElementById('adminTrendChart');
+            if (trendDom) {
+                adminTrendChart = echarts.init(trendDom);
+                adminTrendChart.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        textStyle: { color: '#fff' }
+                    },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: trend.map(item => formatAdminChartLabel(item.time_bucket)),
+                        axisLabel: { color: '#64748b' }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: { color: '#64748b' },
+                        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
+                    },
+                    series: [{
+                        name: '新增案件数',
+                        type: 'line',
+                        smooth: true,
+                        data: trend.map(item => item.count),
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        itemStyle: { color: '#6366f1' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
+                                { offset: 1, color: 'rgba(99, 102, 241, 0)' }
+                            ])
+                        },
+                        lineStyle: { width: 3 }
+                    }]
                 });
             }
 
             // 2. Scam Type Pie Chart
-            const typeCtx = document.getElementById('adminTypeChart');
-            if (typeCtx) {
-                // Generate colors dynamically based on count
-                const colors = [
-                    '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
-                    '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'
-                ];
-                
-                adminTypeChart = new Chart(typeCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: by_scam_type.map(i => i.name),
-                        datasets: [{
-                            data: by_scam_type.map(i => i.count),
-                            backgroundColor: colors.slice(0, by_scam_type.length),
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
-                        }
-                    }
+            const typeDom = document.getElementById('adminTypeChart');
+            if (typeDom) {
+                adminTypeChart = echarts.init(typeDom);
+                adminTypeChart.setOption({
+                    tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff' } },
+                    legend: { orient: 'vertical', right: 10, top: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#64748b' } },
+                    series: [{
+                        name: '诈骗类型',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+                        data: by_scam_type.map(i => ({ value: i.count, name: i.name }))
+                    }]
                 });
             }
 
             // 3. Target Group Pie Chart
-            const targetCtx = document.getElementById('adminTargetChart');
-            if (targetCtx) {
-                const targetColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
-                
-                adminTargetChart = new Chart(targetCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: by_target_group.map(i => i.name),
-                        datasets: [{
-                            data: by_target_group.map(i => i.count),
-                            backgroundColor: targetColors.slice(0, by_target_group.length),
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
-                        }
-                    }
+            const targetDom = document.getElementById('adminTargetChart');
+            if (targetDom) {
+                adminTargetChart = echarts.init(targetDom);
+                adminTargetChart.setOption({
+                    tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff' } },
+                    legend: { orient: 'vertical', right: 10, top: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#64748b' } },
+                    series: [{
+                        name: '目标人群',
+                        type: 'pie',
+                        radius: '70%',
+                        center: ['40%', '50%'],
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        data: by_target_group.map(i => ({ value: i.count, name: i.name }))
+                    }]
                 });
             }
         };
@@ -1374,6 +1590,14 @@ createApp({
             }
             initChatPosition();
             window.addEventListener('resize', handleResize);
+            window.addEventListener('resize', () => {
+                if (adminTargetGroupBarChart && typeof adminTargetGroupBarChart.resize === 'function') adminTargetGroupBarChart.resize();
+                if (adminTrendChart && typeof adminTrendChart.resize === 'function') adminTrendChart.resize();
+                if (adminTypeChart && typeof adminTypeChart.resize === 'function') adminTypeChart.resize();
+                if (adminTargetChart && typeof adminTargetChart.resize === 'function') adminTargetChart.resize();
+                if (pieChartInstance && typeof pieChartInstance.resize === 'function') pieChartInstance.resize();
+                if (lineChartInstance && typeof lineChartInstance.resize === 'function') lineChartInstance.resize();
+            });
         });
 
         onUnmounted(() => {
@@ -1872,6 +2096,8 @@ createApp({
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
             showGraphModal, openGraphModal, resetGraphZoom,
+            adminTargetGroupChartData, availableGraphTargetGroups, selectedGraphTargetGroup,
+            fetchAdminTargetGroupChart, clearAdminTargetGroupFocus,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
             acknowledgeActiveAlert, openAlertHistory

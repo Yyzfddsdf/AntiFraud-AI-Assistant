@@ -1,4 +1,4 @@
-# API 文档（登录系统）
+﻿# API 文档（登录系统）
 
 ## 基础信息
 
@@ -1467,6 +1467,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 ### Query 参数
 
 - `focus_type`（可选）：仅分析指定诈骗类型的画像与局部图谱。
+- `focus_group`（可选）：仅返回指定目标人群的 `target_group_top_scam_types` 统计项。
 - `top_k`（可选）：每个诈骗类型返回多少个高频目标人群 / 高频关键词 / 相似类型，默认 `5`，最大 `10`。
 
 ### 说明
@@ -1474,12 +1475,16 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 - 仅管理员可调用此接口。
 - V1 为**只读派生分析**，不改动数据库结构。
 - 数据来源完全来自 `historical_case_library` 现有字段：`scam_type`、`target_group`、`risk_level`、`keywords`、`embedding_vector` 等。
-- 返回两部分：
+- 返回三部分：
   - `profiles`：每个诈骗类型的画像摘要；
   - `graph`：节点与边组成的轻量图谱。
+  - `target_group_top_scam_types`：每类目标人群下，按案件数量排序后的诈骗类型 TopK，`score` 为该类型在该人群总案件中的占比。
 - `focus_type` 的行为：
   - 不传或传空字符串：返回**全库所有诈骗类型**的画像与图谱；
   - 传入具体诈骗类型：当前 V1 会收缩为**该诈骗类型的局部画像**，`profiles` 只保留该类型，`graph` 也围绕该类型展开。
+- `focus_group` 的行为：
+  - 不传或传空字符串：返回所有目标人群的 `target_group_top_scam_types`；
+  - 传入具体目标人群：仅保留该人群的 `target_group_top_scam_types` 统计项，不影响 `profiles` 与 `graph`。
 - `top_k` 的行为：
   - 对每个诈骗类型，分别最多保留 `top_k` 个高频目标人群、`top_k` 个高频关键词、`top_k` 个相似诈骗类型；
   - 不是“案件 × 关键词”逐条连线，而是**先按诈骗类型聚合**，再从聚合结果里取 TopK。
@@ -1533,6 +1538,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 {
   "summary": {
     "focus_type": "",
+    "focus_group": "",
     "top_k": 3,
     "total_cases": 12,
     "scam_type_count": 4,
@@ -1575,7 +1581,17 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
       {"source": "scam_type:冒充客服类", "target": "keyword:退款", "relation": "keyword", "score": 0.8},
       {"source": "scam_type:冒充客服类", "target": "scam_type:虚假征信类", "relation": "similar", "score": 0.8123}
     ]
-  }
+  },
+  "target_group_top_scam_types": [
+    {
+      "target_group": "老人",
+      "total_cases": 4,
+      "top_scam_types": [
+        {"scam_type": "冒充客服类", "score": 0.5},
+        {"scam_type": "虚假征信类", "score": 0.5}
+      ]
+    }
+  ]
 }
 ```
 
@@ -1589,7 +1605,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=冒充客服类&top_k=3" \
+curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=冒充客服类&focus_group=老人&top_k=3" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +7,17 @@
     <meta name="description" content="Sentinel AI - 下一代智能反诈骗分析系统，集成多模态识别与实时风险评估。">
     
     <!-- Scripts & Styles -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="/assets/vendor/tailwindcss.cdn.js"></script>
+    <script src="/assets/vendor/vue.global.js"></script>
+    <script src="/assets/vendor/chart.js"></script>
+    <script src="/assets/vendor/echarts.min.js"></script>
+    <script src="/assets/vendor/vis-network.min.js"></script>
     <script src="/assets/js/tailwind-config.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="/assets/fonts/plus-jakarta-sans/plus-jakarta-sans.css" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body class="text-slate-800 antialiased h-full">
-    <div id="app" class="min-h-screen flex flex-col transition-colors duration-300">
+<body class="text-slate-800 antialiased h-full overflow-hidden">
+    <div id="app" class="h-full flex flex-col transition-colors duration-300">
         
         <!-- Toast Notification -->
         <div class="fixed top-6 right-6 z-[60] space-y-3 pointer-events-none">
@@ -141,7 +142,7 @@
         </div>
 
         <!-- Auth View -->
-        <div v-if="!isAuthenticated" class="flex-1 flex relative overflow-hidden bg-slate-50">
+        <div v-if="!isAuthenticated" class="h-full flex relative overflow-y-auto bg-slate-50">
             <!-- Background Elements -->
             <div class="absolute inset-0 z-0">
                 <div class="absolute inset-0 tech-bg opacity-60"></div>
@@ -208,7 +209,7 @@
         </div>
 
         <!-- Dashboard View -->
-        <div v-else class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden bg-slate-50 relative">
+        <div v-else class="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-slate-50 relative">
             <!-- Dashboard Background -->
             <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div class="absolute inset-0 tech-bg opacity-40"></div>
@@ -218,9 +219,9 @@
             </div>
 
             <!-- Sidebar -->
-            <aside :class="['glass-panel border-r border-white/20 flex flex-col z-30 shadow-2xl transition-all duration-300 ease-in-out backdrop-blur-xl bg-white/10', isSidebarCollapsed ? 'w-20' : 'w-full md:w-72']">
+            <aside :class="['glass-panel border-r border-white/20 flex flex-col z-30 shadow-2xl transition-all duration-300 ease-in-out backdrop-blur-xl bg-white/10 h-full shrink-0', isSidebarCollapsed ? 'w-20' : 'w-full md:w-72']">
                 <!-- Header / Logo -->
-                <div class="p-6 flex items-center justify-between border-b border-white/20 h-20 relative z-10">
+                <div class="p-6 flex items-center justify-between border-b border-white/20 h-20 relative z-10 shrink-0">
                     <div class="flex items-center gap-3 overflow-hidden">
                         <div class="w-9 h-9 min-w-[36px] bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/30 text-white transition-transform hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -289,7 +290,7 @@
                 </div>
 
                 <!-- Footer / Profile -->
-                <div class="p-4 border-t border-white/20 bg-white/10 backdrop-blur-sm relative z-10">
+                <div class="p-4 border-t border-white/20 bg-white/10 backdrop-blur-sm relative z-10 shrink-0">
                     <!-- Collapsed Profile View -->
                     <div v-if="isSidebarCollapsed" class="flex flex-col items-center gap-4">
                         <button @click="activeTab = 'profile'" class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-400 to-brand-600 flex items-center justify-center text-xs font-bold text-white shadow-md hover:scale-110 transition-transform relative group" title="个人资料">
@@ -731,7 +732,7 @@
                                 风险等级分布
                             </h3>
                             <div class="relative h-64 w-full flex items-center justify-center">
-                                <canvas id="riskPieChart"></canvas>
+                                <div id="riskPieChart" class="w-full h-full"></div>
                             </div>
                         </div>
 
@@ -742,7 +743,7 @@
                                 风险变化趋势
                             </h3>
                             <div class="relative h-64 w-full">
-                                <canvas id="riskLineChart"></canvas>
+                                <div id="riskLineChart" class="w-full h-full"></div>
                             </div>
                         </div>
                     </div>
@@ -773,7 +774,7 @@
                                 案件入库趋势
                             </h3>
                             <div class="relative h-72 w-full">
-                                <canvas id="adminTrendChart"></canvas>
+                                <div id="adminTrendChart" class="w-full h-full"></div>
                             </div>
                         </div>
                     </div>
@@ -786,7 +787,7 @@
                                 诈骗类型分布
                             </h3>
                             <div class="relative h-64 w-full flex items-center justify-center">
-                                <canvas id="adminTypeChart"></canvas>
+                                <div id="adminTypeChart" class="w-full h-full"></div>
                             </div>
                         </div>
 
@@ -797,7 +798,7 @@
                                 目标人群分布
                             </h3>
                             <div class="relative h-64 w-full flex items-center justify-center">
-                                <canvas id="adminTargetChart"></canvas>
+                                <div id="adminTargetChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         </div>
@@ -835,6 +836,79 @@
                             </div>
                         </div>
 
+                        <div v-if="adminGraphData && availableGraphTargetGroups && availableGraphTargetGroups.length" class="mt-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-white via-indigo-50/50 to-fuchsia-50/60 p-5 shadow-sm shadow-indigo-100/40">
+                            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-5">
+                                <div>
+                                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                        <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                                        人群案件分布柱状图
+                                    </h4>
+                                    <p class="text-sm text-slate-500 mt-2">前端默认不传 `focus_group`；点击下方任一目标人群后，再按该人群请求案件 TopK 并渲染柱状图。</p>
+                                </div>
+                                <button v-if="selectedGraphTargetGroup" @click="clearAdminTargetGroupFocus" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-bold hover:bg-slate-50 transition-colors self-start">
+                                    清空人群筛选
+                                </button>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 mb-5">
+                                <button
+                                    v-for="item in availableGraphTargetGroups"
+                                    :key="`graph-target-${item.target_group}`"
+                                    @click="fetchAdminTargetGroupChart(item.target_group)"
+                                    :class="[
+                                        'px-3.5 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2',
+                                        selectedGraphTargetGroup === item.target_group
+                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                                            : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/70'
+                                    ]">
+                                    <span>{{ item.target_group }}</span>
+                                    <span :class="selectedGraphTargetGroup === item.target_group ? 'bg-white/15 text-indigo-50' : 'bg-slate-100 text-slate-500'" class="px-2 py-0.5 rounded-full text-xs font-extrabold">
+                                        {{ item.total_cases }} 案
+                                    </span>
+                                </button>
+                            </div>
+
+                            <div v-if="adminTargetGroupChartData && adminTargetGroupChartData.top_scam_types && adminTargetGroupChartData.top_scam_types.length" class="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.7fr)_340px] gap-5 items-start">
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="flex items-center justify-between gap-4 mb-4">
+                                        <div>
+                                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">当前人群</div>
+                                            <div class="text-lg font-extrabold text-slate-900 mt-1">{{ adminTargetGroupChartData.target_group }}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">案件总数</div>
+                                            <div class="text-lg font-extrabold text-slate-900 mt-1">{{ adminTargetGroupChartData.total_cases }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="h-[320px] rounded-2xl bg-slate-50/70 border border-slate-100 px-3 py-4">
+                                        <div id="adminTargetGroupBarChart" class="w-full h-full"></div>
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">人群案件 TopK</div>
+                                        <div class="text-sm text-slate-500 mt-1">按案件数量排序，`score` 显示为该诈骗类型在当前人群总案件中的占比。</div>
+                                    </div>
+                                    <div class="space-y-2.5">
+                                        <div v-for="(item, index) in adminTargetGroupChartData.top_scam_types" :key="`${adminTargetGroupChartData.target_group}-${item.scam_type}`" class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                            <div class="flex items-center justify-between gap-4">
+                                                <div class="min-w-0">
+                                                    <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">TOP {{ index + 1 }}</div>
+                                                    <div class="text-sm font-bold text-slate-800 mt-1 truncate">{{ item.scam_type }}</div>
+                                                </div>
+                                                <span class="shrink-0 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold">{{ formatGraphScore(item.score) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-slate-500">
+                                点击上方任一目标人群，即可查看该人群下各类案件占比柱状图。
+                            </div>
+                        </div>
+
                         <div v-if="adminGraphData && adminGraphData.profiles && adminGraphData.profiles.length" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <div v-for="profile in adminGraphData.profiles" :key="profile.scam_type" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                                 <div class="flex items-start justify-between gap-4 mb-4">
@@ -853,9 +927,9 @@
                                     <div>
                                         <div class="text-slate-500 text-xs font-semibold mb-2 uppercase tracking-wider">高频目标人群</div>
                                         <div class="flex flex-wrap gap-2">
-                                            <span v-for="item in profile.top_target_groups" :key="`${profile.scam_type}-target-${item.name}`" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700">
+                                            <button v-for="item in profile.top_target_groups" :key="`${profile.scam_type}-target-${item.name}`" type="button" @click="fetchAdminTargetGroupChart(item.name)" :class="selectedGraphTargetGroup === item.name ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/50'" class="px-3 py-1.5 rounded-full border text-sm transition-colors">
                                                 {{ item.name }} · {{ item.count }}
-                                            </span>
+                                            </button>
                                         </div>
                                     </div>
                                     <div>

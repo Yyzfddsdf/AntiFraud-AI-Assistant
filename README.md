@@ -424,10 +424,13 @@ python scripts/backfill_user_history_vectors.py
 
 - 新增管理员接口：`GET /api/scam/case-library/cases/graph`
 - V1 坚持只读分析，不改数据库结构，直接复用 `historical_case_library` 现有字段生成诈骗类型画像与轻量图谱。
-- 当前已接入 Redis 结果缓存：按 `focus_type + top_k` 缓存图谱分析结果，默认缓存 `5` 分钟；缓存不可用时自动回退为现算。
+- 当前已接入 Redis 结果缓存：按 `focus_type + focus_group + top_k` 缓存图谱分析结果，默认缓存 `5` 分钟；缓存不可用时自动回退为现算。
 - 当前输出包括：
   - `profiles`：每个诈骗类型的案例数、风险分布、高频目标人群、高频关键词、相似类型
   - `graph.nodes / graph.edges`：类型、人群、关键词节点及其关联边
+  - `target_group_top_scam_types`：每类目标人群下按案件数量排序的诈骗类型 TopK，`score` 为该类型在该人群总案件中的占比
+- `target_group_top_scam_types` 由同一份诈骗类型聚合结果二次派生，不会为这组数据额外重复扫描数据库。
+- 管理员前端默认请求不带 `focus_group`；点击指定目标人群后，再按该人群请求 `target_group_top_scam_types` 并渲染横向柱状图。
 - 当前相似分数由三部分加权：
   - 向量中心余弦相似度 `0.6`
   - 关键词重合度 `0.25`
@@ -579,8 +582,9 @@ go test ./...
 
 - **后端流式查询优化（OOM 风险治理）**：
   - 针对图谱构建和统计总览，引入 `StreamAllHistoricalCases` 和 `StreamHistoricalCasePreviews` 流式接口。
-  - 内存占用从全量加载的 $O(N)$ 降至 $O(1)$，支持百万级以上案件数据的稳健分析。
-  - 采用 **Streaming Aggregation（流式聚合）** 模式，数据边读取边计算，彻底消除大切片存储压力。
+  - 避免将全量原始案件记录整体加载进大切片；内存模型从“全量原始记录 + 聚合态”收敛为“流式读取 + 必要聚合态”。
+  - 在不改变当前画像统计与类型相似度能力的前提下，已属于较低内存占用方案，显著降低峰值内存与 OOM 风险；但这里不把当前实现表述为严格数学意义上的 `O(1)`。
+  - 采用 **Streaming Aggregation（流式聚合）** 模式，数据边读取边计算；其中统计总览主要保留计数器状态，图谱分析额外保留类型聚合信息与相似度计算所需向量数据。
 - 新增统一缓存模块 `cache/`，减少业务侧重复缓存代码。
 - 验证码从进程内 `map` 迁移到 Redis，支持多实例一致校验与一次性消费。
 - 限流桶从进程内 `map` 迁移到 Redis 计数窗口，支持多实例共享限流配额。
