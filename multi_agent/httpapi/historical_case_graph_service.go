@@ -5,7 +5,9 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
+	"antifraud/cache"
 	"antifraud/multi_agent/case_library"
 	apimodel "antifraud/multi_agent/httpapi/models"
 )
@@ -13,7 +15,10 @@ import (
 const (
 	defaultHistoricalCaseGraphTopK = 5
 	maxHistoricalCaseGraphTopK     = 10
+	historicalCaseGraphCacheTTL    = 5 * time.Minute
 )
+
+const historicalCaseGraphCacheKeyPrefix = "cache:case_library:graph:v1:"
 
 type historicalCaseGraphAggregate struct {
 	ScamType         string
@@ -39,11 +44,24 @@ func normalizeHistoricalCaseGraphTopK(topK int) int {
 }
 
 func buildHistoricalCaseGraph(focusType string, topK int) (apimodel.HistoricalCaseGraphResponse, error) {
+	normalizedFocusType := strings.TrimSpace(focusType)
+	appliedTopK := normalizeHistoricalCaseGraphTopK(topK)
+	cacheKey := buildHistoricalCaseGraphCacheKey(normalizedFocusType, appliedTopK, case_library.HistoricalCaseGraphCacheVersion())
+	var cached apimodel.HistoricalCaseGraphResponse
+	found, cacheErr := cache.GetJSON(cacheKey, &cached)
+	if cacheErr == nil && found {
+		return cached, nil
+	}
+
 	records, err := case_library.QueryAllHistoricalCases()
 	if err != nil {
 		return apimodel.HistoricalCaseGraphResponse{}, err
 	}
-	return BuildHistoricalCaseGraphFromRecords(records, focusType, topK), nil
+	result := BuildHistoricalCaseGraphFromRecords(records, normalizedFocusType, appliedTopK)
+	if cacheErr := cache.SetJSON(cacheKey, result, historicalCaseGraphCacheTTL); cacheErr != nil {
+		// 缓存失败不影响主流程，保持只读分析接口可用。
+	}
+	return result, nil
 }
 
 // BuildHistoricalCaseGraphFromRecords 基于案件记录构建诈骗类型画像与相似关系图谱。
@@ -66,6 +84,19 @@ func BuildHistoricalCaseGraphFromRecords(records []case_library.HistoricalCaseRe
 		Profiles: profiles,
 		Graph:    graph,
 	}
+}
+
+func buildHistoricalCaseGraphCacheKey(focusType string, topK int, version string) string {
+	normalizedFocusType := strings.TrimSpace(focusType)
+	if normalizedFocusType == "" {
+		normalizedFocusType = "all"
+	}
+	trimmedVersion := strings.TrimSpace(version)
+	if trimmedVersion == "" {
+		trimmedVersion = "0"
+	}
+	replacer := strings.NewReplacer(":", "_", " ", "_", "/", "_", "\\", "_")
+	return historicalCaseGraphCacheKeyPrefix + replacer.Replace(normalizedFocusType) + fmt.Sprintf(":topk:%d:version:%s", topK, trimmedVersion)
 }
 
 func buildHistoricalCaseGraphAggregates(records []case_library.HistoricalCaseRecord) map[string]*historicalCaseGraphAggregate {

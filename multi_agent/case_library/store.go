@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode"
 
+	"antifraud/cache"
 	"antifraud/database"
 	"antifraud/embedding"
 	model "antifraud/multi_agent/case_library/model"
@@ -29,6 +30,8 @@ const (
 	maxCaseDescriptionRunes   = 400
 	randomLikeAlnumChunkLimit = 16
 )
+
+const historicalCaseGraphCacheVersionKey = "cache:case_library:graph:v1:version"
 
 // FixedRiskLevels 为上传历史案件时允许的风险等级枚举。
 var FixedRiskLevels = []string{
@@ -92,6 +95,7 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 	}
 	record := recordFromEntity(entity)
 	upsertHistoricalCaseVectorCache(record)
+	touchHistoricalCaseGraphCacheVersion()
 	return record, nil
 }
 
@@ -170,8 +174,30 @@ func DeleteHistoricalCaseByID(caseID string) (bool, error) {
 	deleted := result.RowsAffected > 0
 	if deleted {
 		removeHistoricalCaseVectorCache(trimmedCaseID)
+		touchHistoricalCaseGraphCacheVersion()
 	}
 	return deleted, nil
+}
+
+// HistoricalCaseGraphCacheVersion 返回当前图谱缓存版本；读取失败时回退为 "0"。
+func HistoricalCaseGraphCacheVersion() string {
+	var version string
+	found, err := cache.GetJSON(historicalCaseGraphCacheVersionKey, &version)
+	if err != nil || !found {
+		return "0"
+	}
+	trimmed := strings.TrimSpace(version)
+	if trimmed == "" {
+		return "0"
+	}
+	return trimmed
+}
+
+func touchHistoricalCaseGraphCacheVersion() {
+	version := fmt.Sprintf("%d", time.Now().UnixNano())
+	if err := cache.SetJSON(historicalCaseGraphCacheVersionKey, version, 0); err != nil {
+		log.Printf("[case_library] touch graph cache version failed: %v", err)
+	}
 }
 
 func normalizeAndValidateInput(input CreateHistoricalCaseInput) (CreateHistoricalCaseInput, error) {
