@@ -9,6 +9,7 @@ import (
 
 	"antifraud/database"
 	"antifraud/login_system/models"
+	"antifraud/multi_agent/overview"
 	"antifraud/multi_agent/state"
 	"antifraud/multi_agent/user_history_index"
 
@@ -24,7 +25,9 @@ const defaultUserHistorySearchTopK = 5
 
 type QueryUserHistoryCasesInput struct{}
 
-type QueryUserInfoInput struct{}
+type QueryUserInfoInput struct {
+	Interval string `json:"interval,omitempty"`
+}
 
 type WriteUserHistoryCaseInput struct {
 	Title       string `json:"title"`
@@ -56,8 +59,14 @@ var QueryUserInfoTool = openai.Tool{
 		Name:        QueryUserInfoToolName,
 		Description: "查询当前绑定用户的画像信息与风险摘要。",
 		Parameters: map[string]interface{}{
-			"type":       "object",
-			"properties": map[string]interface{}{},
+			"type": "object",
+			"properties": map[string]interface{}{
+				"interval": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"day", "week", "month"},
+					"description": "可选，风险趋势分析的时间粒度。允许：day/week/month，默认 day。",
+				},
+			},
 		},
 	},
 }
@@ -162,7 +171,7 @@ func noneIfEmpty(raw string) string {
 	return trimmed
 }
 
-func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
+func QueryUserInfo(ctx context.Context, interval string) (map[string]interface{}, error) {
 	uid := CurrentUserID(ctx)
 	view := state.GetUserStateView(uid)
 	var age *int
@@ -195,6 +204,8 @@ func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
 		}
 	}
 
+	riskOverview := overview.BuildUserRiskOverview(uid, strings.TrimSpace(interval))
+
 	return map[string]interface{}{
 		"user_id":              view.UserID,
 		"user_name":            fmt.Sprintf("user-%s", view.UserID),
@@ -208,6 +219,14 @@ func QueryUserInfo(ctx context.Context) (map[string]interface{}, error) {
 		"high_risk_case_count": riskCaseCount["\u9ad8"],
 		"mid_risk_case_count":  riskCaseCount["\u4e2d"],
 		"low_risk_case_count":  riskCaseCount["\u4f4e"],
+		"risk_trend_analysis": map[string]interface{}{
+			"interval":        riskOverview.Interval,
+			"current_bucket":  riskOverview.Analysis.CurrentBucket,
+			"previous_bucket": riskOverview.Analysis.PreviousBucket,
+			"overall_trend":   riskOverview.Analysis.OverallTrend,
+			"high_risk_trend": riskOverview.Analysis.HighRiskTrend,
+			"summary":         riskOverview.Analysis.Summary,
+		},
 	}, nil
 }
 
@@ -353,11 +372,11 @@ func (h *QueryUserHistoryCasesHandler) Handle(ctx context.Context, args string) 
 type QueryUserInfoHandler struct{}
 
 func (h *QueryUserInfoHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
-	_, err := ParseQueryUserInfoInput(args)
+	input, err := ParseQueryUserInfoInput(args)
 	if err != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user info args: %v", err), "user": map[string]interface{}{"user_id": "demo-user", "user_name": "demo-user"}}}, nil
 	}
-	userInfo, queryErr := QueryUserInfo(ctx)
+	userInfo, queryErr := QueryUserInfo(ctx, input.Interval)
 	if queryErr != nil {
 		boundUserID := CurrentUserID(ctx)
 		return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "error": queryErr.Error(), "user": map[string]interface{}{"user_id": boundUserID, "user_name": "user-" + boundUserID}}}, nil
