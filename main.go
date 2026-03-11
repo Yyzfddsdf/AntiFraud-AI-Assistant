@@ -80,6 +80,10 @@ func main() {
 	r.StaticFile("/", "login_system/web/index.html")
 	r.Static("/assets", "login_system/web/assets")
 
+	// 移动端静态资源与主页
+	r.StaticFile("/mobile", "login_system/web-mobile/index.html")
+	r.Static("/mobile/assets", "login_system/web-mobile/assets")
+
 	// 认证相关接口（无需 JWT）。
 	authRoutes := r.Group("/api/auth")
 	{
