@@ -7,6 +7,7 @@ createApp({
         const token = ref(localStorage.getItem('token') || '');
         const user = ref({});
         const authMode = ref('login'); // login | register
+        const loginMethod = ref('password'); // password | sms
         const activeTab = ref('tasks');
         const loading = ref(false);
         const analyzing = ref(false);
@@ -80,13 +81,20 @@ createApp({
         const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
 
         const form = reactive({
+            account: '',
             username: '',
             email: '',
+            phone: '',
             password: '',
-            captchaCode: ''
+            captchaCode: '',
+            smsCode: ''
         });
 
         const ageForm = reactive({ age: 28 });
+        const demoSMSCode = '000000';
+        const smsCodeCooldown = ref(0);
+        const smsCodeSending = ref(false);
+        let smsCodeCooldownTimer = null;
 
         const analyzeForm = reactive({
             text: '',
@@ -382,6 +390,56 @@ createApp({
             }
         };
 
+        const requiresGraphCaptcha = computed(() => authMode.value === 'register' || loginMethod.value === 'password');
+        const shouldShowSMSCodeSection = computed(() => authMode.value === 'register' || loginMethod.value === 'sms');
+        const authSubmitLabel = computed(() => {
+            if (authMode.value === 'register') return '创建账户';
+            return loginMethod.value === 'sms' ? '短信登录' : '立即登录';
+        });
+        const smsCodeButtonLabel = computed(() => authMode.value === 'register' ? '发送注册短信码' : '发送登录短信码');
+        const smsCodeButtonText = computed(() => smsCodeCooldown.value > 0 ? `${smsCodeCooldown.value}s后重试` : smsCodeButtonLabel.value);
+        const canSendSMSCode = computed(() => !smsCodeSending.value && smsCodeCooldown.value === 0);
+
+        const getUserDisplayName = (userInfo) => {
+            const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
+            return String(candidate.username || '').trim()
+                || String(candidate.email || '').trim()
+                || String(candidate.phone || '').trim()
+                || '未设置';
+        };
+
+        const getUserEmailText = (userInfo) => {
+            const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
+            return String(candidate.email || '').trim();
+        };
+
+        const getUserPhoneText = (userInfo) => {
+            const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
+            return String(candidate.phone || '').trim();
+        };
+
+        const getUserAvatarText = (userInfo) => getUserDisplayName(userInfo).slice(0, 2).toUpperCase();
+
+        const clearSMSCodeCooldownTimer = () => {
+            if (smsCodeCooldownTimer) {
+                clearInterval(smsCodeCooldownTimer);
+                smsCodeCooldownTimer = null;
+            }
+        };
+
+        const startSMSCodeCooldown = () => {
+            clearSMSCodeCooldownTimer();
+            smsCodeCooldown.value = 60;
+            smsCodeCooldownTimer = setInterval(() => {
+                if (smsCodeCooldown.value <= 1) {
+                    smsCodeCooldown.value = 0;
+                    clearSMSCodeCooldownTimer();
+                    return;
+                }
+                smsCodeCooldown.value -= 1;
+            }, 1000);
+        };
+
         const request = async (path, method = 'GET', body = null, options = {}) => {
             const { silent = false } = options || {};
             const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
@@ -422,10 +480,55 @@ createApp({
             }
         };
 
+        const sendSMSCode = async () => {
+            if (!canSendSMSCode.value) return;
+            const phone = form.phone.trim();
+            if (!phone) {
+                showToast('请输入手机号', 'error');
+                return;
+            }
+
+            smsCodeSending.value = true;
+            const res = await request('/auth/sms-code', 'POST', { phone });
+            smsCodeSending.value = false;
+            if (res) {
+                showToast(res.message || `短信验证码已发送，请使用 ${demoSMSCode}`);
+                startSMSCodeCooldown();
+            }
+        };
+
+        const buildAuthPayload = () => {
+            if (authMode.value === 'register') {
+                return {
+                    username: form.username.trim(),
+                    email: form.email.trim(),
+                    phone: form.phone.trim(),
+                    password: form.password,
+                    captchaId: captchaId.value,
+                    captchaCode: form.captchaCode.trim(),
+                    smsCode: form.smsCode.trim()
+                };
+            }
+
+            if (loginMethod.value === 'sms') {
+                return {
+                    phone: form.phone.trim(),
+                    smsCode: form.smsCode.trim()
+                };
+            }
+
+            return {
+                account: form.account.trim(),
+                password: form.password,
+                captchaId: captchaId.value,
+                captchaCode: form.captchaCode.trim()
+            };
+        };
+
         const handleAuth = async () => {
             loading.value = true;
             const endpoint = authMode.value === 'login' ? '/auth/login' : '/auth/register';
-            const payload = { ...form, captchaId: captchaId.value };
+            const payload = buildAuthPayload();
             
             const res = await request(endpoint, 'POST', payload);
             loading.value = false;
@@ -434,6 +537,11 @@ createApp({
                 if (authMode.value === 'register') {
                     showToast('注册成功，请登录');
                     authMode.value = 'login';
+                    loginMethod.value = 'password';
+                    form.account = form.email.trim();
+                    form.password = '';
+                    form.captchaCode = '';
+                    form.smsCode = '';
                     fetchCaptcha();
                 } else {
                     token.value = res.token;
@@ -445,7 +553,7 @@ createApp({
                     showToast('登录成功');
                     startPolling();
                 }
-            } else {
+            } else if (requiresGraphCaptcha.value) {
                 fetchCaptcha(); // Refresh captcha on fail
             }
         };
@@ -495,6 +603,14 @@ createApp({
                 inviteCode.value = '';
             }
         };
+
+        watch([authMode, loginMethod], () => {
+            if (requiresGraphCaptcha.value) {
+                fetchCaptcha();
+            } else {
+                form.captchaCode = '';
+            }
+        });
 
         const deleteAccount = async () => {
             if(!confirm('确定要删除账户吗？此操作不可逆！')) return;
@@ -1665,6 +1781,7 @@ createApp({
 
         onUnmounted(() => {
             stopPolling();
+            clearSMSCodeCooldownTimer();
             window.removeEventListener('resize', handleResize);
         });
 
@@ -2144,12 +2261,14 @@ createApp({
         };
 
         return {
-            isAuthenticated, user, authMode, form, ageForm, analyzeForm, 
-            captchaImage, fetchCaptcha, handleAuth, logout, loading,
+            isAuthenticated, user, authMode, loginMethod, form, ageForm, analyzeForm, 
+            captchaImage, requiresGraphCaptcha, shouldShowSMSCodeSection, authSubmitLabel, smsCodeButtonText, canSendSMSCode, demoSMSCode,
+            fetchCaptcha, sendSMSCode, handleAuth, logout, loading,
             activeTab, tasks, history, users, selectedTask, userSearch, toasts, analyzing,
             deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase, debouncedFetchUsers,
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
             updateAge, deleteAccount, upgradeAccount, inviteCode, openImage, exportData, printReport,
+            getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
             showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state

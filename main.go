@@ -11,6 +11,7 @@ import (
 	"antifraud/login_system/controllers"
 	"antifraud/login_system/middleware"
 	"antifraud/login_system/session"
+	"antifraud/login_system/smscode"
 	"antifraud/multi_agent/httpapi"
 
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,7 @@ func main() {
 	}
 	authUserReader := middleware.NewGormAuthUserReader(database.DB)
 	activeTokenManager := session.NewDefaultRedisActiveTokenManager()
+	smsCodeService := smscode.NewDemoService()
 
 	r := gin.Default()
 
@@ -60,8 +62,9 @@ func main() {
 	authRoutes := r.Group("/api/auth")
 	{
 		authRoutes.GET("/captcha", controllers.GetCaptchaHandle)
-		authRoutes.POST("/register", controllers.RegisterHandle)
-		authRoutes.POST("/login", controllers.LoginHandleWithActiveTokenManager(activeTokenManager))
+		authRoutes.POST("/sms-code", controllers.SendSMSCodeHandle(smsCodeService))
+		authRoutes.POST("/register", controllers.RegisterHandleWithSMSCodeService(smsCodeService))
+		authRoutes.POST("/login", controllers.LoginHandleWithActiveTokenManagerAndSMSCodeService(activeTokenManager, smsCodeService))
 	}
 
 	// 业务接口（需要 JWT）。

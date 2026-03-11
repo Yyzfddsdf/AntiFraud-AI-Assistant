@@ -54,6 +54,42 @@
 
 ---
 
+## 1.1) 发送短信验证码
+
+- **Method**: `POST`
+- **Path**: `/api/auth/sms-code`
+- **Header**:
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "phone": "13800138000"
+}
+```
+
+### 说明
+
+- 当前短信发送与校验仍为 `TODO` 占位实现
+- 当前演示环境下，短信验证码固定为 `000000`
+- 该接口同时供“注册”和“短信登录”使用
+
+### 成功响应（200）
+
+```json
+{
+  "message": "短信验证码已发送，当前演示环境请使用 000000"
+}
+```
+
+### 常见失败响应
+
+- `400` 请求参数错误 / 手机号格式错误
+
+---
+
 ## 2) 用户注册
 
 - **Method**: `POST`
@@ -68,9 +104,11 @@
 {
   "username": "test_user",
   "email": "test_user@example.com",
+  "phone": "13800138000",
   "password": "Test@1234",
   "captchaId": "b6f2f9d5f0c64a0d8a53f8a1",
-  "captchaCode": "AB7K9"
+  "captchaCode": "AB7K9",
+  "smsCode": "000000"
 }
 ```
 
@@ -78,11 +116,13 @@
 
 - `username` 必填
 - `email` 必填，且必须是邮箱格式
+- `phone` 必填，且必须是 11 位大陆手机号
 - `password` 必填，且需满足：
   - 至少一个大写字母
   - 至少一个小写字母
   - 至少一个符号
 - `captchaId` / `captchaCode` 必填且必须匹配
+- `smsCode` 必填，当前演示环境固定校验 `000000`
 - 用户年龄在注册时默认写入 `28`（无需在请求体传入 `age`）。
 
 ### 成功响应（201）
@@ -92,6 +132,7 @@
   "id": 1,
   "username": "test_user",
   "email": "test_user@example.com",
+  "phone": "13800138000",
   "age": 28,
   "role": "user"
 }
@@ -99,8 +140,8 @@
 
 ### 常见失败响应
 
-- `400` 请求参数错误 / 密码不满足复杂度 / 验证码错误或过期
-- `409` 邮箱或用户名已存在
+- `400` 请求参数错误 / 手机号格式错误 / 密码不满足复杂度 / 图形验证码错误或过期 / 短信验证码错误
+- `409` 邮箱、手机号或用户名已存在
 
 ---
 
@@ -114,12 +155,34 @@
 
 ### 请求体
 
+密码登录：
+
 ```json
 {
-  "email": "test_user@example.com",
+  "account": "test_user@example.com",
   "password": "Test@1234",
   "captchaId": "b6f2f9d5f0c64a0d8a53f8a1",
   "captchaCode": "AB7K9"
+}
+```
+
+或：
+
+```json
+{
+  "account": "13800138000",
+  "password": "Test@1234",
+  "captchaId": "b6f2f9d5f0c64a0d8a53f8a1",
+  "captchaCode": "AB7K9"
+}
+```
+
+短信登录：
+
+```json
+{
+  "phone": "13800138000",
+  "smsCode": "000000"
 }
 ```
 
@@ -133,14 +196,22 @@
     "id": 1,
     "username": "test_user",
     "email": "test_user@example.com",
+    "phone": "13800138000",
     "role": "user",
     "age": 28
   }
 }
 ```
 
+### 说明
+
+- 密码登录支持“邮箱或手机号 + 密码 + 图形验证码”
+- 短信登录支持“手机号 + 短信验证码”
+- 当前演示环境下，短信验证码固定为 `000000`
+
 ### 常见失败响应
-- `401` 邮箱或密码不正确
+- `400` 请求参数不完整 / 手机号格式错误 / 图形验证码错误或过期
+- `401` 账号或密码不正确 / 手机号或短信验证码不正确
 
 ---
 
@@ -158,6 +229,7 @@
   "id": 1,
   "username": "test_user",
   "email": "test_user@example.com",
+  "phone": "13800138000",
   "role": "user",
   "age": 28
 }
@@ -1027,6 +1099,7 @@ GET /api/users
       "id": 1,
       "username": "admin",
       "email": "admin@example.com",
+      "phone": "13800138000",
       "role": "admin",
       "age": 28
     },
@@ -1034,6 +1107,7 @@ GET /api/users
       "id": 2,
       "username": "test_user",
       "email": "test@example.com",
+      "phone": "13900139000",
       "role": "user",
       "age": 25
     }
@@ -1050,7 +1124,7 @@ GET /api/users
   - `Authorization: Bearer <JWT_TOKEN>`
   - `Accept: application/json`
 - **Query参数**:
-  - `query`: 搜索关键词（模糊匹配用户名或邮箱）
+  - `query`: 搜索关键词（模糊匹配用户名、邮箱或手机号）
 
 **请求示例**：
 ```http
@@ -1066,6 +1140,7 @@ GET /api/users?query=admin
       "id": 1,
       "username": "admin",
       "email": "admin@example.com",
+      "phone": "13800138000",
       "role": "admin",
       "age": 28
     }
@@ -1073,6 +1148,11 @@ GET /api/users?query=admin
   "count": 1
 }
 ```
+
+### 说明
+
+- `/api/users` 返回的单个用户结构当前包含：`id`、`username`、`email`、`phone`、`role`、`age`
+- 若某个用户尚未绑定手机号，`phone` 字段可能为空或省略
 
 ### 常见失败响应
 

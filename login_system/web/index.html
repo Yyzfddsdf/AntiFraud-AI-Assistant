@@ -169,25 +169,51 @@
                         <button @click="authMode = 'register'" :class="['flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200', authMode === 'register' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">注册新用户</button>
                     </div>
 
+                    <div v-if="authMode === 'login'" class="flex bg-slate-100/80 p-1 rounded-xl mb-6">
+                        <button @click="loginMethod = 'password'" :class="['flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200', loginMethod === 'password' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">密码登录</button>
+                        <button @click="loginMethod = 'sms'" :class="['flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200', loginMethod === 'sms' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">短信登录</button>
+                    </div>
+
                     <form @submit.prevent="handleAuth" class="space-y-5">
                         <div v-if="authMode === 'register'" class="animate-fade-in">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">用户名</label>
                             <input v-model="form.username" type="text" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="设置用户名">
                         </div>
-                        
-                        <div>
+
+                        <div v-if="authMode === 'register'">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">邮箱地址</label>
                             <input v-model="form.email" type="email" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="name@company.com">
                         </div>
 
-                        <div>
+                        <div v-if="authMode === 'login' && loginMethod === 'password'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">邮箱或手机号</label>
+                            <input v-model="form.account" type="text" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="请输入邮箱或手机号">
+                        </div>
+
+                        <div v-if="authMode === 'register' || loginMethod === 'sms'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">手机号</label>
+                            <input v-model="form.phone" type="tel" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="请输入 11 位手机号">
+                        </div>
+
+                        <div v-if="authMode === 'register' || loginMethod === 'password'">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">密码</label>
                             <input v-model="form.password" type="password" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="••••••••">
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+                        <div v-if="shouldShowSMSCodeSection">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">短信验证码</label>
+                            <div class="flex gap-3">
+                                <input v-model="form.smsCode" type="text" required class="flex-1 px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium tracking-[0.3em] text-center" placeholder="输入短信验证码">
+                                <button type="button" @click="sendSMSCode" :disabled="!canSendSMSCode" :class="['shrink-0 px-4 py-3 rounded-xl border font-bold text-sm transition-colors', canSendSMSCode ? 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100' : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed']">
+                                    {{ smsCodeButtonText }}
+                                </button>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-400">当前演示短信验证码固定为 {{ demoSMSCode }}，短信发送与真实校验逻辑后续接入。</p>
+                        </div>
+
+                        <div v-if="requiresGraphCaptcha" class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">验证码</label>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">图形验证码</label>
                                 <input v-model="form.captchaCode" type="text" required class="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium text-center tracking-widest" placeholder="输入验证码">
                             </div>
                             <div class="relative h-[48px] mt-[23px] group cursor-pointer overflow-hidden rounded-xl border border-slate-200 hover:border-brand-300 transition-colors" @click="fetchCaptcha" title="点击刷新验证码">
@@ -201,7 +227,7 @@
 
                         <button type="submit" :disabled="loading" class="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/30 transition-all active:scale-[0.98] flex justify-center items-center gap-2 mt-4">
                             <span v-if="loading" class="loader !w-5 !h-5 !border-white/30 !border-t-white"></span>
-                            {{ authMode === 'login' ? '立即登录' : '创建账户' }}
+                            {{ authSubmitLabel }}
                         </button>
                     </form>
                 </div>
@@ -294,7 +320,7 @@
                     <!-- Collapsed Profile View -->
                     <div v-if="isSidebarCollapsed" class="flex flex-col items-center gap-4">
                         <button @click="activeTab = 'profile'" class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-400 to-brand-600 flex items-center justify-center text-xs font-bold text-white shadow-md hover:scale-110 transition-transform relative group" title="个人资料">
-                            {{ user.username ? user.username.substring(0,2).toUpperCase() : 'US' }}
+                            {{ getUserAvatarText(user) }}
                             <div class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">个人资料</div>
                         </button>
                         <button @click="logout" class="text-slate-500 hover:text-red-500 p-2 rounded-lg hover:bg-red-50/50 transition-colors relative group" title="退出登录">
@@ -307,11 +333,12 @@
                     <div v-else>
                         <div class="flex items-center gap-3 mb-4 px-2 cursor-pointer hover:bg-white/30 p-2 rounded-xl transition-colors group" @click="activeTab = 'profile'">
                             <div class="w-10 h-10 min-w-[40px] rounded-full bg-gradient-to-tr from-brand-400 to-brand-600 flex items-center justify-center text-xs font-bold text-white shadow-md group-hover:scale-105 transition-transform">
-                                {{ user.username ? user.username.substring(0,2).toUpperCase() : 'US' }}
+                                {{ getUserAvatarText(user) }}
                             </div>
                             <div class="flex-1 min-w-0 overflow-hidden">
-                                <p class="text-sm font-bold text-slate-800 truncate group-hover:text-brand-600 transition-colors">{{ user.username }}</p>
-                                <p class="text-xs text-slate-500 truncate font-mono">{{ user.email }}</p>
+                                <p class="text-sm font-bold text-slate-800 truncate group-hover:text-brand-600 transition-colors">{{ getUserDisplayName(user) }}</p>
+                                <p v-if="getUserEmailText(user)" class="text-xs text-slate-500 truncate font-mono">{{ getUserEmailText(user) }}</p>
+                                <p v-if="getUserPhoneText(user)" class="text-xs text-slate-400 truncate font-mono">{{ getUserPhoneText(user) }}</p>
                             </div>
                             <!-- Settings Icon -->
                             <div class="text-slate-400 group-hover:text-brand-500 transition-colors">
@@ -977,6 +1004,7 @@
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">ID</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">用户名</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">邮箱</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">手机号</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">角色</th>
                                         <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">年龄</th>
                                     </tr>
@@ -989,6 +1017,7 @@
                                             {{ u.username }}
                                         </td>
                                         <td class="px-6 py-4 text-slate-500">{{ u.email }}</td>
+                                        <td class="px-6 py-4 text-slate-500">{{ u.phone || '-' }}</td>
                                         <td class="px-6 py-4">
                                             <span :class="['px-2.5 py-1 rounded-full text-xs font-bold uppercase border', u.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-slate-100 text-slate-700 border-slate-200']">
                                                 {{ u.role }}
@@ -1010,14 +1039,15 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
                         <div class="flex items-center gap-6">
                             <div class="w-20 h-20 bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600 rounded-2xl flex items-center justify-center text-3xl font-extrabold shadow-inner">
-                                {{ user.username ? user.username.substring(0,2).toUpperCase() : 'US' }}
+                                {{ getUserAvatarText(user) }}
                             </div>
                             <div>
                                 <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                    {{ user.username }}
+                                    {{ getUserDisplayName(user) }}
                                     <span v-if="user.role" :class="['text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border', user.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100']">{{ user.role }}</span>
                                 </h2>
-                                <p class="text-slate-500 mt-1 font-medium">{{ user.email }}</p>
+                                <p v-if="getUserEmailText(user)" class="text-slate-500 mt-1 font-medium">{{ getUserEmailText(user) }}</p>
+                                <p v-if="getUserPhoneText(user)" class="text-slate-400 mt-1 text-sm font-mono">{{ getUserPhoneText(user) }}</p>
                             </div>
                         </div>
 

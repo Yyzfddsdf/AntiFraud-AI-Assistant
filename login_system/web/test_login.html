@@ -21,7 +21,7 @@
 </head>
 <body>
   <h1>用户登录系统测试页</h1>
-  <p class="hint">默认连接当前服务同源接口（/api/*）。流程：注册 -> 登录 -> 获取当前用户 -> 删除当前用户。</p>
+  <p class="hint">默认连接当前服务同源接口（/api/*）。流程：发送短信验证码 -> 注册（需手机号） -> 密码登录或短信登录 -> 获取当前用户。</p>
 
   <div class="card">
     <h3>基础配置</h3>
@@ -37,6 +37,7 @@
     <div class="row">
       <input id="username" placeholder="用户名" value="test_user_web" />
       <input id="email" placeholder="邮箱" value="test_user_web@example.com" />
+      <input id="phone" placeholder="手机号" value="13800138000" />
       <input id="password" type="password" placeholder="密码(需含大小写和符号)" value="Test@1234" />
     </div>
     <div class="row">
@@ -45,9 +46,16 @@
       <button onclick="loadCaptcha()">刷新验证码</button>
     </div>
     <div class="row">
+      <input id="smsCode" placeholder="短信验证码" value="000000" />
+      <button id="sendSMSCodeBtn" onclick="sendSMSCode()">发送短信验证码</button>
       <button onclick="registerUser()">注册</button>
-      <button onclick="loginUser()">登录</button>
     </div>
+    <div class="row">
+      <input id="loginAccount" placeholder="密码登录：邮箱或手机号" value="test_user_web@example.com" style="flex:1; min-width: 260px;" />
+      <button onclick="loginUserWithPassword()">密码登录</button>
+      <button onclick="loginUserWithSMS()">短信登录</button>
+    </div>
+    <p class="hint">当前演示短信验证码固定为 <code>000000</code>；短信发送和真实校验逻辑仍为 TODO 占位实现。</p>
   </div>
 
   <div class="card">
@@ -61,6 +69,7 @@
     </div>
     <div class="row">
       <input id="userAge" type="number" min="1" max="150" placeholder="年龄（1-150）" value="28" />
+      <input id="userPhone" placeholder="手机号" readonly style="background:#f0f0f0; color:#666;" />
       <input id="userRole" placeholder="用户身份" readonly style="background:#f0f0f0; color:#666;" />
       <button onclick="updateUserAge()">更新年龄</button>
     </div>
@@ -125,10 +134,13 @@
   <script>
     const logEl = document.getElementById('log');
     const reportEl = document.getElementById('report');
+    const sendSMSCodeBtn = document.getElementById('sendSMSCodeBtn');
     const MAX_LOG_STRING = 220;
     const MAX_PREVIEW_ITEMS = 3;
     const MAX_PREVIEW_BASE64_LENGTH = 1500000;
     let captchaId = '';
+    let smsCodeCooldownRemaining = 0;
+    let smsCodeCooldownTimer = null;
 
     function appendLog(title, payload) {
       const text = typeof payload === 'string' ? payload : JSON.stringify(sanitizeForLog(payload), null, 2);
@@ -177,6 +189,37 @@
       appendLog('BaseURL', { baseUrl: window.location.origin });
     }
 
+    function updateSMSCodeButtonState() {
+      if (!sendSMSCodeBtn) return;
+      if (smsCodeCooldownRemaining > 0) {
+        sendSMSCodeBtn.disabled = true;
+        sendSMSCodeBtn.textContent = `${smsCodeCooldownRemaining}s后重试`;
+        return;
+      }
+      sendSMSCodeBtn.disabled = false;
+      sendSMSCodeBtn.textContent = '发送短信验证码';
+    }
+
+    function startSMSCodeCooldown() {
+      if (smsCodeCooldownTimer) {
+        clearInterval(smsCodeCooldownTimer);
+        smsCodeCooldownTimer = null;
+      }
+      smsCodeCooldownRemaining = 60;
+      updateSMSCodeButtonState();
+      smsCodeCooldownTimer = setInterval(() => {
+        if (smsCodeCooldownRemaining <= 1) {
+          smsCodeCooldownRemaining = 0;
+          clearInterval(smsCodeCooldownTimer);
+          smsCodeCooldownTimer = null;
+          updateSMSCodeButtonState();
+          return;
+        }
+        smsCodeCooldownRemaining -= 1;
+        updateSMSCodeButtonState();
+      }, 1000);
+    }
+
     async function request(path, method, body, token) {
       const url = `${getBaseUrl()}${path}`;
       const headers = { 'Content-Type': 'application/json' };
@@ -207,9 +250,11 @@
       const payload = {
         username: document.getElementById('username').value.trim(),
         email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
         password: document.getElementById('password').value,
         captchaId,
         captchaCode: document.getElementById('captchaCode').value.trim(),
+        smsCode: document.getElementById('smsCode').value.trim(),
       };
       const result = await request('/api/auth/register', 'POST', payload);
       if (result.status !== 201) {
@@ -217,9 +262,20 @@
       }
     }
 
-    async function loginUser() {
+    async function sendSMSCode() {
+      if (smsCodeCooldownRemaining > 0) return;
       const payload = {
-        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+      };
+      const result = await request('/api/auth/sms-code', 'POST', payload);
+      if (result.status === 200) {
+        startSMSCodeCooldown();
+      }
+    }
+
+    async function loginUserWithPassword() {
+      const payload = {
+        account: document.getElementById('loginAccount').value.trim(),
         password: document.getElementById('password').value,
         captchaId,
         captchaCode: document.getElementById('captchaCode').value.trim(),
@@ -232,11 +288,23 @@
       }
     }
 
+    async function loginUserWithSMS() {
+      const payload = {
+        phone: document.getElementById('phone').value.trim(),
+        smsCode: document.getElementById('smsCode').value.trim(),
+      };
+      const result = await request('/api/auth/login', 'POST', payload);
+      if (result.status === 200 && result.data && result.data.token) {
+        document.getElementById('token').value = result.data.token;
+      }
+    }
+
     async function getCurrentUser() {
       const token = document.getElementById('token').value.trim();
       const result = await request('/api/user', 'GET', null, token);
       if (result.status === 200 && result.data) {
         if (result.data.age) document.getElementById('userAge').value = result.data.age;
+        document.getElementById('userPhone').value = result.data.phone || '';
         if (result.data.role) document.getElementById('userRole').value = result.data.role;
       }
     }
@@ -458,6 +526,7 @@
       win.print();
     }
 
+    updateSMSCodeButtonState();
     useCurrentOrigin();
     loadCaptcha();
     refreshMediaPreview();
