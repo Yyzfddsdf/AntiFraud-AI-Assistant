@@ -825,8 +825,8 @@ createApp({
             }
         };
 
-        const formatChartLabel = (label) => {
-            const interval = riskInterval.value;
+        const formatChartLabel = (label, intervalType) => {
+            const interval = intervalType || riskInterval.value;
             if (interval === 'week' && label.includes('-W')) {
                 try {
                     const [yearStr, weekStr] = label.split('-W');
@@ -853,6 +853,67 @@ createApp({
             return label;
         };
 
+        const fillTrendGaps = (sparseTrend, interval) => {
+            if (!sparseTrend || sparseTrend.length === 0) return [];
+            
+            // Sort by time_bucket first
+            const sorted = [...sparseTrend].sort((a, b) => a.time_bucket.localeCompare(b.time_bucket));
+            const startBucket = sorted[0].time_bucket;
+            const endBucket = sorted[sorted.length - 1].time_bucket;
+            
+            const filled = [];
+            const dataMap = new Map(sorted.map(item => [item.time_bucket, item]));
+            
+            let current = startBucket;
+            const maxIterations = 500; // Safety break
+            let count = 0;
+
+            while (current <= endBucket && count < maxIterations) {
+                count++;
+                if (dataMap.has(current)) {
+                    filled.push(dataMap.get(current));
+                } else {
+                    // Create a zeroed point
+                    const zeroPoint = { time_bucket: current, total: 0 };
+                    // For user risk trend, it has high/medium/low fields
+                    if ('high' in sorted[0]) {
+                        zeroPoint.high = 0;
+                        zeroPoint.medium = 0;
+                        zeroPoint.low = 0;
+                    }
+                    // For admin trend, it has count field
+                    if ('count' in sorted[0]) {
+                        zeroPoint.count = 0;
+                    }
+                    filled.push(zeroPoint);
+                }
+
+                // Increment current bucket
+                if (interval === 'day') {
+                    const date = new Date(current);
+                    date.setDate(date.getDate() + 1);
+                    current = date.toISOString().split('T')[0];
+                } else if (interval === 'week') {
+                    const [y, w] = current.split('-W').map(Number);
+                    let nextW = w + 1;
+                    let nextY = y;
+                    // Simplified week overflow (actual ISO week max is 52 or 53, 
+                    // but since we only compare string current <= endBucket, it's safer)
+                    if (nextW > 53) { nextW = 1; nextY++; }
+                    current = `${nextY}-W${String(nextW).padStart(2, '0')}`;
+                } else if (interval === 'month') {
+                    const [y, m] = current.split('-').map(Number);
+                    let nextM = m + 1;
+                    let nextY = y;
+                    if (nextM > 12) { nextM = 1; nextY++; }
+                    current = `${nextY}-${String(nextM).padStart(2, '0')}`;
+                } else {
+                    break;
+                }
+            }
+            return filled;
+        };
+
         const renderCharts = () => {
             if (!riskData.value) return;
             if (typeof window.echarts === 'undefined') {
@@ -860,7 +921,7 @@ createApp({
                 return;
             }
             const stats = riskData.value.stats;
-            const trend = riskData.value.trend;
+            const trend = fillTrendGaps(riskData.value.trend, riskInterval.value);
 
             // Destroy old charts
             if (pieChartInstance && typeof pieChartInstance.dispose === 'function') pieChartInstance.dispose();
@@ -1405,7 +1466,9 @@ createApp({
                 console.warn('ECharts 未加载，已跳过管理侧图表渲染。');
                 return;
             }
-            const { trend, by_scam_type, by_target_group } = adminStatsData.value;
+            const sparseTrend = adminStatsData.value.trend;
+            const trend = fillTrendGaps(sparseTrend, adminStatsInterval.value);
+            const { by_scam_type, by_target_group } = adminStatsData.value;
 
             // Dispose old instances
             if (adminTrendChart && typeof adminTrendChart.dispose === 'function') adminTrendChart.dispose();
