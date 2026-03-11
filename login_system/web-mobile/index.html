@@ -199,50 +199,50 @@
                     <button @click="authMode = 'register'" :class="['pb-2 text-lg font-bold transition-colors', authMode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400']">注册</button>
                 </div>
 
-                <form @submit.prevent="handleAuth" class="space-y-6">
-                    <div v-if="authMode === 'register'" class="space-y-1">
+                <form @submit.prevent="handleAuth" class="space-y-3">
+                    <div v-if="authMode === 'register'" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">用户名</label>
-                        <input v-model="form.username" type="text" class="m-input" placeholder="设置用户名" required>
+                        <input v-model="form.username" type="text" class="m-input !py-2" placeholder="设置用户名" required>
                     </div>
-                    <div v-if="authMode === 'register'">
+                    <div v-if="authMode === 'register'" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">邮箱</label>
-                        <input v-model="form.email" type="email" class="m-input" placeholder="name@example.com" required>
+                        <input v-model="form.email" type="email" class="m-input !py-2" placeholder="name@example.com" required>
                     </div>
-                    <div v-if="authMode === 'login'" class="flex gap-3 mb-2">
+                    <div v-if="authMode === 'login'" class="flex gap-3 mb-1">
                         <button type="button" @click="loginMethod = 'password'" :class="['text-xs font-bold py-1.5 px-4 rounded-full border transition-colors', loginMethod === 'password' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-200']">密码登录</button>
                         <button type="button" @click="loginMethod = 'sms'" :class="['text-xs font-bold py-1.5 px-4 rounded-full border transition-colors', loginMethod === 'sms' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-200']">短信登录</button>
                     </div>
-                    <div v-if="authMode === 'login' && loginMethod === 'password'">
+                    <div v-if="authMode === 'login' && loginMethod === 'password'" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">账号</label>
-                        <input v-model="form.account" type="text" class="m-input" placeholder="邮箱或手机号" required>
+                        <input v-model="form.account" type="text" class="m-input !py-2" placeholder="邮箱或手机号" required>
                     </div>
-                    <div v-if="authMode === 'register' || loginMethod === 'sms'">
+                    <div v-if="authMode === 'register' || loginMethod === 'sms'" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">手机号</label>
-                        <input v-model="form.phone" type="tel" class="m-input" placeholder="11位手机号" required>
+                        <input v-model="form.phone" type="tel" class="m-input !py-2" placeholder="11位手机号" required>
                     </div>
-                    <div v-if="authMode === 'register' || loginMethod === 'password'">
+                    <div v-if="authMode === 'register' || loginMethod === 'password'" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">密码</label>
-                        <input v-model="form.password" type="password" class="m-input" placeholder="••••••••" required>
+                        <input v-model="form.password" type="password" class="m-input !py-2" placeholder="••••••••" required>
                     </div>
-                    <div v-if="shouldShowSMSCodeSection">
+                    <div v-if="shouldShowSMSCodeSection" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">验证码</label>
                         <div class="flex items-end gap-3">
-                            <input v-model="form.smsCode" type="text" class="m-input text-center tracking-widest" placeholder="000000" required>
-                            <button type="button" @click="sendSMSCode" :disabled="!canSendSMSCode" class="shrink-0 h-10 px-4 rounded-lg bg-gray-100 text-xs font-bold text-black disabled:opacity-50">
+                            <input v-model="form.smsCode" type="text" class="m-input !py-2 text-center tracking-widest" placeholder="000000" required>
+                            <button type="button" @click="sendSMSCode" :disabled="!canSendSMSCode" class="shrink-0 h-9 px-4 rounded-lg bg-gray-100 text-xs font-bold text-black disabled:opacity-50">
                                 {{ smsCodeButtonText }}
                             </button>
                         </div>
                     </div>
-                    <div v-if="requiresGraphCaptcha">
+                    <div v-if="requiresGraphCaptcha" class="space-y-0.5">
                         <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">图形验证</label>
                         <div class="flex items-end gap-3">
-                            <input v-model="form.captchaCode" type="text" class="m-input" placeholder="输入右侧字符" required>
-                            <div @click="fetchCaptcha" class="h-10 w-24 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                            <input v-model="form.captchaCode" type="text" class="m-input !py-2" placeholder="输入右侧字符" required>
+                            <div @click="fetchCaptcha" class="h-9 w-24 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                                 <img :src="captchaImage" class="w-full h-full object-cover" v-if="captchaImage">
                             </div>
                         </div>
                     </div>
-                    <button type="submit" :disabled="loading" class="m-btn-primary mt-8">
+                    <button type="submit" :disabled="loading" class="m-btn-primary mt-6">
                         <span v-if="loading" class="animate-spin mr-2 w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
                         {{ authSubmitLabel }}
                     </button>
@@ -253,8 +253,14 @@
         <!-- 2. 主界面 -->
         <div v-else class="flex-1 min-h-0 flex flex-col bg-gray-50">
             <!-- Header -->
-            <header class="h-14 px-5 pt-safe flex items-center justify-between bg-white border-b border-gray-100 shrink-0 sticky top-0 z-30">
-                <div class="font-bold text-lg tracking-tight">
+            <header class="h-14 px-4 pt-safe flex items-center justify-between bg-white shrink-0 sticky top-0 z-30">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight text-slate-900">Sentinel AI</span>
+                </div>
+                <div class="font-bold text-lg tracking-tight text-slate-900 absolute left-1/2 -translate-x-1/2">
                     <span v-if="['tasks','history','risk_trend'].includes(activeTab)">概览</span>
                     <span v-else-if="activeTab === 'submit'">分析</span>
                     <span v-else-if="activeTab === 'alerts'">消息</span>
@@ -262,65 +268,76 @@
                     <span v-else-if="['family','family_invite'].includes(activeTab)">家庭</span>
                     <span v-else-if="['profile','profile_privacy'].includes(activeTab)">我的</span>
                 </div>
-                <button v-if="activeTab !== 'alerts'" @click="activeTab = 'alerts'" class="relative w-8 h-8 flex items-center justify-center">
-                     <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                <button v-if="activeTab !== 'alerts'" @click="activeTab = 'alerts'" class="relative w-8 h-8 flex items-center justify-center text-slate-600">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                      <span v-if="alertUnreadCount > 0" class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
             </header>
 
-            <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 relative">
+            <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 relative bg-slate-50">
                 
                 <!-- Dashboard (Tasks) -->
                 <div v-show="activeTab === 'tasks'" class="pb-safe">
                     <!-- Banner -->
-                    <div class="bg-blue-600 text-white px-6 pt-6 pb-12 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl"></div>
-                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/20 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl"></div>
+                    <div class="relative overflow-hidden bg-blue-900 text-white px-5 py-8" style="background-image: url('/mobile/assets/images/banner-bg.svg'); background-size: cover; background-position: center;">
+                        <div class="absolute inset-0 bg-blue-900/20 backdrop-blur-[1px]"></div>
                         <div class="relative z-10">
-                            <h2 class="text-2xl font-bold">Sentinel AI 反诈中心</h2>
-                            <p class="text-blue-100 text-sm mt-1">全天候守护您的财产安全</p>
+                            <h2 class="text-2xl font-extrabold tracking-tight drop-shadow-sm">Sentinel AI 反诈中心</h2>
+                            <p class="text-blue-100 text-sm mt-2 font-medium tracking-wide">全天候守护您的财产安全</p>
                         </div>
                     </div>
 
-                    <!-- Grid Menu (Negative Margin) -->
-                    <div class="px-4 -mt-8 relative z-20">
-                        <div class="bg-white rounded-2xl shadow-sm p-4 grid grid-cols-4 gap-y-4">
+                    <!-- Grid Menu -->
+                    <div class="px-4 mt-4 relative z-20">
+                        <div class="bg-white rounded-2xl shadow-sm p-5 grid grid-cols-4 gap-y-4">
                             <div @click="activeTab = 'chat'" class="flex flex-col items-center gap-2">
-                                <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                                 </div>
-                                <span class="text-xs font-medium text-slate-700">AI助手</span>
+                                <span class="text-xs font-bold text-slate-700">AI助手</span>
                             </div>
                             <div @click="activeTab = 'history'" class="flex flex-col items-center gap-2">
-                                <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-blue-400 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-400/30">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                                 </div>
-                                <span class="text-xs font-medium text-slate-700">历史档案</span>
+                                <span class="text-xs font-bold text-slate-700">历史档案</span>
                             </div>
                             <div @click="activeTab = 'risk_trend'" class="flex flex-col items-center gap-2">
-                                <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-indigo-400 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-400/30">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
                                 </div>
-                                <span class="text-xs font-medium text-slate-700">风险趋势</span>
+                                <span class="text-xs font-bold text-slate-700">风险趋势</span>
                             </div>
                             <div @click="activeTab = 'family'" class="flex flex-col items-center gap-2">
-                                <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-sky-400 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-sky-400/30">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 </div>
-                                <span class="text-xs font-medium text-slate-700">家庭守护</span>
+                                <span class="text-xs font-bold text-slate-700">家庭守护</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Stats Cards -->
                     <div class="px-4 mt-4 grid grid-cols-2 gap-3">
-                        <div class="m-card p-4 flex flex-col justify-between h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                            <div class="text-blue-400 text-xs font-bold uppercase">今日检测</div>
-                            <div class="text-2xl font-bold text-slate-800">{{ riskStatsSummary.total }} <span class="text-xs font-normal text-slate-400">件</span></div>
+                        <div class="m-card p-4 h-24 bg-white border border-slate-100 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full"></div>
+                            <div class="absolute top-3 right-3 text-blue-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="flex flex-col justify-center h-full relative z-10">
+                                <div class="text-slate-800 text-sm font-bold">今日检测</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ riskStatsSummary.total }}</div>
+                            </div>
                         </div>
-                        <div class="m-card p-4 flex flex-col justify-between h-24 bg-gradient-to-br from-red-50 to-white border-red-100">
-                            <div class="text-red-400 text-xs font-bold uppercase">高风险</div>
-                            <div class="text-2xl font-bold text-red-600">{{ riskStatsSummary.high }} <span class="text-xs font-normal text-red-300">件</span></div>
+                        <div class="m-card p-4 h-24 bg-white border border-slate-100 shadow-sm relative overflow-hidden">
+                             <div class="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-full"></div>
+                             <div class="absolute top-3 right-3 text-red-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="flex flex-col justify-center h-full relative z-10">
+                                <div class="text-slate-800 text-sm font-bold">高风险</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ riskStatsSummary.high }}</div>
+                            </div>
                         </div>
                     </div>
 
@@ -382,7 +399,7 @@
                 </div>
 
                 <!-- History List (Full) -->
-                <div v-if="activeTab === 'history'" class="p-3 space-y-3">
+                <div v-if="activeTab === 'history'" class="p-3 space-y-3 pb-24">
                     <div class="flex items-center justify-between gap-3 mb-1">
                         <div class="flex items-center gap-2">
                         <button @click="activeTab = 'tasks'" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
@@ -420,106 +437,194 @@
                 </div>
 
                 <!-- Risk Trend Detail -->
-                <div v-if="activeTab === 'risk_trend'" class="p-3 space-y-3">
-                    <div class="flex items-center gap-2 mb-2">
-                        <button @click="activeTab = 'tasks'" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                        <h2 class="text-xl font-bold">风险详情</h2>
+                <div v-if="activeTab === 'risk_trend'" class="p-3 space-y-3 pb-24">
+                    <div class="flex items-center gap-3 mb-2 px-1">
+                        <button @click="activeTab = 'tasks'" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-slate-600 shadow-sm active:scale-95 transition-transform"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                        <h2 class="text-xl font-extrabold tracking-tight text-slate-900">风险详情</h2>
                     </div>
+                    
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="m-card p-4">
-                            <div class="text-xs font-bold uppercase text-slate-400">总检测</div>
-                            <div class="mt-2 text-2xl font-bold text-slate-800">{{ riskStatsSummary.total }}</div>
+                        <div class="m-card p-4 bg-gradient-to-br from-white to-blue-50/50 border border-blue-100 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-blue-100/50 rounded-bl-full -mr-4 -mt-4"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">总检测</span>
+                                </div>
+                                <div class="text-3xl font-black text-slate-900 tracking-tight">{{ riskStatsSummary.total }}</div>
+                            </div>
                         </div>
-                        <div class="m-card p-4">
-                            <div class="text-xs font-bold uppercase text-red-400">高风险</div>
-                            <div class="mt-2 text-2xl font-bold text-red-600">{{ riskStatsSummary.high }}</div>
+                        <div class="m-card p-4 bg-gradient-to-br from-white to-red-50/50 border border-red-100 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-red-100/50 rounded-bl-full -mr-4 -mt-4"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">高风险</span>
+                                </div>
+                                <div class="text-3xl font-black text-slate-900 tracking-tight">{{ riskStatsSummary.high }}</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="m-card p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-sm text-slate-800">最近窗口</h3>
-                            <span class="text-xs text-slate-400">近 7 天</span>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between px-1">
+                            <h3 class="font-bold text-base text-slate-900">最近窗口 <span class="text-xs font-normal text-slate-400 ml-1">近7天</span></h3>
                         </div>
                         <div class="space-y-3">
-                            <div v-for="item in getRecentRiskTrendRows(7)" :key="`trend-row-${item.time_bucket}`" class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div>
-                                        <div class="text-sm font-extrabold text-slate-900">{{ formatChartLabel(item.time_bucket) }}</div>
-                                        <div class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400">Total {{ item.total || 0 }}</div>
+                            <div v-for="item in getRecentRiskTrendRows(7)" :key="`trend-row-${item.time_bucket}`" class="m-card p-4 border border-slate-100 shadow-sm">
+                                <div class="flex items-center justify-between mb-3 border-b border-slate-50 pb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1 h-4 bg-slate-900 rounded-full"></div>
+                                        <span class="text-sm font-bold text-slate-900">{{ formatChartLabel(item.time_bucket) }}</span>
                                     </div>
-                                    <div class="text-right">
-                                        <div class="text-lg font-extrabold text-slate-900">{{ item.total || 0 }}</div>
-                                        <div class="text-[11px] text-slate-400">案件</div>
-                                    </div>
+                                    <div class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">总计 {{ item.total || 0 }}</div>
                                 </div>
-                                <div class="mt-4 grid grid-cols-3 gap-2">
-                                    <div class="rounded-xl bg-red-50 px-3 py-2 border border-red-100">
-                                        <div class="text-[11px] text-red-400 font-bold uppercase">高</div>
-                                        <div class="mt-1 text-sm font-extrabold text-red-600">{{ item.high || 0 }}</div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="flex flex-col items-center p-2 rounded-xl bg-red-50/50 border border-red-50">
+                                        <span class="text-[10px] font-bold text-red-400 uppercase mb-1">高风险</span>
+                                        <span class="text-lg font-black text-red-600">{{ item.high || 0 }}</span>
                                     </div>
-                                    <div class="rounded-xl bg-amber-50 px-3 py-2 border border-amber-100">
-                                        <div class="text-[11px] text-amber-500 font-bold uppercase">中</div>
-                                        <div class="mt-1 text-sm font-extrabold text-amber-600">{{ item.medium || 0 }}</div>
+                                    <div class="flex flex-col items-center p-2 rounded-xl bg-amber-50/50 border border-amber-50">
+                                        <span class="text-[10px] font-bold text-amber-400 uppercase mb-1">中风险</span>
+                                        <span class="text-lg font-black text-amber-500">{{ item.medium || 0 }}</span>
                                     </div>
-                                    <div class="rounded-xl bg-emerald-50 px-3 py-2 border border-emerald-100">
-                                        <div class="text-[11px] text-emerald-500 font-bold uppercase">低</div>
-                                        <div class="mt-1 text-sm font-extrabold text-emerald-600">{{ item.low || 0 }}</div>
+                                    <div class="flex flex-col items-center p-2 rounded-xl bg-emerald-50/50 border border-emerald-50">
+                                        <span class="text-[10px] font-bold text-emerald-400 uppercase mb-1">低风险</span>
+                                        <span class="text-lg font-black text-emerald-500">{{ item.low || 0 }}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="getRecentRiskTrendRows(7).length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                                暂无可展示的时间窗口
+                            <div v-if="getRecentRiskTrendRows(7).length === 0" class="flex flex-col items-center justify-center py-12 text-slate-300">
+                                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                </div>
+                                <span class="text-xs font-medium">暂无数据记录</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Chat -->
-                <div v-show="activeTab === 'chat'" class="p-3 space-y-3">
-                    <div class="flex items-center gap-2 mb-1">
-                        <button @click="activeTab = 'tasks'" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                        <h2 class="text-xl font-bold">AI 助手</h2>
-                    </div>
-                    <div class="m-card overflow-hidden h-[calc(100vh-13rem)] min-h-[520px] flex flex-col bg-white">
-                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex', msg.type === 'user' ? 'justify-end' : msg.type === 'tool' ? 'justify-center' : 'justify-start']">
-                            <div v-if="msg.type === 'tool'" class="text-[11px] font-mono text-slate-500 my-1 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-sm">
-                                {{ msg.content }}
+                <div v-show="activeTab === 'chat'" class="fixed inset-0 z-[1000] flex flex-col bg-white">
+                    <div class="h-14 px-4 flex items-center justify-between border-b border-gray-100 shrink-0 bg-white/90 backdrop-blur-md pt-safe z-30">
+                        <div class="flex items-center gap-2">
+                            <button @click="activeTab = 'tasks'" class="text-slate-500 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <div class="flex flex-col">
+                                <h2 class="text-sm font-bold text-slate-800">Sentinel AI</h2>
+                                <span class="text-[10px] text-green-500 font-medium flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                    Online
+                                </span>
                             </div>
-                            <div v-else :class="['max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm', msg.type === 'user' ? 'bg-black text-white rounded-br-none' : msg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100 rounded-bl-none' : 'bg-gray-100 text-slate-800 rounded-bl-none']">
-                                <div v-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
-                                <div v-if="msg.images && msg.images.length" class="mt-2 grid grid-cols-2 gap-2">
-                                    <button v-for="(img, imgIdx) in msg.images" :key="`${idx}-${imgIdx}`" type="button" class="rounded-lg overflow-hidden border border-white/10" @click="openImage(img)">
-                                        <img :src="img" class="w-full h-24 object-cover">
-                                    </button>
+                        </div>
+                        <button @click="clearChatHistory" class="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all" title="清空对话">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 bg-white scroll-smooth pb-32">
+                        <!-- Welcome Message -->
+                        <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center h-[60vh] text-center px-6 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+                            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">我是您的反诈助手</h3>
+                            <p class="text-sm text-slate-500 max-w-[260px] leading-relaxed">我可以帮您识别诈骗信息、分析风险案例或提供安全建议。请直接发送文字或图片。</p>
+                        </div>
+
+                        <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex gap-4 group', msg.type === 'user' ? 'flex-row-reverse' : 'flex-row']">
+                            <!-- Avatar -->
+                            <div class="shrink-0 flex flex-col items-center">
+                                <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border border-black/5', msg.type === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-green-500 text-white']">
+                                    <span v-if="msg.type === 'user'">You</span>
+                                    <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                            </div>
+
+                            <!-- Message Content -->
+                            <div :class="['flex flex-col max-w-[85%] min-w-0', msg.type === 'user' ? 'items-end' : 'items-start']">
+                                <div v-if="msg.type !== 'tool'" class="text-[11px] font-bold text-slate-400 mb-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {{ msg.type === 'user' ? 'You' : 'Sentinel AI' }}
+                                </div>
+                                
+                                <div v-if="msg.type === 'tool'" class="flex items-center gap-2 text-xs font-mono text-slate-500 my-1 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200/60 w-full">
+                                    <div class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                                    <span class="truncate">{{ msg.content }}</span>
+                                </div>
+
+                                <div v-else :class="['relative px-4 py-3 text-[15px] leading-7 shadow-sm', 
+                                    msg.type === 'user' ? 'bg-[#f4f4f4] text-slate-800 rounded-2xl rounded-tr-sm' : 
+                                    msg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100 rounded-2xl rounded-tl-sm' : 
+                                    'bg-transparent text-slate-800 p-0 shadow-none']">
+                                    <div v-if="msg.content" class="whitespace-pre-wrap break-words markdown-body">{{ msg.content }}</div>
+                                    
+                                    <div v-if="msg.images && msg.images.length" class="mt-3 grid grid-cols-2 gap-2">
+                                        <button v-for="(img, imgIdx) in msg.images" :key="`${idx}-${imgIdx}`" type="button" class="relative group/img rounded-xl overflow-hidden border border-black/5 shadow-sm transition-transform hover:scale-[1.02] active:scale-95" @click="openImage(img)">
+                                            <img :src="img" class="w-full h-32 object-cover bg-white">
+                                            <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors"></div>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div v-if="isChatting" class="flex justify-start">
-                            <div class="bg-gray-100 text-slate-500 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1.5 shadow-sm">
-                                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
-                                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+
+                        <!-- Typing Indicator -->
+                        <div v-if="isChatting" class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div class="flex items-center h-8">
+                                <div class="flex gap-1">
+                                    <span class="w-2 h-2 bg-slate-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-0"></span>
+                                    <span class="w-2 h-2 bg-slate-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-150"></span>
+                                    <span class="w-2 h-2 bg-slate-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-300"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="p-3 border-t border-gray-100 bg-white pb-safe">
-                        <div class="flex justify-end pb-3">
-                            <button @click="clearChatHistory" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">清空历史</button>
-                        </div>
-                        <input id="chat-image-input" type="file" accept="image/*" multiple class="hidden" @change="handleChatImageSelect">
-                        <div v-if="chatImages.length" class="flex gap-2 overflow-x-auto pb-3">
-                            <div v-for="(img, idx) in chatImages" :key="idx" class="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-gray-200">
+
+                    <!-- Input Area -->
+                    <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-safe z-40">
+                        <div v-if="chatImages.length" class="flex gap-3 overflow-x-auto pb-3 mb-1 px-1">
+                            <div v-for="(img, idx) in chatImages" :key="idx" class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
                                 <img :src="img" class="w-full h-full object-cover">
-                                <button @click="removeChatImage(idx)" class="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                <button @click="removeChatImage(idx)" class="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-red-500 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                             </div>
                         </div>
-                        <form @submit.prevent="sendChatMessage" class="flex items-end gap-2">
-                            <button type="button" @click="triggerChatImagePicker" :disabled="isChatting" class="p-3 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 disabled:opacity-40"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>
-                            <div class="flex-1 bg-gray-50 rounded-2xl px-4 py-3"><input v-model="chatInput" type="text" placeholder="输入消息..." class="w-full bg-transparent outline-none text-sm max-h-24"></div>
-                            <button type="submit" :disabled="(!chatInput.trim() && !chatImages.length) || isChatting" class="p-3 rounded-full bg-black text-white disabled:opacity-30 disabled:bg-gray-200"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                        
+                        <form @submit.prevent="sendChatMessage" class="relative max-w-3xl mx-auto">
+                            <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-[26px] p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                                <button type="button" @click="triggerChatImagePicker" :disabled="isChatting" class="p-2.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-gray-200/50 transition-colors shrink-0">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                </button>
+                                <input id="chat-image-input" type="file" accept="image/*" multiple class="hidden" @change="handleChatImageSelect">
+                                
+                                <textarea 
+                                    v-model="chatInput" 
+                                    placeholder="发送消息..." 
+                                    rows="1"
+                                    class="w-full bg-transparent border-none outline-none text-[15px] text-slate-800 placeholder:text-slate-400 py-3 max-h-32 resize-none leading-normal"
+                                    @keydown.enter.prevent="!isChatting && (chatInput.trim() || chatImages.length) ? sendChatMessage() : null"
+                                ></textarea>
+                                
+                                <button 
+                                    type="submit" 
+                                    :disabled="(!chatInput.trim() && !chatImages.length) || isChatting" 
+                                    class="p-2.5 rounded-full bg-black text-white disabled:opacity-20 disabled:bg-slate-300 transition-all shrink-0 hover:bg-slate-800 shadow-sm"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                                </button>
+                            </div>
+                            <div class="text-center mt-2">
+                                <p class="text-[10px] text-slate-400">Sentinel AI 可能会产生错误信息，请核实重要信息。</p>
+                            </div>
                         </form>
-                    </div>
                     </div>
                 </div>
 
@@ -729,9 +834,8 @@
             </nav>
 
             <!-- Submit Task Page -->
-            <div v-if="activeTab === 'submit'" class="p-3 space-y-3">
+            <div v-if="activeTab === 'submit'" class="p-3 space-y-3 pb-24">
                 <div class="flex items-center gap-2 mb-1">
-                    <button @click="activeTab = 'tasks'" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
                     <h2 class="text-xl font-bold">新建分析任务</h2>
                 </div>
                 <div class="m-card p-4 space-y-5">
@@ -919,11 +1023,8 @@
                                 <button
                                     type="button"
                                     @click="toggleDropdown('task-export-menu')"
-                                    :class="['w-11 h-11 rounded-full flex items-center justify-center transition-all', openDropdownKey === 'task-export-menu' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-900 text-white']">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C9.046 13.127 9.469 13 9.922 13c.453 0 .876.127 1.238.342l3.156-1.842A2.99 2.99 0 0114 10c0-.523.134-1.014.369-1.441l-3.157-1.842A2.99 2.99 0 019.922 7c-.453 0-.876-.127-1.238-.342L5.528 8.5c.235.427.369.918.369 1.441 0 .523-.134 1.014-.369 1.441l3.156 1.96z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 5a2 2 0 110 4 2 2 0 010-4zM16 15a2 2 0 110 4 2 2 0 010-4zM6 10a2 2 0 110 4 2 2 0 010-4z"></path>
-                                    </svg>
+                                    :class="['w-11 h-11 rounded-full flex items-center justify-center transition-all', openDropdownKey === 'task-export-menu' ? 'text-blue-600' : 'text-slate-900']">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 </button>
                                 <transition name="fade">
                                     <div v-if="openDropdownKey === 'task-export-menu'" class="m-dropdown-menu !right-0 !left-auto !w-44">
