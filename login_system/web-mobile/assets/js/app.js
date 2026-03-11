@@ -11,7 +11,7 @@ createApp({
         const activeTab = ref('tasks');
         const loading = ref(false);
         const analyzing = ref(false);
-        const inviteCode = ref('');
+        const ageEditorVisible = ref(false);
         const captchaImage = ref('');
         const captchaId = ref('');
         const toasts = ref([]);
@@ -23,7 +23,6 @@ createApp({
         const alertDrawerVisible = ref(false);
         const tasks = ref([]);
         const history = ref([]);
-        const users = ref([]);
         const familyOverview = ref(null);
         const familyMembers = ref([]);
         const familyInvitations = ref([]);
@@ -33,29 +32,11 @@ createApp({
         const familyNotificationConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
         const familyAlertModalVisible = ref(false);
         const activeFamilyNotification = ref(null);
-        const caseLibrary = ref([]); // Admin Case Library
-        const scamTypeOptions = ref([]);
-        const targetGroupOptions = ref([]);
-        const selectedCase = ref(null); // For admin view details
-        const showCaseModal = ref(false);
-        const submittingCase = ref(false);
-        const caseForm = reactive({
-            title: '',
-            target_group: '',
-            risk_level: '',
-            scam_type: '',
-            case_description: '',
-            typical_scripts_raw: '',
-            keywords_raw: '',
-            violated_law: '',
-            suggestion: ''
-        });
         const deletingHistory = reactive({});
         const familyDeletingMembers = reactive({});
         const familyDeletingGuardianLinks = reactive({});
         const familyMarkingNotifications = reactive({});
         const selectedTask = ref(null);
-        const userSearch = ref('');
         
         // Risk Trend State
         const riskInterval = ref('day');
@@ -64,24 +45,9 @@ createApp({
         const riskCache = reactive({});
         let pieChartInstance = null;
         let lineChartInstance = null;
+        let lineDetailChartInstance = null;
         let hasWarnedMissingChartLibrary = false;
-
-        // Admin Stats State
-        const adminStatsInterval = ref('day');
-        const adminStatsData = ref(null);
-        // Cache for admin stats: { 'day': data, 'week': data, 'month': data }
-        const adminStatsCache = reactive({});
-        const adminGraphData = ref(null);
-        const adminGraphCache = ref(null);
-        const adminTargetGroupChartData = ref(null);
-        const adminTargetGroupChartCache = reactive({});
-        const selectedGraphTargetGroup = ref('');
-        const showGraphModal = ref(false);
-        let adminTrendChart = null;
-        let adminTypeChart = null;
-        let adminTargetChart = null;
-        let adminTargetGroupBarChart = null;
-        let adminNetworkInstance = null;
+        const openDropdownKey = ref('');
 
         // Draggable Chat State
         const chatPosition = reactive({ left: 0, top: 0 });
@@ -114,7 +80,6 @@ createApp({
             role: 'member',
             relation: ''
         });
-        const familyAcceptForm = reactive({ invite_code: '' });
         const familyGuardianForm = reactive({
             guardian_user_id: '',
             member_user_id: ''
@@ -584,6 +549,61 @@ createApp({
         const familyHasGroup = computed(() => !!familyOverview.value?.family);
         const familyGuardianCandidates = computed(() => (familyMembers.value || []).filter(item => item && (item.role === 'owner' || item.role === 'guardian')));
         const familyProtectedCandidates = computed(() => (familyMembers.value || []).filter(item => item && item.role !== 'owner'));
+        const familyRoleSelectOptions = [
+            { value: 'member', label: '普通成员', hint: '接收家庭通知，不承担守护职责' },
+            { value: 'guardian', label: '守护人', hint: '接收被守护成员的高风险提醒' }
+        ];
+        const familyGuardianSelectOptions = computed(() => (familyGuardianCandidates.value || []).map((item) => ({
+            value: item.user_id,
+            label: String(item.username || '').trim() || '未命名成员',
+            hint: String(item.role || '').trim() || '守护人候选'
+        })));
+        const familyProtectedSelectOptions = computed(() => (familyProtectedCandidates.value || []).map((item) => ({
+            value: item.user_id,
+            label: String(item.username || '').trim() || '未命名成员',
+            hint: String(item.relation || item.role || '').trim() || '被守护成员候选'
+        })));
+        const riskStatsSummary = computed(() => {
+            const stats = riskData.value && riskData.value.stats ? riskData.value.stats : {};
+            return {
+                total: Number(stats.total) || 0,
+                high: Number(stats.high) || 0,
+                medium: Number(stats.medium) || 0,
+                low: Number(stats.low) || 0
+            };
+        });
+        const normalizeOptionValue = (value) => String(value ?? '').trim();
+        const getSelectedOption = (options, value) => (options || []).find((option) => normalizeOptionValue(option.value) === normalizeOptionValue(value)) || null;
+        const getSelectedOptionLabel = (options, value, placeholder = '请选择') => {
+            const matched = getSelectedOption(options, value);
+            return matched ? matched.label : placeholder;
+        };
+        const getSelectedOptionHint = (options, value, fallback = '') => {
+            const matched = getSelectedOption(options, value);
+            return matched ? String(matched.hint || '').trim() : fallback;
+        };
+        const toggleDropdown = (dropdownKey) => {
+            openDropdownKey.value = openDropdownKey.value === dropdownKey ? '' : dropdownKey;
+        };
+        const closeDropdown = () => {
+            openDropdownKey.value = '';
+        };
+        const selectDropdownValue = (dropdownKey, target, field, value) => {
+            if (target && typeof target === 'object' && field) {
+                target[field] = value;
+            }
+            openDropdownKey.value = '';
+        };
+        const handleDocumentClick = (event) => {
+            const target = event && event.target;
+            if (!(target instanceof Element)) {
+                closeDropdown();
+                return;
+            }
+            if (!target.closest('[data-custom-dropdown]')) {
+                closeDropdown();
+            }
+        };
 
         const getUserDisplayName = (userInfo) => {
             const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
@@ -604,6 +624,21 @@ createApp({
         };
 
         const getUserAvatarText = (userInfo) => getUserDisplayName(userInfo).slice(0, 2).toUpperCase();
+        const toggleAgeEditor = () => {
+            ageEditorVisible.value = !ageEditorVisible.value;
+        };
+        const cancelAgeEditor = () => {
+            ageEditorVisible.value = false;
+            ageForm.age = Number(user.value.age) || ageForm.age || 28;
+        };
+        const openProfilePrivacyPage = () => {
+            ageEditorVisible.value = false;
+            activeTab.value = 'profile_privacy';
+        };
+        const closeProfilePrivacyPage = () => {
+            cancelAgeEditor();
+            activeTab.value = 'profile';
+        };
 
         const clearSMSCodeCooldownTimer = () => {
             if (smsCodeCooldownTimer) {
@@ -778,24 +813,17 @@ createApp({
         };
 
         const updateAge = async () => {
+            const normalizedAge = Number(ageForm.age);
+            if (!Number.isFinite(normalizedAge) || normalizedAge < 1 || normalizedAge > 150) {
+                showToast('年龄请输入 1 到 150 之间的数字', 'error');
+                return;
+            }
             const res = await request('/scam/multimodal/user/age', 'PUT', { age: ageForm.age });
             if (res) {
-                user.value.age = ageForm.age;
+                user.value.age = normalizedAge;
+                ageForm.age = normalizedAge;
+                ageEditorVisible.value = false;
                 showToast('年龄更新成功');
-                activeTab.value = 'profile';
-            }
-        };
-
-        const upgradeAccount = async () => {
-            if (!inviteCode.value) return;
-            loading.value = true;
-            const res = await request('/upgrade', 'POST', { invite_code: inviteCode.value });
-            loading.value = false;
-            if (res) {
-                showToast(res.message);
-                user.value = res.user;
-                inviteCode.value = '';
-                activeTab.value = 'profile';
             }
         };
 
@@ -906,22 +934,6 @@ createApp({
             }
         };
 
-        // User Management
-        const fetchUsers = async () => {
-            if (!isAuthenticated.value) return;
-            const query = userSearch.value ? `?query=${encodeURIComponent(userSearch.value)}` : '';
-            const res = await request(`/users${query}`);
-            if (res && res.users) {
-                replaceListIfChanged(users, res.users);
-            }
-        };
-
-        let debounceTimer;
-        const debouncedFetchUsers = () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(fetchUsers, 300);
-        };
-
         // Family System
         const hydrateFamilyOverview = (overview) => {
             familyOverview.value = overview || null;
@@ -968,19 +980,6 @@ createApp({
                 familyInviteForm.role = 'member';
                 familyInviteForm.relation = '';
                 fetchFamilyOverview({ silent: true });
-            }
-        };
-
-        const acceptFamilyInvitation = async () => {
-            const payload = { invite_code: familyAcceptForm.invite_code.trim() };
-            const res = await request('/families/invitations/accept', 'POST', payload);
-            if (res) {
-                hydrateFamilyOverview(res);
-                familyAcceptForm.invite_code = '';
-                showToast('已加入家庭');
-                familyNotifications.value = [];
-                familyNotificationSeenIDs.clear();
-                connectFamilyNotificationWebSocket();
             }
         };
 
@@ -1048,190 +1047,12 @@ createApp({
             }
         };
 
-        // Case Library Management
-        const fetchCaseLibrary = async () => {
-            if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
-            const res = await request('/scam/case-library/cases');
-            if (res && res.cases) {
-                replaceListIfChanged(caseLibrary, res.cases);
-            }
-        };
-
-        const fetchCaseOptionLists = async () => {
-            if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
-            const [scamTypeRes, targetGroupRes] = await Promise.all([
-                request('/scam/case-library/options/scam-types'),
-                request('/scam/case-library/options/target-groups')
-            ]);
-            if (scamTypeRes && Array.isArray(scamTypeRes.options)) {
-                replaceListIfChanged(scamTypeOptions, scamTypeRes.options);
-            }
-            if (targetGroupRes && Array.isArray(targetGroupRes.options)) {
-                replaceListIfChanged(targetGroupOptions, targetGroupRes.options);
-            }
-        };
-
-        const openCaseModal = () => {
-            Object.assign(caseForm, {
-                title: '',
-                target_group: '',
-                risk_level: '',
-                scam_type: '',
-                case_description: '',
-                typical_scripts_raw: '',
-                keywords_raw: '',
-                violated_law: '',
-                suggestion: ''
-            });
-            showCaseModal.value = true;
-        };
-
-        const minCaseDescriptionRunes = 12;
-        const maxCaseDescriptionRunes = 400;
-        const randomLikeAlnumChunkLimit = 16;
-
-        const validateCaseDescriptionQualityClient = (description) => {
-            const normalized = String(description || '').trim().replace(/\s+/g, ' ');
-            const runes = Array.from(normalized);
-
-            if (!normalized) {
-                return { ok: false, message: '案件描述不能为空' };
-            }
-            if (runes.length < minCaseDescriptionRunes) {
-                return { ok: false, message: `案件描述过短，至少 ${minCaseDescriptionRunes} 个字符` };
-            }
-
-            if (runes.length > maxCaseDescriptionRunes) {
-                return { ok: false, message: `案件描述过长，最多 ${maxCaseDescriptionRunes} 个字符` };
-            }
-
-            const uniqueChars = new Set(runes);
-            if (uniqueChars.size <= 2) {
-                return { ok: false, message: '案件描述疑似无效，请填写有语义的内容' };
-            }
-
-            const hasHan = /[\u4e00-\u9fff]/.test(normalized);
-            const hasSeparator = /[^A-Za-z0-9]/.test(normalized);
-
-            let maxAlnumChunk = 0;
-            let currentAlnumChunk = 0;
-            let alnumCount = 0;
-            let digitCount = 0;
-
-            for (const ch of runes) {
-                if (/[A-Za-z0-9]/.test(ch)) {
-                    currentAlnumChunk += 1;
-                    alnumCount += 1;
-                    if (/[0-9]/.test(ch)) {
-                        digitCount += 1;
-                    }
-                } else {
-                    currentAlnumChunk = 0;
-                }
-
-                if (currentAlnumChunk > maxAlnumChunk) {
-                    maxAlnumChunk = currentAlnumChunk;
-                }
-            }
-
-            if (!hasHan && !hasSeparator && maxAlnumChunk >= randomLikeAlnumChunkLimit) {
-                return { ok: false, message: '案件描述疑似随机字符串，请补充有效描述' };
-            }
-
-            if (!hasHan && alnumCount >= minCaseDescriptionRunes) {
-                const digitRatio = digitCount / alnumCount;
-                if (maxAlnumChunk >= minCaseDescriptionRunes && digitRatio > 0.35) {
-                    return { ok: false, message: '案件描述疑似随机字符串，请补充有效描述' };
-                }
-            }
-
-            return { ok: true, message: '' };
-        };
-
-        const submitCase = async () => {
-            if (!String(caseForm.title || '').trim()) {
-                showToast('案件标题不能为空', 'error');
-                return;
-            }
-            if (!String(caseForm.target_group || '').trim()) {
-                showToast('目标人群不能为空', 'error');
-                return;
-            }
-            if (!String(caseForm.risk_level || '').trim()) {
-                showToast('风险等级不能为空', 'error');
-                return;
-            }
-            if (!String(caseForm.scam_type || '').trim()) {
-                showToast('诈骗类型不能为空', 'error');
-                return;
-            }
-
-            const descriptionValidation = validateCaseDescriptionQualityClient(caseForm.case_description);
-            if (!descriptionValidation.ok) {
-                showToast(descriptionValidation.message, 'error');
-                return;
-            }
-
-            submittingCase.value = true;
-            try {
-                const payload = {
-                    title: String(caseForm.title || '').trim(),
-                    target_group: String(caseForm.target_group || '').trim(),
-                    risk_level: String(caseForm.risk_level || '').trim(),
-                    scam_type: String(caseForm.scam_type || '').trim(),
-                    case_description: String(caseForm.case_description || '').trim(),
-                    typical_scripts: caseForm.typical_scripts_raw.split('\n').filter(s => s.trim()),
-                    keywords: caseForm.keywords_raw.split(/[,，]/).map(s => s.trim()).filter(s => s),
-                    violated_law: String(caseForm.violated_law || '').trim(),
-                    suggestion: String(caseForm.suggestion || '').trim()
-                };
-
-                const res = await request('/scam/case-library/cases', 'POST', payload);
-                if (res) {
-                    showToast('案件录入成功');
-                    showCaseModal.value = false;
-                    fetchCaseLibrary();
-                    fetchCaseOptionLists();
-                    fetchAdminStats(true);
-                }
-            } catch (e) {
-                showToast('录入失败: ' + e.message, 'error');
-            } finally {
-                submittingCase.value = false;
-            }
-        };
-
-        const viewCaseDetail = async (caseId) => {
-            const res = await request(`/scam/case-library/cases/${caseId}`);
-            if (res && res.case) {
-                selectedCase.value = res.case;
-            }
-        };
-
-        const deleteCase = async (item) => {
-             if (!item || !item.case_id) return;
-             if (!confirm(`确定删除案件 ${item.title} 吗？此操作不可恢复。`)) return;
-
-             try {
-                 const res = await request(`/scam/case-library/cases/${item.case_id}`, 'DELETE');
-                 if (res) {
-                     showToast(res.message || '案件已删除');
-                     fetchCaseLibrary();
-                     fetchAdminStats(true);
-                     if (selectedCase.value && selectedCase.value.case_id === item.case_id) {
-                         selectedCase.value = null;
-                     }
-                 }
-             } catch (e) {
-                 showToast('删除失败: ' + e.message, 'error');
-             }
-        };
-
         // Risk Trend Logic
         const fetchRiskTrend = async (forceRefresh = false) => {
             if (!isAuthenticated.value) return;
 
-            const interval = riskInterval.value;
+            riskInterval.value = 'day';
+            const interval = 'day';
             
             // 1. 如果有缓存，先立即渲染缓存数据（Stale-While-Revalidate 策略）
             if (riskCache[interval]) {
@@ -1350,180 +1171,172 @@ createApp({
             }
             return filled;
         };
+        const getRecentRiskTrendRows = (limit = 7) => {
+            if (!riskData.value || !Array.isArray(riskData.value.trend)) return [];
+            const normalizedLimit = Number(limit) > 0 ? Number(limit) : 7;
+            return fillTrendGaps(riskData.value.trend, riskInterval.value)
+                .slice(-normalizedLimit)
+                .reverse();
+        };
+
+        const disposeUserRiskCharts = () => {
+            if (pieChartInstance && typeof pieChartInstance.dispose === 'function') {
+                pieChartInstance.dispose();
+            }
+            if (lineChartInstance && typeof lineChartInstance.dispose === 'function') {
+                lineChartInstance.dispose();
+            }
+            if (lineDetailChartInstance && typeof lineDetailChartInstance.dispose === 'function') {
+                lineDetailChartInstance.dispose();
+            }
+            pieChartInstance = null;
+            lineChartInstance = null;
+            lineDetailChartInstance = null;
+        };
+
+        const buildRiskLineOption = (trend, compact = false) => ({
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                textStyle: { color: '#fff' }
+            },
+            legend: compact ? undefined : { bottom: 0, textStyle: { fontSize: 11 } },
+            grid: compact
+                ? { left: '2%', right: '2%', top: '8%', bottom: '6%', containLabel: false }
+                : { left: '3%', right: '4%', top: '10%', bottom: '15%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: trend.map(item => formatChartLabel(item.time_bucket)),
+                axisLabel: compact ? { show: false } : { color: '#64748b' },
+                axisLine: compact ? { show: false } : undefined,
+                axisTick: compact ? { show: false } : undefined
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: compact ? { show: false } : { color: '#64748b' },
+                axisLine: compact ? { show: false } : undefined,
+                axisTick: compact ? { show: false } : undefined,
+                splitLine: compact
+                    ? { show: false }
+                    : { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
+            },
+            series: [
+                {
+                    name: '高风险',
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: !compact,
+                    symbolSize: compact ? 0 : 6,
+                    data: trend.map(item => item.high),
+                    itemStyle: { color: '#ef4444' },
+                    lineStyle: { width: compact ? 2.5 : 3 },
+                    areaStyle: compact ? { color: 'rgba(239, 68, 68, 0.08)' } : undefined
+                },
+                {
+                    name: '中风险',
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: !compact,
+                    symbolSize: compact ? 0 : 6,
+                    data: trend.map(item => item.medium),
+                    itemStyle: { color: '#f59e0b' },
+                    lineStyle: { width: compact ? 2.5 : 3 },
+                    areaStyle: compact ? { color: 'rgba(245, 158, 11, 0.08)' } : undefined
+                },
+                {
+                    name: '低风险',
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: !compact,
+                    symbolSize: compact ? 0 : 6,
+                    data: trend.map(item => item.low),
+                    itemStyle: { color: '#10b981' },
+                    lineStyle: { width: compact ? 2.5 : 3 },
+                    areaStyle: compact ? { color: 'rgba(16, 185, 129, 0.08)' } : undefined
+                }
+            ]
+        });
 
         const renderCharts = () => {
-            if (!riskData.value) return;
-            // Ensure Chart.js is loaded
-            if (typeof Chart === 'undefined') {
-                console.warn('Chart.js 未加载，已跳过用户侧图表渲染。');
+            if (!riskData.value) {
+                disposeUserRiskCharts();
                 return;
             }
-            const stats = riskData.value.stats;
+
+            if (typeof window.echarts === 'undefined') {
+                if (!hasWarnedMissingChartLibrary) {
+                    console.warn('ECharts 未加载，已跳过用户侧图表渲染。');
+                    hasWarnedMissingChartLibrary = true;
+                }
+                return;
+            }
+
+            hasWarnedMissingChartLibrary = false;
+            const stats = riskData.value.stats || { high: 0, medium: 0, low: 0, total: 0 };
             const trend = fillTrendGaps(riskData.value.trend, riskInterval.value);
 
-            // Destroy old charts
-            if (pieChartInstance && typeof pieChartInstance.destroy === 'function') pieChartInstance.destroy();
-            if (lineChartInstance && typeof lineChartInstance.destroy === 'function') lineChartInstance.destroy();
+            disposeUserRiskCharts();
 
-            // Pie Chart
             const pieDom = document.getElementById('riskPieChart');
             if (pieDom) {
-                pieChartInstance = new Chart(pieDom, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['高风险', '中风险', '低风险'],
-                        datasets: [{
-                            data: [stats.high, stats.medium, stats.low],
-                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
+                pieChartInstance = echarts.init(pieDom);
+                pieChartInstance.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        textStyle: { color: '#fff' }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleColor: '#fff',
-                                bodyColor: '#fff',
-                                padding: 10,
-                                cornerRadius: 8
+                    graphic: [
+                        {
+                            type: 'text',
+                            left: 'center',
+                            top: '43%',
+                            style: {
+                                text: String(Number(stats.total) || 0),
+                                fill: '#0f172a',
+                                fontSize: 26,
+                                fontWeight: '700'
                             }
                         },
-                        cutout: '70%'
-                    }
+                        {
+                            type: 'text',
+                            left: 'center',
+                            top: '58%',
+                            style: {
+                                text: '总检测',
+                                fill: '#64748b',
+                                fontSize: 12
+                            }
+                        }
+                    ],
+                    series: [{
+                        name: '风险分布',
+                        type: 'pie',
+                        radius: ['56%', '82%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
+                        data: [
+                            { value: Number(stats.high) || 0, name: '高风险', itemStyle: { color: '#ef4444' } },
+                            { value: Number(stats.medium) || 0, name: '中风险', itemStyle: { color: '#f59e0b' } },
+                            { value: Number(stats.low) || 0, name: '低风险', itemStyle: { color: '#10b981' } }
+                        ]
+                    }]
                 });
             }
 
-            // Line Chart (Main Dashboard)
             const lineDom = document.getElementById('riskLineChart');
             if (lineDom) {
-                lineChartInstance = new Chart(lineDom, {
-                    type: 'line',
-                    data: {
-                        labels: trend.map(item => formatChartLabel(item.time_bucket)),
-                        datasets: [
-                            {
-                                label: '高风险',
-                                data: trend.map(item => item.high),
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                tension: 0.4,
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                fill: true
-                            },
-                            {
-                                label: '中风险',
-                                data: trend.map(item => item.medium),
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                tension: 0.4,
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                fill: true
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleColor: '#fff',
-                                bodyColor: '#fff',
-                                padding: 10,
-                                cornerRadius: 8
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: false, // Clean look
-                                grid: { display: false }
-                            },
-                            y: {
-                                display: false,
-                                grid: { display: false },
-                                min: 0
-                            }
-                        }
-                    }
-                });
+                lineChartInstance = echarts.init(lineDom);
+                lineChartInstance.setOption(buildRiskLineOption(trend, true));
             }
 
-            // Line Chart Detail (Detail View)
             const lineDetailDom = document.getElementById('riskLineChartDetail');
             if (lineDetailDom) {
-                // Reuse variable or create new one if both visible? 
-                // Since views are mutually exclusive usually (tabs), re-init is fine.
-                // But riskLineChart is in 'tasks', riskLineChartDetail is in 'risk_trend'.
-                // We should handle them separately.
-                new Chart(lineDetailDom, {
-                    type: 'line',
-                    data: {
-                        labels: trend.map(item => formatChartLabel(item.time_bucket)),
-                        datasets: [
-                            {
-                                label: '高风险',
-                                data: trend.map(item => item.high),
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                tension: 0.4,
-                                borderWidth: 2,
-                                fill: true
-                            },
-                            {
-                                label: '中风险',
-                                data: trend.map(item => item.medium),
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                tension: 0.4,
-                                borderWidth: 2,
-                                fill: true
-                            },
-                            {
-                                label: '低风险',
-                                data: trend.map(item => item.low),
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                tension: 0.4,
-                                borderWidth: 2,
-                                fill: true
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleColor: '#fff',
-                                bodyColor: '#fff'
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: '#94a3b8', font: { size: 10 } }
-                            },
-                            y: {
-                                grid: { color: '#f1f5f9', borderDash: [5, 5] },
-                                ticks: { color: '#94a3b8', font: { size: 10 } },
-                                min: 0
-                            }
-                        }
-                    }
-                });
+                lineDetailChartInstance = echarts.init(lineDetailDom);
+                lineDetailChartInstance.setOption(buildRiskLineOption(trend, false));
             }
         };
 
@@ -1539,562 +1352,43 @@ createApp({
                     return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
             }
         };
-
-        const formatAdminChartLabel = (label) => {
-            const interval = adminStatsInterval.value;
-            if (interval === 'week' && label.includes('-W')) {
-                try {
-                    const [yearStr, weekStr] = label.split('-W');
-                    const year = parseInt(yearStr);
-                    const week = parseInt(weekStr);
-                    const jan4 = new Date(year, 0, 4);
-                    const jan4Day = jan4.getDay() || 7; 
-                    const week1Start = new Date(year, 0, 4 - jan4Day + 1);
-                    const start = new Date(week1Start.getTime() + (week - 1) * 7 * 86400000);
-                    const end = new Date(start.getTime() + 6 * 86400000);
-                    const fmt = d => `${d.getMonth() + 1}.${d.getDate()}`;
-                    return `${year}年第${week}周 (${fmt(start)}-${fmt(end)})`;
-                } catch (e) {
-                    return label;
-                }
+        const formatRiskTrendDescriptor = (trendText, dimension = 'overall') => {
+            const normalized = String(trendText || '').trim();
+            if (dimension === 'high') {
+                if (normalized === '上升') return '高危暴露增强';
+                if (normalized === '下降') return '高危暴露收敛';
+                if (normalized === '平稳') return '高危信号平稳';
+                return '高危信号待观察';
             }
-            if (interval === 'month' && /^\d{4}-\d{2}$/.test(label)) {
-                const [y, m] = label.split('-');
-                return `${y}年${parseInt(m)}月`;
-            }
-            return label;
+            if (normalized === '上升') return '风险热度抬升';
+            if (normalized === '下降') return '风险热度回落';
+            if (normalized === '平稳') return '风险热度平稳';
+            return '风险热度待观察';
         };
-
-        const fetchAdminStats = async (forceRefresh = false) => {
-            if (!isAuthenticated.value || user.value.role !== 'admin') return;
-
-            const interval = adminStatsInterval.value;
-            
-            // 1. Check Cache
-            if (adminStatsCache[interval]) {
-                adminStatsData.value = adminStatsCache[interval];
-                setTimeout(() => renderAdminCharts(), 0);
-            }
-
-            // 2. Silent Update
-            try {
-                const res = await request(`/scam/case-library/cases/overview?interval=${interval}`, 'GET', null, { silent: true });
-                if (res) {
-                    const cachedData = adminStatsCache[interval];
-                    const hasChanged = !cachedData || stableJSONStringify(cachedData) !== stableJSONStringify(res);
-
-                    if (hasChanged || forceRefresh) {
-                        adminStatsData.value = res;
-                        adminStatsCache[interval] = res;
-                        setTimeout(() => renderAdminCharts(), 100);
-                        if (forceRefresh) showToast('全景数据已更新');
-                    }
-                }
-            } catch (e) {
-                console.error('Fetch admin stats failed:', e);
-            }
-
-            await fetchAdminCaseGraph(forceRefresh);
-        };
-
-        const fetchAdminCaseGraph = async (forceRefresh = false) => {
-            if (!isAuthenticated.value || user.value.role !== 'admin') return;
-
-            if (adminGraphCache.value) {
-                adminGraphData.value = adminGraphCache.value;
-            }
-
-            try {
-                const res = await request('/scam/case-library/cases/graph?top_k=5', 'GET', null, { silent: true });
-                if (res) {
-                    const cachedData = adminGraphCache.value;
-                    const hasChanged = !cachedData || stableJSONStringify(cachedData) !== stableJSONStringify(res);
-                    if (hasChanged || forceRefresh) {
-                        adminGraphData.value = res;
-                        adminGraphCache.value = res;
-                    }
-                }
-
-                if (selectedGraphTargetGroup.value) {
-                    await fetchAdminTargetGroupChart(selectedGraphTargetGroup.value, forceRefresh);
-                }
-            } catch (e) {
-                console.error('Fetch admin graph failed:', e);
-            }
-        };
-
-        const fetchAdminTargetGroupChart = async (targetGroup, forceRefresh = false) => {
-            if (!isAuthenticated.value || user.value.role !== 'admin') return;
-
-            const normalizedTargetGroup = String(targetGroup || '').trim();
-            if (!normalizedTargetGroup) {
-                clearAdminTargetGroupFocus();
-                return;
-            }
-
-            selectedGraphTargetGroup.value = normalizedTargetGroup;
-
-            if (adminTargetGroupChartCache[normalizedTargetGroup] && !forceRefresh) {
-                adminTargetGroupChartData.value = adminTargetGroupChartCache[normalizedTargetGroup];
-                setTimeout(() => renderAdminTargetGroupBarChart(), 0);
-                return;
-            }
-
-            // Show loading if instance exists
-            if (adminTargetGroupBarChart) {
-                adminTargetGroupBarChart.showLoading({
-                    text: '分析中...',
-                    color: '#6366f1',
-                    textColor: '#6366f1',
-                    maskColor: 'rgba(255, 255, 255, 0.2)',
-                    zlevel: 0
-                });
-            }
-
-            try {
-                const query = `/scam/case-library/cases/graph?top_k=5&focus_group=${encodeURIComponent(normalizedTargetGroup)}`;
-                const res = await request(query, 'GET', null, { silent: true });
-                const nextData = res && Array.isArray(res.target_group_top_scam_types)
-                    ? (res.target_group_top_scam_types[0] || null)
-                    : null;
-
-                adminTargetGroupChartData.value = nextData;
-                if (nextData) {
-                    adminTargetGroupChartCache[normalizedTargetGroup] = nextData;
-                    setTimeout(() => {
-                        renderAdminTargetGroupBarChart();
-                        if (adminTargetGroupBarChart) adminTargetGroupBarChart.hideLoading();
-                    }, 0);
-                } else if (adminTargetGroupBarChart) {
-                    adminTargetGroupBarChart.hideLoading();
-                    adminTargetGroupBarChart.destroy();
-                    adminTargetGroupBarChart = null;
-                }
-            } catch (e) {
-                console.error('Fetch admin target group chart failed:', e);
-                if (adminTargetGroupBarChart) adminTargetGroupBarChart.hideLoading();
-            }
-        };
-
-        const clearAdminTargetGroupFocus = () => {
-            selectedGraphTargetGroup.value = '';
-            adminTargetGroupChartData.value = null;
-            if (adminTargetGroupBarChart) {
-                adminTargetGroupBarChart.destroy();
-                adminTargetGroupBarChart = null;
-            }
-        };
-
-        const openGraphModal = () => {
-            showGraphModal.value = true;
-            setTimeout(() => renderAdminGraphNetwork(), 300);
-        };
-
-        const renderAdminGraphNetwork = () => {
-            if (!adminGraphData.value || !adminGraphData.value.graph) return;
-            const container = document.getElementById('adminGraphNetwork');
-            if (!container) return;
-
-            const { nodes, edges } = adminGraphData.value.graph;
-
-            const visNodes = new vis.DataSet(nodes.map(node => {
-                let background = '#6366f1'; // Default Indigo-500
-                let border = '#818cf8'; // Indigo-400
-                let size = 20;
-
-                if (node.node_type === 'scam_type') {
-                    background = '#d946ef'; // Fuchsia-500
-                    border = '#f0abfc'; // Fuchsia-300
-                    size = 35;
-                } else if (node.node_type === 'target_group') {
-                    background = '#10b981'; // Emerald-500
-                    border = '#6ee7b7'; // Emerald-300
-                    size = 42; // Larger to act as an anchor
-                } else if (node.node_type === 'keyword') {
-                    background = '#818cf8'; // Indigo-400
-                    border = '#c7d2fe'; // Indigo-200
-                    size = 18;
-                }
-
-                return {
-                    id: node.id,
-                    label: node.label,
-                    nodeType: node.node_type, // Custom property for interaction
-                    title: `类型: ${node.node_type}\n名称: ${node.label}${node.properties?.case_count ? '\n案件数: ' + node.properties.case_count : ''}`,
-                    color: {
-                        background: background,
-                        border: border,
-                        highlight: { background: background, border: '#000' },
-                        hover: { background: background, border: border }
-                    },
-                    font: { color: '#475569', size: 14, face: 'Plus Jakarta Sans', weight: '800' },
-                    size: size,
-                    shape: node.node_type === 'target_group' ? 'diamond' : 'dot', // Diamond shape for people anchors
-                    borderWidth: node.node_type === 'target_group' ? 6 : 4,
-                    shadow: {
-                        enabled: true,
-                        color: 'rgba(0,0,0,0.1)',
-                        size: 12,
-                        x: 0,
-                        y: 4
-                    }
-                };
-            }));
-
-            const visEdges = new vis.DataSet(edges.map(edge => {
-                let label = '';
-                let dashes = false;
-                let color = '#e2e8f0'; // Slate-200
-                const relation = String(edge.relation || edge.relation_type || '').trim();
-
-                if (relation === 'similar' || relation === 'similar_to') {
-                    label = '相似';
-                    dashes = true;
-                    color = '#fbcfe8'; // Pink-200
-                } else if (relation === 'targets' || relation === 'target_of') {
-                    label = '针对';
-                    color = '#d1fae5'; // Emerald-100
-                } else if (relation === 'keyword' || relation === 'has_keyword') {
-                    label = '关键词';
-                    color = '#e0e7ff'; // Indigo-100
-                }
-
-                return {
-                    from: edge.source,
-                    to: edge.target,
-                    label: label,
-                    arrows: { to: { enabled: true, scaleFactor: 0.5, type: 'arrow' } },
-                    font: { size: 11, align: 'middle', color: '#94a3b8', strokeWidth: 0 },
-                    color: { color: color, highlight: color, hover: color },
-                    width: edge.weight ? Math.max(1.5, edge.weight * 4) : 1.5,
-                    dashes: dashes,
-                    smooth: { type: 'curvedCW', roundness: 0.2 }
-                };
-            }));
-
-            const data = { nodes: visNodes, edges: visEdges };
-            const options = {
-                nodes: {
-                    borderWidthSelected: 2
-                },
-                edges: {
-                    hoverWidth: 1.5,
-                    selectionWidth: 2
-                },
-                physics: {
-                    forceAtlas2Based: {
-                        gravitationalConstant: -80,
-                        centralGravity: 0.005,
-                        springLength: 180,
-                        springConstant: 0.04,
-                        avoidOverlap: 1
-                    },
-                    maxVelocity: 45,
-                    solver: 'forceAtlas2Based',
-                    timestep: 0.35,
-                    stabilization: { iterations: 200, updateInterval: 25 }
-                },
-                interaction: {
-                    hover: true,
-                    tooltipDelay: 100,
-                    navigationButtons: false,
-                    keyboard: true,
-                    zoomView: true,
-                    dragView: true
-                }
-            };
-
-            if (adminNetworkInstance) {
-                adminNetworkInstance.destroy();
-            }
-            adminNetworkInstance = new vis.Network(container, data, options);
-
-            // Click interaction for "People-oriented" perspective
-            adminNetworkInstance.on('click', (params) => {
-                if (params.nodes.length > 0) {
-                    const nodeId = params.nodes[0];
-                    const node = visNodes.get(nodeId);
-                    
-                    if (node && node.nodeType === 'target_group') {
-                        // If it's a "Target Group", select all associated "Scam Types"
-                        const connectedNodeIds = adminNetworkInstance.getConnectedNodes(nodeId);
-                        const allToSelect = [nodeId, ...connectedNodeIds];
-                        adminNetworkInstance.selectNodes(allToSelect);
-                        fetchAdminTargetGroupChart(node.label);
-                        
-                        showToast(`已切换至【${node.label}】人群视角，关联 ${connectedNodeIds.length} 种诈骗手法`, 'success');
-                    }
-                }
-            });
-        };
-
-        const resetGraphZoom = () => {
-            if (adminNetworkInstance) {
-                adminNetworkInstance.fit({ animation: true });
-            }
-        };
-
-        const formatGraphScore = (score) => {
-            const value = Number(score);
-            if (!Number.isFinite(value)) return '--';
-            return `${(value * 100).toFixed(1)}%`;
-        };
-
-        const availableGraphTargetGroups = computed(() => {
-            if (!adminGraphData.value || !Array.isArray(adminGraphData.value.target_group_top_scam_types)) {
-                return [];
-            }
-            return adminGraphData.value.target_group_top_scam_types;
-        });
-
-        const renderAdminTargetGroupBarChart = () => {
-            if (!adminTargetGroupChartData.value) return;
-            if (typeof window.echarts === 'undefined') {
-                console.warn('ECharts 未加载，已跳过人群案件柱状图渲染。');
-                return;
-            }
-
-            const items = Array.isArray(adminTargetGroupChartData.value.top_scam_types)
-                ? adminTargetGroupChartData.value.top_scam_types
-                : [];
-            
-            // Calculate max value for scaling to fill space
-            const rawScores = items.map(item => Number((Number(item.score || 0) * 100).toFixed(2)));
-            const maxScore = rawScores.length > 0 ? Math.max(...rawScores) : 100;
-            const displayMax = Math.ceil(maxScore * 1.15 / 10) * 10; // Add some margin and round up to nearest 10
-
-            const targetDom = document.getElementById('adminTargetGroupBarChart');
-            if (!targetDom) return;
-
-            // Dispose old instance if exists
-            if (adminTargetGroupBarChart) {
-                adminTargetGroupBarChart.dispose();
-            }
-
-            adminTargetGroupBarChart = echarts.init(targetDom);
-            
-            const option = {
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: { type: 'shadow' },
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 1,
-                    textStyle: { color: '#fff', fontSize: 12 },
-                    formatter: (params) => {
-                        const data = params.find(p => p.seriesName === '案件占比');
-                        if (!data) return '';
-                        return `<div class="font-bold mb-1">${data.name}</div>
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full" style="background:${data.color}"></span>
-                                    <span>占比: ${data.value}%</span>
-                                </div>`;
-                    }
-                },
-                grid: {
-                    left: '3%',
-                    right: '15%', // Leave space for labels
-                    bottom: '3%',
-                    top: '3%',
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'value',
-                    max: displayMax, // Dynamic max to fill horizontal space
-                    axisLabel: {
-                        formatter: '{value}%',
-                        color: '#64748b',
-                        fontWeight: 'bold'
-                    },
-                    splitLine: {
-                        lineStyle: { color: 'rgba(148, 163, 184, 0.1)' }
-                    }
-                },
-                yAxis: {
-                    type: 'category',
-                    data: items.map(item => item.scam_type).reverse(),
-                    axisLabel: {
-                        color: '#334155',
-                        fontWeight: 'bold',
-                        fontSize: 12
-                    },
-                    axisLine: { show: false },
-                    axisTick: { show: false }
-                },
-                series: [
-                    {
-                        name: 'placeholder',
-                        type: 'bar',
-                        itemStyle: {
-                            color: 'rgba(148, 163, 184, 0.05)',
-                            borderRadius: [0, 20, 20, 0]
-                        },
-                        barGap: '-100%',
-                        barWidth: 32,
-                        data: items.map(() => displayMax), 
-                        animation: false,
-                        tooltip: { show: false }
-                    },
-                    {
-                        name: '案件占比',
-                        type: 'bar',
-                        data: items.map((item, index) => {
-                            // Define a set of beautiful gradients
-                            const gradients = [
-                                ['#3b82f6', '#6366f1', '#d946ef'], // Blue-Indigo-Purple
-                                ['#10b981', '#3b82f6', '#6366f1'], // Emerald-Blue-Indigo
-                                ['#f59e0b', '#ef4444', '#d946ef'], // Amber-Red-Purple
-                                ['#6366f1', '#a855f7', '#ec4899'], // Indigo-Purple-Pink
-                                ['#0ea5e9', '#2dd4bf', '#10b981']  // Sky-Teal-Emerald
-                            ];
-                            const colors = gradients[index % gradients.length];
-                            
-                            return {
-                                value: Number((Number(item.score || 0) * 100).toFixed(2)),
-                                itemStyle: {
-                                    borderRadius: [0, 20, 20, 0],
-                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                                        { offset: 0, color: colors[0] },
-                                        { offset: 0.5, color: colors[1] },
-                                        { offset: 1, color: colors[2] }
-                                    ])
-                                }
-                            };
-                        }).reverse(),
-                        barWidth: 32,
-                        label: {
-                            show: true,
-                            position: 'right',
-                            formatter: '{c}%',
-                            color: '#475569',
-                            fontWeight: 'bold',
-                            distance: 10
-                        },
-                        emphasis: {
-                            itemStyle: {
-                                shadowBlur: 15,
-                                shadowColor: 'rgba(0,0,0,0.1)',
-                                shadowOffsetX: 5
-                            }
-                        }
-                    }
-                ]
-            };
-
-            adminTargetGroupBarChart.setOption(option);
-        };
-
-        const renderAdminCharts = () => {
-            if (!adminStatsData.value) return;
-            if (typeof window.echarts === 'undefined') {
-                console.warn('ECharts 未加载，已跳过管理侧图表渲染。');
-                return;
-            }
-            const sparseTrend = adminStatsData.value.trend;
-            const trend = fillTrendGaps(sparseTrend, adminStatsInterval.value);
-            const { by_scam_type, by_target_group } = adminStatsData.value;
-
-            // Dispose old instances
-            if (adminTrendChart && typeof adminTrendChart.dispose === 'function') adminTrendChart.dispose();
-            if (adminTypeChart && typeof adminTypeChart.dispose === 'function') adminTypeChart.dispose();
-            if (adminTargetChart && typeof adminTargetChart.dispose === 'function') adminTargetChart.dispose();
-
-            // 1. Trend Line Chart
-            const trendDom = document.getElementById('adminTrendChart');
-            if (trendDom) {
-                adminTrendChart = echarts.init(trendDom);
-                adminTrendChart.setOption({
-                    tooltip: {
-                        trigger: 'axis',
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        textStyle: { color: '#fff' }
-                    },
-                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                    xAxis: {
-                        type: 'category',
-                        boundaryGap: false,
-                        data: trend.map(item => formatAdminChartLabel(item.time_bucket)),
-                        axisLabel: { color: '#64748b' }
-                    },
-                    yAxis: {
-                        type: 'value',
-                        axisLabel: { color: '#64748b' },
-                        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
-                    },
-                    series: [{
-                        name: '新增案件数',
-                        type: 'line',
-                        smooth: true,
-                        data: trend.map(item => item.count),
-                        symbol: 'circle',
-                        symbolSize: 8,
-                        itemStyle: { color: '#6366f1' },
-                        areaStyle: {
-                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
-                                { offset: 1, color: 'rgba(99, 102, 241, 0)' }
-                            ])
-                        },
-                        lineStyle: { width: 3 }
-                    }]
-                });
-            }
-
-            // 2. Scam Type Pie Chart
-            const typeDom = document.getElementById('adminTypeChart');
-            if (typeDom) {
-                adminTypeChart = echarts.init(typeDom);
-                adminTypeChart.setOption({
-                    tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff' } },
-                    legend: { orient: 'vertical', right: 10, top: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#64748b' } },
-                    series: [{
-                        name: '诈骗类型',
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        center: ['40%', '50%'],
-                        avoidLabelOverlap: false,
-                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-                        label: { show: false },
-                        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
-                        data: by_scam_type.map(i => ({ value: i.count, name: i.name }))
-                    }]
-                });
-            }
-
-            // 3. Target Group Pie Chart
-            const targetDom = document.getElementById('adminTargetChart');
-            if (targetDom) {
-                adminTargetChart = echarts.init(targetDom);
-                adminTargetChart.setOption({
-                    tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff' } },
-                    legend: { orient: 'vertical', right: 10, top: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#64748b' } },
-                    series: [{
-                        name: '目标人群',
-                        type: 'pie',
-                        radius: '70%',
-                        center: ['40%', '50%'],
-                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-                        label: { show: false },
-                        data: by_target_group.map(i => ({ value: i.count, name: i.name }))
-                    }]
-                });
-            }
+        const getRiskTrendHeadline = (analysis) => {
+            const overall = String(analysis?.overall_trend || '').trim();
+            const high = String(analysis?.high_risk_trend || '').trim();
+            if (overall === '上升' && high === '上升') return 'AI 研判：风险热度正在拉升';
+            if (overall === '下降' && high === '下降') return 'AI 研判：风险热度出现回落';
+            if (high === '上升') return 'AI 研判：高危暴露正在增强';
+            if (overall === '上升') return 'AI 研判：整体风险有所抬头';
+            if (overall === '下降') return 'AI 研判：整体风险趋于缓和';
+            if (overall === '平稳' && high === '平稳') return 'AI 研判：当前波动较为平稳';
+            return 'AI 研判：风险走势仍需持续观察';
         };
 
         watch(activeTab, (newTab) => {
-            if (newTab === 'case_library') {
-                fetchCaseLibrary();
-                fetchCaseOptionLists();
-            }
+            closeDropdown();
             if (newTab === 'family') {
                 fetchFamilyOverview();
                 connectFamilyNotificationWebSocket();
             }
-            if (newTab === 'users') fetchUsers();
             if (newTab === 'history') fetchHistory();
-            if (newTab === 'tasks') fetchTasks();
+            if (newTab === 'tasks') {
+                fetchTasks();
+                fetchRiskTrend();
+            }
             if (newTab === 'risk_trend') fetchRiskTrend();
-            if (newTab === 'admin_stats') fetchAdminStats();
         });
 
         // Polling
@@ -2103,11 +1397,15 @@ createApp({
             fetchTasks({ silent: true });
             fetchHistory({ silent: true });
             fetchFamilyOverview({ silent: true });
+            fetchRiskTrend();
             connectAlertWebSocket();
             connectFamilyNotificationWebSocket();
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
-                if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
+                if (isAuthenticated.value && activeTab.value === 'tasks') {
+                    fetchTasks({ silent: true });
+                    fetchRiskTrend();
+                }
                 if (isAuthenticated.value && activeTab.value === 'family') {
                     fetchFamilyOverview({ silent: true });
                 }
@@ -2132,6 +1430,13 @@ createApp({
             const maxY = window.innerHeight - 60;
             if (chatPosition.left > maxX) chatPosition.left = maxX;
             if (chatPosition.top > maxY) chatPosition.top = maxY;
+        };
+
+        const handleWindowResize = () => {
+            handleResize();
+            if (pieChartInstance && typeof pieChartInstance.resize === 'function') pieChartInstance.resize();
+            if (lineChartInstance && typeof lineChartInstance.resize === 'function') lineChartInstance.resize();
+            if (lineDetailChartInstance && typeof lineDetailChartInstance.resize === 'function') lineDetailChartInstance.resize();
         };
 
         const startDrag = (e) => {
@@ -2186,21 +1491,16 @@ createApp({
                 getUserInfo();
             }
             initChatPosition();
-            window.addEventListener('resize', handleResize);
-            window.addEventListener('resize', () => {
-                if (adminTargetGroupBarChart && typeof adminTargetGroupBarChart.resize === 'function') adminTargetGroupBarChart.resize();
-                if (adminTrendChart && typeof adminTrendChart.resize === 'function') adminTrendChart.resize();
-                if (adminTypeChart && typeof adminTypeChart.resize === 'function') adminTypeChart.resize();
-                if (adminTargetChart && typeof adminTargetChart.resize === 'function') adminTargetChart.resize();
-                if (pieChartInstance && typeof pieChartInstance.resize === 'function') pieChartInstance.resize();
-                if (lineChartInstance && typeof lineChartInstance.resize === 'function') lineChartInstance.resize();
-            });
+            window.addEventListener('resize', handleWindowResize);
+            document.addEventListener('click', handleDocumentClick);
         });
 
         onUnmounted(() => {
             stopPolling();
+            disposeUserRiskCharts();
             clearSMSCodeCooldownTimer();
-            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('resize', handleWindowResize);
+            document.removeEventListener('click', handleDocumentClick);
         });
 
         // Formatting
@@ -2682,27 +1982,25 @@ createApp({
             isAuthenticated, user, authMode, loginMethod, form, ageForm, analyzeForm, 
             captchaImage, requiresGraphCaptcha, shouldShowSMSCodeSection, authSubmitLabel, smsCodeButtonText, canSendSMSCode, demoSMSCode,
             fetchCaptcha, sendSMSCode, handleAuth, logout, loading,
-            activeTab, tasks, history, users, selectedTask, userSearch, toasts, analyzing,
-            deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase, debouncedFetchUsers,
+            activeTab, tasks, history, selectedTask, toasts, analyzing,
+            deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase,
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
-            updateAge, deleteAccount, upgradeAccount, inviteCode, openImage, exportData, printReport,
+            updateAge, deleteAccount, openImage, exportData, printReport,
             getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
+            ageEditorVisible, toggleAgeEditor, cancelAgeEditor, openProfilePrivacyPage, closeProfilePrivacyPage,
             familyOverview, familyMembers, familyInvitations, familyGuardianLinks, familyNotifications,
-            familyLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyAcceptForm, familyGuardianForm,
+            familyLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyGuardianForm,
             familyUnreadCount, familyHasGroup, familyGuardianCandidates, familyProtectedCandidates,
-            createFamily, createFamilyInvitation, acceptFamilyInvitation, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
+            openDropdownKey, familyRoleSelectOptions, familyGuardianSelectOptions, familyProtectedSelectOptions,
+            getSelectedOptionLabel, getSelectedOptionHint, toggleDropdown, closeDropdown, selectDropdownValue,
+            createFamily, createFamilyInvitation, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
             familyDeletingMembers, familyDeletingGuardianLinks, familyMarkingNotifications,
             showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
-            caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
-            riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
-            adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
-            showGraphModal, openGraphModal, resetGraphZoom,
-            adminTargetGroupChartData, availableGraphTargetGroups, selectedGraphTargetGroup,
-            fetchAdminTargetGroupChart, clearAdminTargetGroupFocus,
+            riskInterval, fetchRiskTrend, riskData, riskStatsSummary, getRiskTrendAnalysisClass, formatRiskTrendDescriptor, getRiskTrendHeadline, getRecentRiskTrendRows, formatChartLabel,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
             acknowledgeActiveAlert, openAlertHistory
