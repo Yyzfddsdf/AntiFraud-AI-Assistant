@@ -36,6 +36,12 @@ type pendingTaskEntity = model.PendingTaskEntity
 type historyCaseEntity = model.HistoryCaseEntity
 
 var stateSchemaOnce sync.Once
+var historyObserversMu sync.RWMutex
+var historyObservers []func(CaseHistoryRecord)
+
+func init() {
+	database.RegisterMainDBSchemaInitializer("multi_agent_state", initStateSchema)
+}
 
 // ensureStateSchema 确保状态相关表结构存在。
 func ensureStateSchema(db *gorm.DB) {
@@ -43,10 +49,43 @@ func ensureStateSchema(db *gorm.DB) {
 		return
 	}
 	stateSchemaOnce.Do(func() {
-		if err := db.AutoMigrate(&pendingTaskEntity{}, &historyCaseEntity{}); err != nil {
+		if err := initStateSchema(db); err != nil {
 			log.Printf("[state] auto migrate state tables failed: %v", err)
 		}
 	})
+}
+
+func initStateSchema(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("state db is nil")
+	}
+	return db.AutoMigrate(&pendingTaskEntity{}, &historyCaseEntity{})
+}
+
+// RegisterHistoryObserver 注册历史归档事件观察者。
+func RegisterHistoryObserver(observer func(CaseHistoryRecord)) {
+	if observer == nil {
+		return
+	}
+	historyObserversMu.Lock()
+	defer historyObserversMu.Unlock()
+	historyObservers = append(historyObservers, observer)
+}
+
+func publishHistoryAdded(record CaseHistoryRecord) {
+	historyObserversMu.RLock()
+	observers := append([]func(CaseHistoryRecord){}, historyObservers...)
+	historyObserversMu.RUnlock()
+	for _, observer := range observers {
+		func() {
+			defer func() {
+				if recover() != nil {
+					log.Printf("[state] history observer panic recovered: record=%s", record.RecordID)
+				}
+			}()
+			observer(record)
+		}()
+	}
 }
 
 // CreateTask 创建任务并落库到 pending_tasks。
@@ -501,8 +540,11 @@ func AddCaseHistory(userID, taskID, title, summary, scamType, riskLevel string, 
 	if err != nil {
 		log.Printf("[state] add case history failed: user=%s record=%s err=%v", uid, recordID, err)
 	}
-
-	return historyFromEntity(entity)
+	result := historyFromEntity(entity)
+	if err == nil {
+		publishHistoryAdded(result)
+	}
+	return result
 }
 
 // GetCaseHistory 查询用户历史案件列表。

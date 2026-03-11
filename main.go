@@ -1,18 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	chatapi "antifraud/chat_system/httpapi"
 	appcfg "antifraud/config"
 	"antifraud/database"
+	"antifraud/family_system"
 	"antifraud/login_system/controllers"
 	"antifraud/login_system/middleware"
 	"antifraud/login_system/session"
 	"antifraud/login_system/smscode"
 	"antifraud/multi_agent/httpapi"
+	"antifraud/multi_agent/state"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,13 +28,31 @@ func main() {
 		log.Fatalf("load app config failed: %v", err)
 	}
 
-	database.ConnectDB()
-	if err := database.InitHistoricalCaseDB(); err != nil {
-		log.Fatalf("init historical case db failed: %v", err)
+	if err := database.InitPersistence(); err != nil {
+		log.Fatalf("init persistence failed: %v", err)
 	}
 	authUserReader := middleware.NewGormAuthUserReader(database.DB)
 	activeTokenManager := session.NewDefaultRedisActiveTokenManager()
 	smsCodeService := smscode.NewDemoService()
+	familyService := family_system.NewService(database.DB)
+	state.RegisterHistoryObserver(func(record state.CaseHistoryRecord) {
+		if record.RiskLevel != "高" {
+			return
+		}
+		userID, err := strconv.ParseUint(record.UserID, 10, 64)
+		if err != nil {
+			return
+		}
+		_ = familyService.HandleRiskEvent(context.Background(), family_system.RiskEvent{
+			TargetUserID: uint(userID),
+			RecordID:     record.RecordID,
+			Title:        record.Title,
+			CaseSummary:  record.CaseSummary,
+			ScamType:     record.ScamType,
+			RiskLevel:    record.RiskLevel,
+			CreatedAt:    record.CreatedAt,
+		})
+	})
 
 	r := gin.Default()
 
@@ -79,6 +101,7 @@ func main() {
 		api.GET("/chat/context", chatapi.GetChatContextHandle)
 		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)
 		api.GET("/alert/ws", httpapi.AlertWebSocketHandle)
+		family_system.RegisterRoutes(api, familyService)
 		api.PUT("/scam/multimodal/user/age", httpapi.UpdateUserAgeHandle)
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)

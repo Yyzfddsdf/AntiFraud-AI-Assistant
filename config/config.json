@@ -62,5 +62,9 @@
     "alert_ws":  {
                      "poll_interval_seconds":  30,
                      "recent_window_minutes":  60
+                 },
+    "family_alert_ws":  {
+                            "poll_interval_seconds":  20,
+                            "recent_window_minutes":  60
                  }
 }

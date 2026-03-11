@@ -24,6 +24,15 @@ createApp({
         const tasks = ref([]);
         const history = ref([]);
         const users = ref([]);
+        const familyOverview = ref(null);
+        const familyMembers = ref([]);
+        const familyInvitations = ref([]);
+        const familyGuardianLinks = ref([]);
+        const familyNotifications = ref([]);
+        const familyLoading = ref(false);
+        const familyNotificationConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
+        const familyAlertModalVisible = ref(false);
+        const activeFamilyNotification = ref(null);
         const caseLibrary = ref([]); // Admin Case Library
         const scamTypeOptions = ref([]);
         const targetGroupOptions = ref([]);
@@ -42,6 +51,9 @@ createApp({
             suggestion: ''
         });
         const deletingHistory = reactive({});
+        const familyDeletingMembers = reactive({});
+        const familyDeletingGuardianLinks = reactive({});
+        const familyMarkingNotifications = reactive({});
         const selectedTask = ref(null);
         const userSearch = ref('');
         
@@ -95,6 +107,18 @@ createApp({
         const smsCodeCooldown = ref(0);
         const smsCodeSending = ref(false);
         let smsCodeCooldownTimer = null;
+        const familyCreateForm = reactive({ name: '' });
+        const familyInviteForm = reactive({
+            invitee_email: '',
+            invitee_phone: '',
+            role: 'member',
+            relation: ''
+        });
+        const familyAcceptForm = reactive({ invite_code: '' });
+        const familyGuardianForm = reactive({
+            guardian_user_id: '',
+            member_user_id: ''
+        });
 
         const analyzeForm = reactive({
             text: '',
@@ -109,6 +133,11 @@ createApp({
         let alertReconnectAttempts = 0;
         const alertSeenRecordIDs = new Set();
         const maxAlertReconnectDelayMS = 30000;
+        let familyNotificationSocket = null;
+        let familyNotificationReconnectTimer = null;
+        let familyNotificationReconnectAttempts = 0;
+        const familyNotificationSeenIDs = new Set();
+        const maxFamilyNotificationReconnectDelayMS = 30000;
 
         // Helpers
         const showToast = (message, type = 'success') => {
@@ -127,6 +156,18 @@ createApp({
                     return '告警通道重连中';
                 default:
                     return '告警通道未连接';
+            }
+        });
+        const familyNotificationConnectionLabel = computed(() => {
+            switch (familyNotificationConnectionStatus.value) {
+                case 'connected':
+                    return '家庭通知通道已连接';
+                case 'connecting':
+                    return '家庭通知连接中';
+                case 'reconnecting':
+                    return '家庭通知重连中';
+                default:
+                    return '家庭通知未连接';
             }
         });
 
@@ -249,6 +290,13 @@ createApp({
             return `${base}?token=${queryToken}`;
         };
 
+        const buildFamilyNotificationWebSocketURL = () => {
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const base = `${protocol}://${window.location.host}/api/families/notifications/ws`;
+            const queryToken = encodeURIComponent(token.value || '');
+            return `${base}?token=${queryToken}`;
+        };
+
         const disconnectAlertWebSocket = () => {
             if (alertReconnectTimer) {
                 clearTimeout(alertReconnectTimer);
@@ -270,6 +318,27 @@ createApp({
             alertConnectionStatus.value = 'disconnected';
         };
 
+        const disconnectFamilyNotificationWebSocket = () => {
+            if (familyNotificationReconnectTimer) {
+                clearTimeout(familyNotificationReconnectTimer);
+                familyNotificationReconnectTimer = null;
+            }
+            familyNotificationReconnectAttempts = 0;
+
+            if (familyNotificationSocket) {
+                const ws = familyNotificationSocket;
+                familyNotificationSocket = null;
+                ws.onopen = null;
+                ws.onmessage = null;
+                ws.onerror = null;
+                ws.onclose = null;
+                if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                    ws.close(1000, 'client logout');
+                }
+            }
+            familyNotificationConnectionStatus.value = 'disconnected';
+        };
+
         const scheduleAlertReconnect = () => {
             if (!isAuthenticated.value || !token.value) return;
             if (alertReconnectTimer) return;
@@ -279,6 +348,18 @@ createApp({
             alertReconnectTimer = setTimeout(() => {
                 alertReconnectTimer = null;
                 connectAlertWebSocket();
+            }, delay);
+        };
+
+        const scheduleFamilyNotificationReconnect = () => {
+            if (!isAuthenticated.value || !token.value) return;
+            if (familyNotificationReconnectTimer) return;
+
+            const delay = Math.min(maxFamilyNotificationReconnectDelayMS, 1000 * Math.pow(2, familyNotificationReconnectAttempts));
+            familyNotificationReconnectAttempts += 1;
+            familyNotificationReconnectTimer = setTimeout(() => {
+                familyNotificationReconnectTimer = null;
+                connectFamilyNotificationWebSocket();
             }, delay);
         };
 
@@ -293,6 +374,27 @@ createApp({
             const current = activeAlertEvent.value;
             if (!current) return;
             await openAlertCaseDetail(current);
+        };
+
+        const acknowledgeFamilyAlert = () => {
+            const current = activeFamilyNotification.value;
+            if (!current) {
+                familyAlertModalVisible.value = false;
+                return;
+            }
+            markFamilyNotificationRead(current);
+            familyAlertModalVisible.value = false;
+        };
+
+        const openFamilyNotificationCenter = async () => {
+            const current = activeFamilyNotification.value;
+            familyAlertModalVisible.value = false;
+            activeTab.value = 'family';
+            if (current) {
+                await markFamilyNotificationRead(current);
+            }
+            await fetchFamilyOverview({ silent: true });
+            connectFamilyNotificationWebSocket();
         };
 
         const handleAlertMessage = (payload) => {
@@ -320,6 +422,32 @@ createApp({
             alertModalVisible.value = true;
             showToast(`高风险预警：${event.title}`, 'error');
             fetchHistory({ silent: true });
+        };
+
+        const handleFamilyNotificationMessage = (payload) => {
+            if (!payload || payload.type !== 'family_high_risk_alert') return;
+            const notificationID = Number(payload.notification_id || 0);
+            if (!Number.isInteger(notificationID) || notificationID <= 0) return;
+            if (familyNotificationSeenIDs.has(notificationID)) return;
+            familyNotificationSeenIDs.add(notificationID);
+
+            const notification = {
+                id: notificationID,
+                family_id: Number(payload.family_id || 0),
+                target_user_id: Number(payload.target_user_id || 0),
+                target_name: String(payload.target_name || '').trim() || '家庭成员',
+                event_type: String(payload.event_type || '').trim() || 'high_risk_case',
+                record_id: String(payload.record_id || '').trim(),
+                title: String(payload.title || '').trim() || '家庭高风险通知',
+                summary: String(payload.summary || '').trim() || '家庭成员触发高风险案件，请及时核查。',
+                risk_level: String(payload.risk_level || '').trim() || '高',
+                event_at: String(payload.event_at || '').trim(),
+                read_at: String(payload.read_at || '').trim()
+            };
+            familyNotifications.value = [notification, ...familyNotifications.value].slice(0, 50);
+            activeFamilyNotification.value = notification;
+            familyAlertModalVisible.value = true;
+            showToast(`家庭通知：${notification.summary}`, 'error');
         };
 
         const connectAlertWebSocket = () => {
@@ -375,6 +503,59 @@ createApp({
             };
         };
 
+        const connectFamilyNotificationWebSocket = () => {
+            if (!isAuthenticated.value || !token.value) return;
+            if (familyNotificationSocket && (familyNotificationSocket.readyState === WebSocket.OPEN || familyNotificationSocket.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+
+            let ws = null;
+            try {
+                familyNotificationConnectionStatus.value = 'connecting';
+                ws = new WebSocket(buildFamilyNotificationWebSocketURL());
+            } catch (error) {
+                familyNotificationConnectionStatus.value = 'reconnecting';
+                scheduleFamilyNotificationReconnect();
+                return;
+            }
+
+            familyNotificationSocket = ws;
+
+            ws.onopen = () => {
+                if (familyNotificationSocket !== ws) return;
+                familyNotificationReconnectAttempts = 0;
+                familyNotificationConnectionStatus.value = 'connected';
+            };
+
+            ws.onmessage = (event) => {
+                if (!event || typeof event.data !== 'string') return;
+                try {
+                    const payload = JSON.parse(event.data);
+                    handleFamilyNotificationMessage(payload);
+                } catch (_) {
+                    // ignore malformed payload to avoid UI cascade failure
+                }
+            };
+
+            ws.onerror = () => {
+                if (familyNotificationSocket !== ws) return;
+                if (familyNotificationConnectionStatus.value !== 'connected') {
+                    familyNotificationConnectionStatus.value = 'reconnecting';
+                }
+            };
+
+            ws.onclose = () => {
+                if (familyNotificationSocket !== ws) return;
+                familyNotificationSocket = null;
+                if (!isAuthenticated.value) {
+                    familyNotificationConnectionStatus.value = 'disconnected';
+                    return;
+                }
+                familyNotificationConnectionStatus.value = 'reconnecting';
+                scheduleFamilyNotificationReconnect();
+            };
+        };
+
         const stableJSONStringify = (value) => {
             try {
                 return JSON.stringify(value);
@@ -399,6 +580,10 @@ createApp({
         const smsCodeButtonLabel = computed(() => authMode.value === 'register' ? '发送注册短信码' : '发送登录短信码');
         const smsCodeButtonText = computed(() => smsCodeCooldown.value > 0 ? `${smsCodeCooldown.value}s后重试` : smsCodeButtonLabel.value);
         const canSendSMSCode = computed(() => !smsCodeSending.value && smsCodeCooldown.value === 0);
+        const familyUnreadCount = computed(() => (familyNotifications.value || []).filter(item => item && !item.read_at).length);
+        const familyHasGroup = computed(() => !!familyOverview.value?.family);
+        const familyGuardianCandidates = computed(() => (familyMembers.value || []).filter(item => item && (item.role === 'owner' || item.role === 'guardian')));
+        const familyProtectedCandidates = computed(() => (familyMembers.value || []).filter(item => item && item.role !== 'owner'));
 
         const getUserDisplayName = (userInfo) => {
             const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
@@ -582,6 +767,14 @@ createApp({
             alertModalVisible.value = false;
             activeAlertEvent.value = null;
             alertSeenRecordIDs.clear();
+            familyNotifications.value = [];
+            familyNotificationSeenIDs.clear();
+            familyOverview.value = null;
+            familyMembers.value = [];
+            familyInvitations.value = [];
+            familyGuardianLinks.value = [];
+            familyAlertModalVisible.value = false;
+            activeFamilyNotification.value = null;
         };
 
         const updateAge = async () => {
@@ -725,6 +918,132 @@ createApp({
         const debouncedFetchUsers = () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(fetchUsers, 300);
+        };
+
+        // Family System
+        const hydrateFamilyOverview = (overview) => {
+            familyOverview.value = overview || null;
+            familyMembers.value = Array.isArray(overview?.members) ? overview.members : [];
+            familyInvitations.value = Array.isArray(overview?.invitations) ? overview.invitations : [];
+            familyGuardianLinks.value = Array.isArray(overview?.guardian_links) ? overview.guardian_links : [];
+        };
+
+        const fetchFamilyOverview = async ({ silent = false } = {}) => {
+            if (!isAuthenticated.value) return;
+            familyLoading.value = !silent;
+            const res = await request('/families/me', 'GET', null, { silent });
+            familyLoading.value = false;
+            if (res) {
+                hydrateFamilyOverview(res);
+            }
+        };
+
+        const createFamily = async () => {
+            const payload = { name: familyCreateForm.name.trim() };
+            const res = await request('/families', 'POST', payload);
+            if (res) {
+                hydrateFamilyOverview(res);
+                familyCreateForm.name = '';
+                showToast('家庭创建成功');
+                familyNotifications.value = [];
+                familyNotificationSeenIDs.clear();
+                connectFamilyNotificationWebSocket();
+            }
+        };
+
+        const createFamilyInvitation = async () => {
+            const payload = {
+                invitee_email: familyInviteForm.invitee_email.trim(),
+                invitee_phone: familyInviteForm.invitee_phone.trim(),
+                role: familyInviteForm.role,
+                relation: familyInviteForm.relation.trim()
+            };
+            const res = await request('/families/invitations', 'POST', payload);
+            if (res && res.invitation) {
+                showToast('家庭邀请已创建');
+                familyInviteForm.invitee_email = '';
+                familyInviteForm.invitee_phone = '';
+                familyInviteForm.role = 'member';
+                familyInviteForm.relation = '';
+                fetchFamilyOverview({ silent: true });
+            }
+        };
+
+        const acceptFamilyInvitation = async () => {
+            const payload = { invite_code: familyAcceptForm.invite_code.trim() };
+            const res = await request('/families/invitations/accept', 'POST', payload);
+            if (res) {
+                hydrateFamilyOverview(res);
+                familyAcceptForm.invite_code = '';
+                showToast('已加入家庭');
+                familyNotifications.value = [];
+                familyNotificationSeenIDs.clear();
+                connectFamilyNotificationWebSocket();
+            }
+        };
+
+        const createGuardianLink = async () => {
+            const guardianUserID = Number(familyGuardianForm.guardian_user_id);
+            const memberUserID = Number(familyGuardianForm.member_user_id);
+            if (!Number.isInteger(guardianUserID) || !Number.isInteger(memberUserID)) {
+                showToast('请选择守护人和被守护成员', 'error');
+                return;
+            }
+            const payload = {
+                guardian_user_id: guardianUserID,
+                member_user_id: memberUserID
+            };
+            const res = await request('/families/guardian-links', 'POST', payload);
+            if (res && res.guardian_link) {
+                showToast('守护关系配置成功');
+                familyGuardianForm.guardian_user_id = '';
+                familyGuardianForm.member_user_id = '';
+                fetchFamilyOverview({ silent: true });
+            }
+        };
+
+        const deleteFamilyMember = async (member) => {
+            if (!member || !member.member_id) return;
+            if (!confirm(`确定移除成员 ${member.username} 吗？`)) return;
+            familyDeletingMembers[member.member_id] = true;
+            try {
+                const res = await request(`/families/members/${encodeURIComponent(member.member_id)}`, 'DELETE');
+                if (res) {
+                    showToast(res.message || '成员已移除');
+                    fetchFamilyOverview({ silent: true });
+                }
+            } finally {
+                familyDeletingMembers[member.member_id] = false;
+            }
+        };
+
+        const deleteGuardianLink = async (link) => {
+            if (!link || !link.id) return;
+            if (!confirm(`确定取消 ${link.guardian_name} -> ${link.member_name} 的守护关系吗？`)) return;
+            familyDeletingGuardianLinks[link.id] = true;
+            try {
+                const res = await request(`/families/guardian-links/${encodeURIComponent(link.id)}`, 'DELETE');
+                if (res) {
+                    showToast(res.message || '守护关系已移除');
+                    fetchFamilyOverview({ silent: true });
+                }
+            } finally {
+                familyDeletingGuardianLinks[link.id] = false;
+            }
+        };
+
+        const markFamilyNotificationRead = async (notification) => {
+            if (!notification || !notification.id || notification.read_at) return;
+            familyMarkingNotifications[notification.id] = true;
+            try {
+                const res = await request(`/families/notifications/${encodeURIComponent(notification.id)}/read`, 'POST');
+                if (res) {
+                    const readAt = new Date().toISOString();
+                    familyNotifications.value = familyNotifications.value.map(item => item && item.id === notification.id ? { ...item, read_at: readAt } : item);
+                }
+            } finally {
+                familyMarkingNotifications[notification.id] = false;
+            }
         };
 
         // Case Library Management
@@ -1678,6 +1997,10 @@ createApp({
                 fetchCaseLibrary();
                 fetchCaseOptionLists();
             }
+            if (newTab === 'family') {
+                fetchFamilyOverview();
+                connectFamilyNotificationWebSocket();
+            }
             if (newTab === 'users') fetchUsers();
             if (newTab === 'history') fetchHistory();
             if (newTab === 'tasks') fetchTasks();
@@ -1690,16 +2013,22 @@ createApp({
         const startPolling = () => {
             fetchTasks({ silent: true });
             fetchHistory({ silent: true });
+            fetchFamilyOverview({ silent: true });
             connectAlertWebSocket();
+            connectFamilyNotificationWebSocket();
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
                 if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
+                if (isAuthenticated.value && activeTab.value === 'family') {
+                    fetchFamilyOverview({ silent: true });
+                }
             }, 5000);
         };
         
         const stopPolling = () => {
             if (pollInterval) clearInterval(pollInterval);
             disconnectAlertWebSocket();
+            disconnectFamilyNotificationWebSocket();
         };
 
         // Draggable Logic
@@ -2269,6 +2598,11 @@ createApp({
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
             updateAge, deleteAccount, upgradeAccount, inviteCode, openImage, exportData, printReport,
             getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
+            familyOverview, familyMembers, familyInvitations, familyGuardianLinks, familyNotifications,
+            familyLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyAcceptForm, familyGuardianForm,
+            familyUnreadCount, familyHasGroup, familyGuardianCandidates, familyProtectedCandidates,
+            createFamily, createFamilyInvitation, acceptFamilyInvitation, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
+            familyDeletingMembers, familyDeletingGuardianLinks, familyMarkingNotifications,
             showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state

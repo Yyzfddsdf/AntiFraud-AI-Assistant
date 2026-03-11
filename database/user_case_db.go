@@ -17,7 +17,7 @@ import (
 var DB *gorm.DB
 
 // ConnectDB 初始化主业务库连接、连接池参数和 users 表迁移。
-func ConnectDB() {
+func ConnectDB() error {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = defaultDBPath()
@@ -26,7 +26,7 @@ func ConnectDB() {
 	dbDir := filepath.Dir(dbPath)
 	if dbDir != "." && dbDir != "" {
 		if err := os.MkdirAll(dbDir, 0755); err != nil {
-			log.Fatal("create database directory failed: ", err)
+			return err
 		}
 	}
 
@@ -35,12 +35,12 @@ func ConnectDB() {
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
-		log.Fatal("connect database failed: ", err)
+		return err
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatal("get sql db handle failed: ", err)
+		return err
 	}
 
 	sqlDB.SetMaxIdleConns(10)
@@ -48,8 +48,10 @@ func ConnectDB() {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	if err = DB.AutoMigrate(&models.User{}); err != nil {
-		log.Fatal("auto migrate failed: ", err)
+		return err
 	}
+	log.Printf("[database] main db initialized: %s", dbPath)
+	return nil
 }
 
 // defaultDBPath 在未配置 DB_PATH 时给出默认数据库路径。

@@ -11,8 +11,8 @@
 
 说明：
 
-- `auth_system.db` 由 `database/setup.go` 初始化连接。
-- `historical_case_library.db` 由 `multi_agent/case_library/store.go` 独立初始化连接。
+- `auth_system.db` 与 `historical_case_library.db` 均由启动阶段统一入口 `database.InitPersistence()` 初始化。
+- 主业务库 schema 通过注册式初始化器一次性建表，避免分散在功能首次调用时才懒迁移。
 - 两个库连接分离，不共享 `gorm.DB`。
 
 ## 2. 业务主库 `auth_system.db`
@@ -33,9 +33,106 @@
 | `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间（来自 `gorm.Model`） |
 | `username` | `string` / `text` | `unique`, `not null` | 用户名 |
 | `email` | `string` / `text` | `unique`, `not null` | 邮箱 |
+| `phone` | `*string` / `text` | `unique`, 可空 | 手机号 |
 | `age` | `*int` / `integer` | 可空 | 年龄 |
 | `password` | `string` / `text` | `not null` | 密码哈希 |
 | `role` | `string` / `text` | 默认值 `'user'` | 角色（`user`/`admin`） |
+
+### 2.1.1 `family_groups`（家庭组表）
+
+来源：
+
+- 服务启动时由 `family_system.EnsureSchema(database.DB)` 自动迁移。
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 家庭组主键 |
+| `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+| `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
+| `name` | `string` / `varchar(128)` | `not null` | 家庭名称 |
+| `owner_user_id` | `uint` / `integer` | 索引, `not null` | 家庭创建者用户 ID |
+| `invite_code` | `string` / `varchar(32)` | `uniqueIndex`, `not null` | 家庭邀请码 |
+| `status` | `string` / `varchar(32)` | 索引, `not null` | 家庭状态，当前为 `active` |
+
+### 2.1.2 `family_members`（家庭成员表）
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 成员关系主键 |
+| `family_id` | `uint` / `integer` | 索引, `not null` | 所属家庭 |
+| `user_id` | `uint` / `integer` | 索引, 唯一, `not null` | 成员用户 ID（MVP 阶段一人仅加入一个家庭） |
+| `role` | `string` / `varchar(32)` | 索引, `not null` | 角色：`owner/guardian/member` |
+| `relation` | `string` / `varchar(64)` | 可空 | 关系描述，如父亲/女儿 |
+| `status` | `string` / `varchar(32)` | 索引, `not null` | 当前实现固定为 `active` |
+| `created_by` | `uint` / `integer` | 索引, `not null` | 创建该成员关系的用户 ID |
+| `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+| `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
+
+### 2.1.3 `family_invitations`（家庭邀请表）
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 邀请记录主键 |
+| `family_id` | `uint` / `integer` | 索引, `not null` | 所属家庭 |
+| `inviter_user_id` | `uint` / `integer` | 索引, `not null` | 邀请人 |
+| `invitee_email` | `*string` / `varchar(255)` | 索引, 可空 | 受邀邮箱 |
+| `invitee_phone` | `*string` / `varchar(32)` | 索引, 可空 | 受邀手机号 |
+| `role` | `string` / `varchar(32)` | 索引, `not null` | 邀请加入后的角色 |
+| `relation` | `string` / `varchar(64)` | 可空 | 关系描述 |
+| `invite_code` | `string` / `varchar(32)` | `uniqueIndex`, `not null` | 邀请码 |
+| `status` | `string` / `varchar(32)` | 索引, `not null` | `pending/accepted/revoked/expired` |
+| `expires_at` | `time.Time` / `datetime` | 索引, `not null` | 过期时间 |
+| `accepted_by_user_id` | `*uint` / `integer` | 索引, 可空 | 接受邀请的用户 ID |
+| `accepted_at` | `*time.Time` / `datetime` | 索引, 可空 | 接受时间 |
+| `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+| `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
+
+### 2.1.4 `family_guardian_links`（守护关系表）
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 守护关系主键 |
+| `family_id` | `uint` / `integer` | 索引, `not null` | 所属家庭 |
+| `guardian_user_id` | `uint` / `integer` | 索引, 复合唯一, `not null` | 守护人用户 ID |
+| `member_user_id` | `uint` / `integer` | 索引, 复合唯一, `not null` | 被守护成员用户 ID |
+| `status` | `string` / `varchar(32)` | 索引, `not null` | 当前实现固定为 `active` |
+| `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+| `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
+
+### 2.1.5 `family_notifications`（家庭通知表）
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 家庭通知主键 |
+| `family_id` | `uint` / `integer` | 索引, `not null` | 所属家庭 |
+| `target_user_id` | `uint` / `integer` | 索引, `not null` | 触发风险事件的成员用户 ID |
+| `receiver_user_id` | `uint` / `integer` | 索引, 复合唯一, `not null` | 通知接收人（守护人） |
+| `event_type` | `string` / `varchar(64)` | 索引, 复合唯一, `not null` | 事件类型，当前为 `high_risk_case` |
+| `record_id` | `string` / `varchar(64)` | 索引, 复合唯一, `not null` | 关联历史案件记录 ID |
+| `title` | `string` / `varchar(255)` | `not null` | 案件标题 |
+| `case_summary` | `string` / `text` | 可空 | 案件摘要 |
+| `scam_type` | `string` / `varchar(64)` | 索引 | 诈骗类型 |
+| `risk_level` | `string` / `varchar(32)` | 索引 | 风险等级 |
+| `summary` | `string` / `text` | `not null` | 面向守护人的简版通知文案 |
+| `event_at` | `time.Time` / `datetime` | 索引, `not null` | 风险事件发生时间 |
+| `read_at` | `*time.Time` / `datetime` | 索引, 可空 | 已读时间 |
+| `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+| `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
 
 ### 2.2 `pending_tasks`（任务进行中表）
 
@@ -206,6 +303,11 @@ sqlite3 DB/auth_system.db ".tables"
 
 ```bash
 sqlite3 DB/auth_system.db ".schema users"
+sqlite3 DB/auth_system.db ".schema family_groups"
+sqlite3 DB/auth_system.db ".schema family_members"
+sqlite3 DB/auth_system.db ".schema family_invitations"
+sqlite3 DB/auth_system.db ".schema family_guardian_links"
+sqlite3 DB/auth_system.db ".schema family_notifications"
 sqlite3 DB/auth_system.db ".schema pending_tasks"
 sqlite3 DB/auth_system.db ".schema history_cases"
 sqlite3 DB/auth_system.db ".schema user_history_vectors"
@@ -222,6 +324,11 @@ sqlite3 DB/historical_case_library.db ".schema historical_case_library"
 
 ```bash
 sqlite3 DB/auth_system.db "PRAGMA table_info(users);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(family_groups);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(family_members);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(family_invitations);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(family_guardian_links);"
+sqlite3 DB/auth_system.db "PRAGMA table_info(family_notifications);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(pending_tasks);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(history_cases);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(user_history_vectors);"

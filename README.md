@@ -7,6 +7,7 @@
 - **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
 - 主分析流程按需自动更新案件库（典型案例自动向量化入库）
 - 实时高风险告警（WebSocket 连接下的主动预警推送）
+- **家庭协同守护系统（MVP）**：家庭组、成员邀请、守护关系配置、家庭高风险通知
 
 默认服务端口：`8081`
 
@@ -65,6 +66,7 @@ go run .
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `redis`：统一缓存配置（`addr`、`password`、`db`）
   - `alert_ws`：实时告警轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
+  - `family_alert_ws`：家庭通知 WebSocket 轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `prompts.main / image / video / audio`：提示词
   - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
@@ -78,14 +80,20 @@ go run .
 - `cache:case_library:vector_records_ready`：向量缓存就绪标记
 - `chat:context:<user_id>`：聊天会话上下文，TTL=`5` 分钟
 
+说明：
+
+- 家庭通知当前不走 Redis 缓存，而是“`family_notifications` 持久化 + `family_alert_ws` 最近窗口 WebSocket 推送”。
+
 ---
 
 ## 5. 项目结构（核心目录）
 
 - `main.go`：服务入口、路由挂载、中间件注册
 - `cache/`：统一 Redis 缓存函数（少参数读写、计数窗口、Hash 管理）
+- `database/`：数据库连接、统一 schema 初始化入口（`InitPersistence`）
 - `login_system/auth/`：JWT 能力边界（claims、签发、验签、鉴权错误语义）
 - `login_system/`：注册登录、用户管理、JWT 中间件、限流
+- `family_system/`：家庭组、成员关系、邀请、守护关系、家庭通知
 - `chat_system/`：聊天 SSE、工具调用、Redis 上下文
 - `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
 - `multi_agent/overview/`：用户风险总览聚合（基于历史案件生成趋势与统计）
@@ -100,6 +108,7 @@ go run .
 flowchart LR
     U[Web 前端<br/>login_system/web] -->|JWT + API 调用| G[Gin API 层<br/>main.go + httpapi]
     G --> A[鉴权与账号模块<br/>login_system]
+    G --> F[家庭系统<br/>family_system]
     G --> C[聊天系统<br/>chat_system]
     G --> M[多智能体编排<br/>multi_agent]
     G --> L[案件库管理 API<br/>multi_agent/httpapi/historical_case_handler]
@@ -118,6 +127,7 @@ flowchart LR
     CL --> R
 
     A --> DB1[(SQLite: auth_system.db)]
+    F --> DB1
     S --> DB1
     CL --> DB2[(SQLite: historical_case_library.db)]
     L --> CL
@@ -128,7 +138,10 @@ flowchart LR
 架构说明（摘要）：
 
 - API 层统一接入鉴权、聊天、多模态分析、案件库管理。
+- 启动阶段通过 `database.InitPersistence()` 一次性完成主业务库连接、历史案件库连接以及主业务 schema 初始化，减少分散建表点。
+- 家庭系统通过独立路由管理“家庭组 / 家庭成员 / 邀请 / 守护关系 / 家庭通知”，与鉴权和多模态主流程解耦。
 - 多模态任务走“入队 -> 子智能体并发分析 -> 主智能体工具闭环 -> 归档”流程。
+- 家庭通知不直接侵入分析主链路，而是通过“历史归档事件 -> 家庭通知服务”方式接收高风险事件。
 - 数据层双库隔离：业务库（用户/任务）与案件知识库（结构化字段 + 向量）分离。
 - Redis 统一缓存层承载验证码、限流桶、向量库管理侧缓存与聊天上下文。
 - 模型调用统一走 `llm` 客户端，支持 Chat / Embedding / SSE。
@@ -184,6 +197,11 @@ flowchart LR
 主要表：
 
 - `users`
+- `family_groups`
+- `family_members`
+- `family_invitations`
+- `family_guardian_links`
+- `family_notifications`
 - `pending_tasks`
 - `history_cases`
 - `user_history_vectors`
@@ -200,10 +218,53 @@ flowchart LR
   - 任务中的数组字段（视频/音频/图片/insights）使用 Base64 逗号串存储
   - 读取时对历史明文做兼容回退，避免旧数据读失败
 - 任务详情查询统一：`GetTaskDetailByID` 先查 pending，再查 history，前端一个接口覆盖“未完成+已完成”
+- 家庭系统解耦建模：
+  - `family_groups`：家庭组本体
+  - `family_members`：家庭成员与角色
+  - `family_invitations`：家庭邀请与接受状态
+  - `family_guardian_links`：守护人 -> 被守护成员配置
+  - `family_notifications`：面向守护人的家庭风险通知
+- 风险事件联动：
+  - `write_user_history_case` 最终归档后触发历史事件回调
+  - 家庭系统只订阅“高风险历史归档事件”
+  - 守护关系命中后再生成家庭通知，避免主分析链路被家庭模块反向耦合
 - 用户历史语义索引拆表：
   - `history_cases` 保存业务归档事实
   - `user_history_vectors` 保存用户历史案件的语义索引
   - 索引表当前只保留 `record_id`、`user_id`、`embedding_vector`、`embedding_model`、`embedding_dimension` 与时间字段，避免和业务详情重复耦合
+
+### 8.2.1 家庭系统（MVP）设计与实现
+
+核心目标：
+
+- 把反诈从“个人自救”扩展到“家庭联防”
+- 当被守护成员出现高风险案件时，让守护人收到家庭通知
+- 保持低耦合：家庭系统不直接改写多模态分析、聊天、登录主流程
+
+当前实现边界：
+
+- 每个用户在 MVP 阶段默认只加入一个家庭
+- 家庭创建者为 `owner`
+- 家庭成员角色支持：`owner`、`guardian`、`member`
+- 邀请支持按邮箱或手机号定向
+- 守护关系通过 `family_guardian_links` 独立配置
+- 高风险家庭通知通过 `family_notifications` 持久化，并通过家庭通知 WebSocket 按 `family_alert_ws` 配置的最近窗口主动推送给守护人
+
+当前已落地的家庭接口：
+
+- `POST /api/families`
+- `GET /api/families/me`
+- `POST /api/families/invitations`
+- `GET /api/families/invitations`
+- `POST /api/families/invitations/accept`
+- `GET /api/families/members`
+- `PATCH /api/families/members/:memberId`
+- `DELETE /api/families/members/:memberId`
+- `POST /api/families/guardian-links`
+- `GET /api/families/guardian-links`
+- `DELETE /api/families/guardian-links/:linkId`
+- `GET /api/families/notifications/ws`
+- `POST /api/families/notifications/:notificationId/read`
 
 #### 用户历史向量化（当前实现）
 

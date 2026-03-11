@@ -70,13 +70,14 @@ type PromptConfig struct {
 
 // Config 是项目总配置对象。
 type Config struct {
-	Agents    AgentModelConfig `json:"agents"`
-	Embedding EmbeddingConfig  `json:"embedding"`
-	Chat      ChatConfig       `json:"chat"`
-	Redis     RedisConfig      `json:"redis"`
-	Prompts   PromptConfig     `json:"prompts"`
-	Retry     RetryConfig      `json:"retry"`
-	AlertWS   AlertWSConfig    `json:"alert_ws"`
+	Agents        AgentModelConfig `json:"agents"`
+	Embedding     EmbeddingConfig  `json:"embedding"`
+	Chat          ChatConfig       `json:"chat"`
+	Redis         RedisConfig      `json:"redis"`
+	Prompts       PromptConfig     `json:"prompts"`
+	Retry         RetryConfig      `json:"retry"`
+	AlertWS       AlertWSConfig    `json:"alert_ws"`
+	FamilyAlertWS AlertWSConfig    `json:"family_alert_ws"`
 }
 
 var (
@@ -149,6 +150,7 @@ func (c *Config) normalize() {
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
 	c.Prompts.Audio = strings.TrimSpace(c.Prompts.Audio)
 	c.AlertWS = normalizeAlertWS(c.AlertWS)
+	c.FamilyAlertWS = normalizeAlertWS(c.FamilyAlertWS)
 }
 
 // normalizeModel 处理单个模型配置的字符串规范化。

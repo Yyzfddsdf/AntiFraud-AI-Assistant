@@ -1161,6 +1161,222 @@ GET /api/users?query=admin
 
 ---
 
+## 15.3) 家庭系统（需鉴权）
+
+### 15.3.1 创建家庭
+
+- **Method**: `POST`
+- **Path**: `/api/families`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+
+```json
+{
+  "name": "张三家庭"
+}
+```
+
+说明：
+
+- 当前家庭系统 MVP 阶段默认一个用户只加入一个家庭
+- 创建成功后，当前用户会自动成为 `owner`
+
+### 15.3.2 获取我的家庭总览
+
+- **Method**: `GET`
+- **Path**: `/api/families/me`
+
+成功响应（已加入家庭）：
+
+```json
+{
+  "family": {
+    "id": 1,
+    "name": "张三家庭",
+    "owner_user_id": 1,
+    "owner_name": "zhangsan",
+    "owner_email": "zhangsan@example.com",
+    "owner_phone": "13800138000",
+    "invite_code": "FAM-8A1BC9D0E1F2",
+    "status": "active",
+    "member_count": 3,
+    "guardian_count": 2
+  },
+  "current_member": {
+    "member_id": 1,
+    "family_id": 1,
+    "user_id": 1,
+    "username": "zhangsan",
+    "email": "zhangsan@example.com",
+    "phone": "13800138000",
+    "role": "owner",
+    "relation": "家庭创建者",
+    "status": "active",
+    "created_at": "2026-03-11T09:30:00+08:00"
+  },
+  "members": [],
+  "invitations": [],
+  "guardian_links": [],
+  "unread_notification_count": 2
+}
+```
+
+成功响应（未加入家庭）：
+
+```json
+{
+  "family": null,
+  "current_member": null,
+  "members": [],
+  "invitations": [],
+  "guardian_links": [],
+  "unread_notification_count": 0
+}
+```
+
+### 15.3.3 创建家庭邀请
+
+- **Method**: `POST`
+- **Path**: `/api/families/invitations`
+
+```json
+{
+  "invitee_email": "parent@example.com",
+  "invitee_phone": "13900139000",
+  "role": "member",
+  "relation": "父亲"
+}
+```
+
+说明：
+
+- 仅家庭 `owner` 可创建邀请
+- `invitee_email` 与 `invitee_phone` 至少填写一项
+- `role` 当前支持：`guardian`、`member`
+
+### 15.3.4 查询家庭邀请列表
+
+- **Method**: `GET`
+- **Path**: `/api/families/invitations`
+
+### 15.3.5 接受家庭邀请
+
+- **Method**: `POST`
+- **Path**: `/api/families/invitations/accept`
+
+```json
+{
+  "invite_code": "INV-2B73D5E1A0C4"
+}
+```
+
+说明：
+
+- 当前登录用户的邮箱/手机号必须与邀请目标匹配
+- 邀请接受后会写入 `family_members`
+
+### 15.3.6 查询家庭成员
+
+- **Method**: `GET`
+- **Path**: `/api/families/members`
+
+### 15.3.7 更新家庭成员角色/关系
+
+- **Method**: `PATCH`
+- **Path**: `/api/families/members/:memberId`
+
+```json
+{
+  "role": "guardian",
+  "relation": "女儿"
+}
+```
+
+说明：
+
+- 仅家庭 `owner` 可更新
+- 家庭创建者不可降级
+
+### 15.3.8 移除家庭成员
+
+- **Method**: `DELETE`
+- **Path**: `/api/families/members/:memberId`
+
+### 15.3.9 创建守护关系
+
+- **Method**: `POST`
+- **Path**: `/api/families/guardian-links`
+
+```json
+{
+  "guardian_user_id": 2,
+  "member_user_id": 3
+}
+```
+
+说明：
+
+- 仅家庭 `owner` 可配置
+- 守护人角色必须为 `owner` 或 `guardian`
+
+### 15.3.10 查询守护关系
+
+- **Method**: `GET`
+- **Path**: `/api/families/guardian-links`
+
+### 15.3.11 删除守护关系
+
+- **Method**: `DELETE`
+- **Path**: `/api/families/guardian-links/:linkId`
+
+### 15.3.12 家庭通知 WebSocket
+
+- **Method**: `GET`
+- **Path**: `/api/families/notifications/ws`
+
+说明：
+
+- 当前家庭通知来源于“历史归档事件回调”
+- 仅当被守护成员归档为高风险案件时，系统才会为对应守护人创建通知
+- 连接建立后会按最近窗口轮询 `family_notifications`
+- 只推送“当前用户可见 + 未读 + 最近窗口内”的家庭通知
+- 家庭通知窗口与轮询频率来自 `config/config.json -> family_alert_ws`
+
+推送示例：
+
+```json
+{
+  "type": "family_high_risk_alert",
+  "notification_id": 1,
+  "family_id": 1,
+  "target_user_id": 3,
+  "target_name": "parent_user",
+  "event_type": "high_risk_case",
+  "record_id": "TASK-7FA12BC09D11",
+  "title": "疑似冒充客服退款",
+  "scam_type": "冒充客服类",
+  "summary": "家庭成员 parent_user 触发高风险案件，请及时核查。",
+  "risk_level": "高",
+  "event_at": "2026-03-11T10:15:00+08:00"
+}
+```
+
+### 15.3.13 标记家庭通知已读
+
+- **Method**: `POST`
+- **Path**: `/api/families/notifications/:notificationId/read`
+
+### 常见失败响应
+
+- `400` 请求参数错误 / 邀请码无效 / 邀请目标不匹配 / 无效守护关系配置
+- `401` 用户未认证
+- `403` 无权操作当前家庭
+- `404` 当前用户未加入家庭 / 家庭成员不存在 / 守护关系不存在
+- `409` 当前用户已加入家庭 / 邀请已处理
+
+---
+
 ## 16) 测试页面
 
 - **Method**: `GET`

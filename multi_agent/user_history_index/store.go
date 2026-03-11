@@ -69,6 +69,10 @@ var (
 	userHistorySchemaErr  error
 )
 
+func init() {
+	database.RegisterMainDBSchemaInitializer("user_history_index", initUserHistoryVectorSchema)
+}
+
 // BuildEmbeddingInput 将用户历史归档字段拼接为 embedding 输入文本。
 func BuildEmbeddingInput(input ArchiveInput) string {
 	normalized := normalizeArchiveInput(input)
@@ -193,12 +197,19 @@ func ensureUserHistoryVectorSchema(db *gorm.DB) error {
 		return fmt.Errorf("database not initialized")
 	}
 	userHistorySchemaOnce.Do(func() {
-		userHistorySchemaErr = db.AutoMigrate(&userHistoryVectorEntity{})
+		userHistorySchemaErr = initUserHistoryVectorSchema(db)
 	})
 	if userHistorySchemaErr != nil {
 		return fmt.Errorf("auto migrate user history vector table failed: %w", userHistorySchemaErr)
 	}
 	return nil
+}
+
+func initUserHistoryVectorSchema(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return db.AutoMigrate(&userHistoryVectorEntity{})
 }
 
 func validateArchiveInput(input ArchiveInput) error {
