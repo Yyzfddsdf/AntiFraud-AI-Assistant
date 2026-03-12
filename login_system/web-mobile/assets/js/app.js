@@ -1,4 +1,4 @@
-const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch } = Vue;
+const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } = Vue;
 
 createApp({
     setup() {
@@ -26,15 +26,18 @@ createApp({
         const familyOverview = ref(null);
         const familyMembers = ref([]);
         const familyInvitations = ref([]);
+        const familyReceivedInvitations = ref([]);
         const familyGuardianLinks = ref([]);
         const familyNotifications = ref([]);
         const familyLoading = ref(false);
+        const familyReceivedLoading = ref(false);
         const familyNotificationConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
         const familyAlertModalVisible = ref(false);
         const activeFamilyNotification = ref(null);
         const deletingHistory = reactive({});
         const familyDeletingMembers = reactive({});
         const familyDeletingGuardianLinks = reactive({});
+        const familyAcceptingInvitations = reactive({});
         const familyMarkingNotifications = reactive({});
         const selectedTask = ref(null);
         
@@ -80,6 +83,7 @@ createApp({
             role: 'member',
             relation: ''
         });
+        const familyAcceptForm = reactive({ invite_code: '' });
         const familyGuardianForm = reactive({
             guardian_user_id: '',
             member_user_id: ''
@@ -243,6 +247,7 @@ createApp({
             markAlertReadByRecordID(item.record_id);
             alertDrawerVisible.value = false;
             alertModalVisible.value = false;
+            activeAlertEvent.value = null;
             activeTab.value = 'history';
             await fetchHistory({ silent: true });
             await viewTaskDetail(item.record_id);
@@ -333,6 +338,7 @@ createApp({
                 markAlertReadByRecordID(activeAlertEvent.value.record_id);
             }
             alertModalVisible.value = false;
+            activeAlertEvent.value = null;
         };
 
         const openAlertHistory = async () => {
@@ -349,11 +355,13 @@ createApp({
             }
             markFamilyNotificationRead(current);
             familyAlertModalVisible.value = false;
+            activeFamilyNotification.value = null;
         };
 
         const openFamilyNotificationCenter = async () => {
             const current = activeFamilyNotification.value;
             familyAlertModalVisible.value = false;
+            activeFamilyNotification.value = null;
             activeTab.value = 'family';
             if (current) {
                 await markFamilyNotificationRead(current);
@@ -404,7 +412,9 @@ createApp({
                 event_type: String(payload.event_type || '').trim() || 'high_risk_case',
                 record_id: String(payload.record_id || '').trim(),
                 title: String(payload.title || '').trim() || '家庭高风险通知',
+                case_summary: String(payload.case_summary || '').trim(),
                 summary: String(payload.summary || '').trim() || '家庭成员触发高风险案件，请及时核查。',
+                scam_type: String(payload.scam_type || '').trim(),
                 risk_level: String(payload.risk_level || '').trim() || '高',
                 event_at: String(payload.event_at || '').trim(),
                 read_at: String(payload.read_at || '').trim()
@@ -807,9 +817,18 @@ createApp({
             familyOverview.value = null;
             familyMembers.value = [];
             familyInvitations.value = [];
+            familyReceivedInvitations.value = [];
             familyGuardianLinks.value = [];
+            familyReceivedLoading.value = false;
+            Object.keys(familyAcceptingInvitations).forEach((key) => delete familyAcceptingInvitations[key]);
             familyAlertModalVisible.value = false;
             activeFamilyNotification.value = null;
+            chatMessages.value = [
+                buildChatMessage({ type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' })
+            ];
+            chatInput.value = '';
+            chatImages.value = [];
+            chatHistoryLoaded.value = false;
         };
 
         const updateAge = async () => {
@@ -935,11 +954,47 @@ createApp({
         };
 
         // Family System
+        const pruneFamilyNotificationsByMembers = (members) => {
+            const activeUserIDs = new Set(
+                (Array.isArray(members) ? members : [])
+                    .map(item => Number(item?.user_id || 0))
+                    .filter(userID => Number.isInteger(userID) && userID > 0)
+            );
+
+            if (activeUserIDs.size === 0) {
+                familyNotifications.value = [];
+                familyNotificationSeenIDs.clear();
+                activeFamilyNotification.value = null;
+                familyAlertModalVisible.value = false;
+                return;
+            }
+
+            familyNotifications.value = familyNotifications.value.filter(item => {
+                const targetUserID = Number(item?.target_user_id || 0);
+                return Number.isInteger(targetUserID) && activeUserIDs.has(targetUserID);
+            });
+
+            familyNotificationSeenIDs.clear();
+            familyNotifications.value.forEach(item => {
+                const notificationID = Number(item?.id || 0);
+                if (Number.isInteger(notificationID) && notificationID > 0) {
+                    familyNotificationSeenIDs.add(notificationID);
+                }
+            });
+
+            const activeTargetUserID = Number(activeFamilyNotification.value?.target_user_id || 0);
+            if (!Number.isInteger(activeTargetUserID) || !activeUserIDs.has(activeTargetUserID)) {
+                activeFamilyNotification.value = null;
+                familyAlertModalVisible.value = false;
+            }
+        };
+
         const hydrateFamilyOverview = (overview) => {
             familyOverview.value = overview || null;
             familyMembers.value = Array.isArray(overview?.members) ? overview.members : [];
             familyInvitations.value = Array.isArray(overview?.invitations) ? overview.invitations : [];
             familyGuardianLinks.value = Array.isArray(overview?.guardian_links) ? overview.guardian_links : [];
+            pruneFamilyNotificationsByMembers(familyMembers.value);
         };
 
         const fetchFamilyOverview = async ({ silent = false } = {}) => {
@@ -949,6 +1004,20 @@ createApp({
             familyLoading.value = false;
             if (res) {
                 hydrateFamilyOverview(res);
+                if (res.family) {
+                    replaceListIfChanged(familyReceivedInvitations, []);
+                    familyReceivedLoading.value = false;
+                }
+            }
+        };
+
+        const fetchReceivedFamilyInvitations = async ({ silent = false } = {}) => {
+            if (!isAuthenticated.value) return;
+            familyReceivedLoading.value = !silent;
+            const res = await request('/families/invitations/received', 'GET', null, { silent });
+            familyReceivedLoading.value = false;
+            if (res && Array.isArray(res.invitations)) {
+                replaceListIfChanged(familyReceivedInvitations, res.invitations);
             }
         };
 
@@ -958,6 +1027,8 @@ createApp({
             if (res) {
                 hydrateFamilyOverview(res);
                 familyCreateForm.name = '';
+                replaceListIfChanged(familyReceivedInvitations, []);
+                familyReceivedLoading.value = false;
                 showToast('家庭创建成功');
                 familyNotifications.value = [];
                 familyNotificationSeenIDs.clear();
@@ -980,6 +1051,36 @@ createApp({
                 familyInviteForm.role = 'member';
                 familyInviteForm.relation = '';
                 fetchFamilyOverview({ silent: true });
+            }
+        };
+
+        const acceptFamilyInvitation = async (rawInviteCode = '', invitationID = 0) => {
+            const inviteCode = String(rawInviteCode || familyAcceptForm.invite_code || '').trim();
+            if (!inviteCode) {
+                showToast('请输入家庭邀请码', 'error');
+                return;
+            }
+
+            if (invitationID) {
+                familyAcceptingInvitations[invitationID] = true;
+            }
+            try {
+                const payload = { invite_code: inviteCode };
+                const res = await request('/families/invitations/accept', 'POST', payload);
+                if (res) {
+                    hydrateFamilyOverview(res);
+                    familyAcceptForm.invite_code = '';
+                    replaceListIfChanged(familyReceivedInvitations, []);
+                    familyReceivedLoading.value = false;
+                    showToast('已加入家庭');
+                    familyNotifications.value = [];
+                    familyNotificationSeenIDs.clear();
+                    connectFamilyNotificationWebSocket();
+                }
+            } finally {
+                if (invitationID) {
+                    familyAcceptingInvitations[invitationID] = false;
+                }
             }
         };
 
@@ -1380,8 +1481,20 @@ createApp({
         watch(activeTab, (newTab) => {
             closeDropdown();
             if (newTab === 'family') {
-                fetchFamilyOverview();
-                connectFamilyNotificationWebSocket();
+                fetchFamilyOverview().then(() => {
+                    if (familyHasGroup.value) {
+                        connectFamilyNotificationWebSocket();
+                    } else {
+                        fetchReceivedFamilyInvitations();
+                    }
+                });
+            }
+            if (newTab === 'chat') {
+                if (!chatHistoryLoaded.value) {
+                    fetchChatHistory();
+                } else {
+                    scrollToBottom();
+                }
             }
             if (newTab === 'history') fetchHistory();
             if (newTab === 'tasks') {
@@ -1407,7 +1520,11 @@ createApp({
                     fetchRiskTrend();
                 }
                 if (isAuthenticated.value && activeTab.value === 'family') {
-                    fetchFamilyOverview({ silent: true });
+                    fetchFamilyOverview({ silent: true }).then(() => {
+                        if (!familyHasGroup.value) {
+                            fetchReceivedFamilyInvitations({ silent: true });
+                        }
+                    });
                 }
             }, 5000);
         };
@@ -1493,6 +1610,7 @@ createApp({
             initChatPosition();
             window.addEventListener('resize', handleWindowResize);
             document.addEventListener('click', handleDocumentClick);
+            startBannerCarousel();
         });
 
         onUnmounted(() => {
@@ -1501,6 +1619,7 @@ createApp({
             clearSMSCodeCooldownTimer();
             window.removeEventListener('resize', handleWindowResize);
             document.removeEventListener('click', handleDocumentClick);
+            stopBannerCarousel();
         });
 
         // Formatting
@@ -1542,10 +1661,64 @@ createApp({
             win.document.write(`<img src="${src}" style="max-width:100%; height:auto;">`);
         };
 
+        // Markdown Renderer
+        const renderMarkdown = (text) => {
+            if (!text) return '';
+            if (typeof marked !== 'undefined') {
+                try {
+                    return marked.parse(text, {
+                        breaks: true,
+                        gfm: true
+                    });
+                } catch (e) {
+                    console.error('Markdown parse error:', e);
+                    return text;
+                }
+            }
+            return text;
+        };
+
+        const buildChatMessage = (message) => {
+            const normalizedType = String(message?.type || 'ai').trim() || 'ai';
+            const normalizedContent = typeof message?.content === 'string' ? message.content : '';
+            const normalizedImages = Array.isArray(message?.images)
+                ? message.images.filter((item) => typeof item === 'string' && item.trim())
+                : [];
+
+            return {
+                ...message,
+                type: normalizedType,
+                content: normalizedContent,
+                images: normalizedImages,
+                rendered_content: normalizedType === 'ai' ? renderMarkdown(normalizedContent) : ''
+            };
+        };
+
+        const appendChatMessage = (message) => {
+            chatMessages.value.push(buildChatMessage(message));
+            return chatMessages.value.length - 1;
+        };
+
+        const replaceChatMessage = (index, messagePatch) => {
+            if (!Number.isInteger(index) || index < 0 || index >= chatMessages.value.length) {
+                return -1;
+            }
+
+            const currentMessage = chatMessages.value[index] || {};
+            const nextMessage = buildChatMessage({
+                ...currentMessage,
+                ...messagePatch
+            });
+
+            // Replace the whole message object so streaming updates always trigger markdown re-render.
+            chatMessages.value.splice(index, 1, nextMessage);
+            return index;
+        };
+
         // Chat State
         const showChat = ref(false);
         const chatMessages = ref([
-            { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
+            buildChatMessage({ type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' })
         ]);
         const chatInput = ref('');
         const chatImages = ref([]);
@@ -1568,28 +1741,28 @@ createApp({
                             if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
                                 for (const call of msg.tool_calls) {
                                     const toolName = call.name || call.function?.name || 'unknown';
-                                    history.push({
+                                    history.push(buildChatMessage({
                                         type: 'tool',
                                         content: `正在调用工具: ${toolName}...`
-                                    });
+                                    }));
                                 }
                             }
                             
                             // If there is content, add as AI message
                             if (msg.content) {
-                                history.push({
+                                history.push(buildChatMessage({
                                     type: 'ai',
                                     content: msg.content
-                                });
+                                }));
                             }
                         } 
                         // Handle tool result messages
                         else if (msg.role === 'tool') {
                             // Optionally show tool completion
-                            history.push({
+                            history.push(buildChatMessage({
                                 type: 'tool',
                                 content: `工具调用完成`
-                            });
+                            }));
                         }
                         // Handle user messages
                         else if (msg.role === 'user') {
@@ -1599,18 +1772,18 @@ createApp({
                             if (!msg.content && imageUrls.length === 0) {
                                 continue;
                             }
-                            history.push({
+                            history.push(buildChatMessage({
                                 type: 'user',
                                 content: msg.content || '',
                                 images: imageUrls
-                            });
+                            }));
                         }
                     }
                     
                     if (history.length > 0) {
                         // Keep welcome message and append history
                         chatMessages.value = [
-                            chatMessages.value[0], 
+                            chatMessages.value[0],
                             ...history
                         ];
                     }
@@ -1741,8 +1914,13 @@ createApp({
         };
 
         const scrollToBottom = () => {
-            const container = document.getElementById('chat-container');
-            if (container) container.scrollTop = container.scrollHeight;
+            nextTick(() => {
+                const container = document.getElementById('chat-container');
+                if (!container) return;
+                window.requestAnimationFrame(() => {
+                    container.scrollTop = container.scrollHeight;
+                });
+            });
         };
 
         const triggerChatImagePicker = () => {
@@ -1777,7 +1955,7 @@ createApp({
             const images = [...chatImages.value];
             if (!message && images.length === 0) return;
 
-            chatMessages.value.push({ type: 'user', content: message, images });
+            appendChatMessage({ type: 'user', content: message, images });
             chatInput.value = '';
             chatImages.value = [];
             isChatting.value = true;
@@ -1800,7 +1978,7 @@ createApp({
                 let aiMessageContent = '';
                 
                 // Add placeholder for AI response
-                chatMessages.value.push({ type: 'ai', content: '' });
+                appendChatMessage({ type: 'ai', content: '' });
                 
                 // We can't use a fixed index anymore because tool calls might insert messages
                 // So we'll always target the last message if it's type 'ai', or append a new one
@@ -1835,14 +2013,13 @@ createApp({
                                         return lastIdx;
                                     }
                                     // If last message is not AI (e.g. tool), push new AI placeholder
-                                    chatMessages.value.push({ type: 'ai', content: '' });
-                                    return chatMessages.value.length - 1;
+                                    return appendChatMessage({ type: 'ai', content: '' });
                                 };
 
                                 if (data.type === 'content') {
                                     const idx = getActiveAiIndex();
                                     aiMessageContent += data.content;
-                                    chatMessages.value[idx].content = aiMessageContent;
+                                    replaceChatMessage(idx, { type: 'ai', content: aiMessageContent });
                                     scrollToBottom();
                                 } else if (data.type === 'tool_call') {
                                     // Insert tool message
@@ -1850,12 +2027,12 @@ createApp({
                                     // If current AI message is empty, replace it
                                     const lastIdx = chatMessages.value.length - 1;
                                     if (lastIdx >= 0 && chatMessages.value[lastIdx].type === 'ai' && !chatMessages.value[lastIdx].content) {
-                                        chatMessages.value[lastIdx] = {
+                                        replaceChatMessage(lastIdx, {
                                             type: 'tool',
                                             content: `正在调用工具: ${toolName}...`
-                                        };
+                                        });
                                     } else {
-                                        chatMessages.value.push({
+                                        appendChatMessage({
                                             type: 'tool',
                                             content: `正在调用工具: ${toolName}...`
                                         });
@@ -1866,7 +2043,7 @@ createApp({
                                 } else if (data.type === 'tool_result') {
                                     // Insert tool completion message
                                     const toolName = data.tool;
-                                    chatMessages.value.push({
+                                    appendChatMessage({
                                         type: 'tool',
                                         content: `工具 ${toolName} 调用完成`
                                     });
@@ -1882,7 +2059,7 @@ createApp({
                 }
             } catch (error) {
                 console.error('Chat error:', error);
-                chatMessages.value.push({ type: 'error', content: '抱歉，服务暂时不可用，请稍后再试。' });
+                appendChatMessage({ type: 'error', content: '抱歉，服务暂时不可用，请稍后再试。' });
             } finally {
                 isChatting.value = false;
                 scrollToBottom();
@@ -1895,7 +2072,7 @@ createApp({
             try {
                 await request('/chat/refresh', 'POST');
                 chatMessages.value = [
-                    { type: 'ai', content: '对话历史已清除。' }
+                    buildChatMessage({ type: 'ai', content: '对话历史已清除。' })
                 ];
                 chatInput.value = '';
                 chatImages.value = [];
@@ -1978,23 +2155,40 @@ createApp({
             window.print();
         };
 
+        // Banner Carousel State
+        const currentBannerIndex = ref(0);
+        let bannerCarouselTimer = null;
+        
+        const startBannerCarousel = () => {
+            bannerCarouselTimer = setInterval(() => {
+                currentBannerIndex.value = (currentBannerIndex.value + 1) % 2;
+            }, 5000);
+        };
+        
+        const stopBannerCarousel = () => {
+            if (bannerCarouselTimer) {
+                clearInterval(bannerCarouselTimer);
+                bannerCarouselTimer = null;
+            }
+        };
+
         return {
             isAuthenticated, user, authMode, loginMethod, form, ageForm, analyzeForm, 
             captchaImage, requiresGraphCaptcha, shouldShowSMSCodeSection, authSubmitLabel, smsCodeButtonText, canSendSMSCode, demoSMSCode,
             fetchCaptcha, sendSMSCode, handleAuth, logout, loading,
             activeTab, tasks, history, selectedTask, toasts, analyzing,
             deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase,
-            formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
+            formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass, renderMarkdown,
             updateAge, deleteAccount, openImage, exportData, printReport,
             getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
             ageEditorVisible, toggleAgeEditor, cancelAgeEditor, openProfilePrivacyPage, closeProfilePrivacyPage,
-            familyOverview, familyMembers, familyInvitations, familyGuardianLinks, familyNotifications,
-            familyLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyGuardianForm,
+            familyOverview, familyMembers, familyInvitations, familyReceivedInvitations, familyGuardianLinks, familyNotifications,
+            familyLoading, familyReceivedLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyAcceptForm, familyGuardianForm,
             familyUnreadCount, familyHasGroup, familyGuardianCandidates, familyProtectedCandidates,
             openDropdownKey, familyRoleSelectOptions, familyGuardianSelectOptions, familyProtectedSelectOptions,
             getSelectedOptionLabel, getSelectedOptionHint, toggleDropdown, closeDropdown, selectDropdownValue,
-            createFamily, createFamilyInvitation, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
-            familyDeletingMembers, familyDeletingGuardianLinks, familyMarkingNotifications,
+            createFamily, createFamilyInvitation, acceptFamilyInvitation, fetchReceivedFamilyInvitations, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
+            familyDeletingMembers, familyDeletingGuardianLinks, familyAcceptingInvitations, familyMarkingNotifications,
             showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state
@@ -2003,7 +2197,8 @@ createApp({
             riskInterval, fetchRiskTrend, riskData, riskStatsSummary, getRiskTrendAnalysisClass, formatRiskTrendDescriptor, getRiskTrendHeadline, getRecentRiskTrendRows, formatChartLabel,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentHighRiskCases, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
-            acknowledgeActiveAlert, openAlertHistory
+            acknowledgeActiveAlert, openAlertHistory,
+            currentBannerIndex, startBannerCarousel, stopBannerCarousel
         };
     }
 }).mount('#app');

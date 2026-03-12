@@ -921,11 +921,47 @@ createApp({
         };
 
         // Family System
+        const pruneFamilyNotificationsByMembers = (members) => {
+            const activeUserIDs = new Set(
+                (Array.isArray(members) ? members : [])
+                    .map(item => Number(item?.user_id || 0))
+                    .filter(userID => Number.isInteger(userID) && userID > 0)
+            );
+
+            if (activeUserIDs.size === 0) {
+                familyNotifications.value = [];
+                familyNotificationSeenIDs.clear();
+                activeFamilyNotification.value = null;
+                familyAlertModalVisible.value = false;
+                return;
+            }
+
+            familyNotifications.value = familyNotifications.value.filter(item => {
+                const targetUserID = Number(item?.target_user_id || 0);
+                return Number.isInteger(targetUserID) && activeUserIDs.has(targetUserID);
+            });
+
+            familyNotificationSeenIDs.clear();
+            familyNotifications.value.forEach(item => {
+                const notificationID = Number(item?.id || 0);
+                if (Number.isInteger(notificationID) && notificationID > 0) {
+                    familyNotificationSeenIDs.add(notificationID);
+                }
+            });
+
+            const activeTargetUserID = Number(activeFamilyNotification.value?.target_user_id || 0);
+            if (!Number.isInteger(activeTargetUserID) || !activeUserIDs.has(activeTargetUserID)) {
+                activeFamilyNotification.value = null;
+                familyAlertModalVisible.value = false;
+            }
+        };
+
         const hydrateFamilyOverview = (overview) => {
             familyOverview.value = overview || null;
             familyMembers.value = Array.isArray(overview?.members) ? overview.members : [];
             familyInvitations.value = Array.isArray(overview?.invitations) ? overview.invitations : [];
             familyGuardianLinks.value = Array.isArray(overview?.guardian_links) ? overview.guardian_links : [];
+            pruneFamilyNotificationsByMembers(familyMembers.value);
         };
 
         const fetchFamilyOverview = async ({ silent = false } = {}) => {

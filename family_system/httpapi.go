@@ -28,6 +28,7 @@ func RegisterRoutes(router *gin.RouterGroup, service *Service) {
 	router.GET("/families/me", getMyFamilyHandle(service))
 	router.POST("/families/invitations", createInvitationHandle(service))
 	router.GET("/families/invitations", listInvitationsHandle(service))
+	router.GET("/families/invitations/received", listReceivedInvitationsHandle(service))
 	router.POST("/families/invitations/accept", acceptInvitationHandle(service))
 	router.GET("/families/members", listMembersHandle(service))
 	router.PATCH("/families/members/:memberId", updateMemberHandle(service))
@@ -58,6 +59,7 @@ type familyNotificationWSMessage struct {
 	EventType      string `json:"event_type"`
 	RecordID       string `json:"record_id"`
 	Title          string `json:"title"`
+	CaseSummary    string `json:"case_summary,omitempty"`
 	ScamType       string `json:"scam_type,omitempty"`
 	Summary        string `json:"summary"`
 	RiskLevel      string `json:"risk_level"`
@@ -127,6 +129,21 @@ func listInvitationsHandle(service *Service) gin.HandlerFunc {
 			return
 		}
 		result, err := service.ListInvitations(c.Request.Context(), userID)
+		if err != nil {
+			writeFamilyError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"invitations": result})
+	}
+}
+
+func listReceivedInvitationsHandle(service *Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := resolveCurrentUserID(c)
+		if !ok {
+			return
+		}
+		result, err := service.ListReceivedInvitations(c.Request.Context(), userID)
 		if err != nil {
 			writeFamilyError(c, err)
 			return
@@ -434,6 +451,7 @@ func pushFamilyNotifications(ws *websocket.Conn, service *Service, userID uint, 
 			EventType:      strings.TrimSpace(item.EventType),
 			RecordID:       strings.TrimSpace(item.RecordID),
 			Title:          strings.TrimSpace(item.Title),
+			CaseSummary:    strings.TrimSpace(item.CaseSummary),
 			ScamType:       strings.TrimSpace(item.ScamType),
 			Summary:        strings.TrimSpace(item.Summary),
 			RiskLevel:      strings.TrimSpace(item.RiskLevel),

@@ -221,7 +221,7 @@ flowchart LR
 - 家庭系统解耦建模：
   - `family_groups`：家庭组本体
   - `family_members`：家庭成员与角色
-  - `family_invitations`：家庭邀请与接受状态
+  - `family_invitations`：家庭邀请暂存记录（用户加入或邀请过期后清理）
   - `family_guardian_links`：守护人 -> 被守护成员配置
   - `family_notifications`：面向守护人的家庭风险通知
 - 风险事件联动：

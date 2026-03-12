@@ -88,13 +88,17 @@
 | `role` | `string` / `varchar(32)` | 索引, `not null` | 邀请加入后的角色 |
 | `relation` | `string` / `varchar(64)` | 可空 | 关系描述 |
 | `invite_code` | `string` / `varchar(32)` | `uniqueIndex`, `not null` | 邀请码 |
-| `status` | `string` / `varchar(32)` | 索引, `not null` | `pending/accepted/revoked/expired` |
+| `status` | `string` / `varchar(32)` | 索引, `not null` | `pending/revoked` |
 | `expires_at` | `time.Time` / `datetime` | 索引, `not null` | 过期时间 |
-| `accepted_by_user_id` | `*uint` / `integer` | 索引, 可空 | 接受邀请的用户 ID |
-| `accepted_at` | `*time.Time` / `datetime` | 索引, 可空 | 接受时间 |
 | `created_at` | `time.Time` / `datetime` | 无 | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
 | `deleted_at` | `gorm.DeletedAt` / `datetime` | 索引 | 软删除时间 |
+
+说明：
+
+- 用户接受邀请并成功加入家庭后，服务端会物理删除所有与该用户邮箱/手机号匹配的邀请记录，不保留已接受记录。
+- 邀请过期后，服务端会在查询、创建新邀请、接受邀请等路径中自动清理过期记录。
+- `deleted_at` 来自 `gorm.Model`；业务清理路径使用物理删除，不依赖软删除归档已接受或已过期邀请。
 
 ### 2.1.4 `family_guardian_links`（守护关系表）
 

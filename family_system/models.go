@@ -15,10 +15,8 @@ const (
 
 	FamilyMemberStatusActive = "active"
 
-	FamilyInvitationStatusPending  = "pending"
-	FamilyInvitationStatusAccepted = "accepted"
-	FamilyInvitationStatusRevoked  = "revoked"
-	FamilyInvitationStatusExpired  = "expired"
+	FamilyInvitationStatusPending = "pending"
+	FamilyInvitationStatusRevoked = "revoked"
 
 	FamilyGuardianLinkStatusActive = "active"
 
@@ -56,17 +54,15 @@ func (FamilyMemberEntity) TableName() string {
 // FamilyInvitationEntity 表示家庭邀请记录。
 type FamilyInvitationEntity struct {
 	gorm.Model
-	FamilyID         uint       `gorm:"index;not null"`
-	InviterUserID    uint       `gorm:"index;not null"`
-	InviteeEmail     *string    `gorm:"size:255;index"`
-	InviteePhone     *string    `gorm:"size:32;index"`
-	Role             string     `gorm:"size:32;index;not null"`
-	Relation         string     `gorm:"size:64"`
-	InviteCode       string     `gorm:"size:32;uniqueIndex;not null"`
-	Status           string     `gorm:"size:32;index;not null;default:'pending'"`
-	ExpiresAt        time.Time  `gorm:"index;not null"`
-	AcceptedByUserID *uint      `gorm:"index"`
-	AcceptedAt       *time.Time `gorm:"index"`
+	FamilyID      uint      `gorm:"index;not null"`
+	InviterUserID uint      `gorm:"index;not null"`
+	InviteeEmail  *string   `gorm:"size:255;index"`
+	InviteePhone  *string   `gorm:"size:32;index"`
+	Role          string    `gorm:"size:32;index;not null"`
+	Relation      string    `gorm:"size:64"`
+	InviteCode    string    `gorm:"size:32;uniqueIndex;not null"`
+	Status        string    `gorm:"size:32;index;not null;default:'pending'"`
+	ExpiresAt     time.Time `gorm:"index;not null"`
 }
 
 func (FamilyInvitationEntity) TableName() string {
@@ -168,17 +164,34 @@ type FamilyMemberView struct {
 
 // FamilyInvitationView 是邀请返回结构。
 type FamilyInvitationView struct {
-	ID               uint   `json:"id"`
-	FamilyID         uint   `json:"family_id"`
-	InviterUserID    uint   `json:"inviter_user_id"`
-	InviteeEmail     string `json:"invitee_email,omitempty"`
-	InviteePhone     string `json:"invitee_phone,omitempty"`
-	Role             string `json:"role"`
-	Relation         string `json:"relation,omitempty"`
-	InviteCode       string `json:"invite_code"`
-	Status           string `json:"status"`
-	ExpiresAt        string `json:"expires_at"`
-	AcceptedByUserID *uint  `json:"accepted_by_user_id,omitempty"`
+	ID            uint   `json:"id"`
+	FamilyID      uint   `json:"family_id"`
+	InviterUserID uint   `json:"inviter_user_id"`
+	InviteeEmail  string `json:"invitee_email,omitempty"`
+	InviteePhone  string `json:"invitee_phone,omitempty"`
+	Role          string `json:"role"`
+	Relation      string `json:"relation,omitempty"`
+	InviteCode    string `json:"invite_code"`
+	Status        string `json:"status"`
+	ExpiresAt     string `json:"expires_at"`
+}
+
+// ReceivedFamilyInvitationView 是被邀请人收到的邀请返回结构。
+type ReceivedFamilyInvitationView struct {
+	ID            uint   `json:"id"`
+	FamilyID      uint   `json:"family_id"`
+	FamilyName    string `json:"family_name"`
+	InviterUserID uint   `json:"inviter_user_id"`
+	InviterName   string `json:"inviter_name"`
+	InviterEmail  string `json:"inviter_email,omitempty"`
+	InviterPhone  string `json:"inviter_phone,omitempty"`
+	InviteeEmail  string `json:"invitee_email,omitempty"`
+	InviteePhone  string `json:"invitee_phone,omitempty"`
+	Role          string `json:"role"`
+	Relation      string `json:"relation,omitempty"`
+	InviteCode    string `json:"invite_code"`
+	Status        string `json:"status"`
+	ExpiresAt     string `json:"expires_at"`
 }
 
 // FamilyGuardianLinkView 是守护关系返回结构。

@@ -1260,7 +1260,48 @@ GET /api/users?query=admin
 - **Method**: `GET`
 - **Path**: `/api/families/invitations`
 
-### 15.3.5 接受家庭邀请
+说明：
+
+- 仅已加入家庭的成员可查看当前家庭的邀请记录
+
+### 15.3.5 查询我收到的家庭邀请
+
+- **Method**: `GET`
+- **Path**: `/api/families/invitations/received`
+
+成功响应示例：
+
+```json
+{
+  "invitations": [
+    {
+      "id": 12,
+      "family_id": 1,
+      "family_name": "张三家庭",
+      "inviter_user_id": 3,
+      "inviter_name": "zhangsan",
+      "inviter_email": "zhangsan@example.com",
+      "inviter_phone": "13800138000",
+      "invitee_email": "parent@example.com",
+      "invitee_phone": "13900139000",
+      "role": "member",
+      "relation": "父亲",
+      "invite_code": "INV-2B73D5E1A0C4",
+      "status": "pending",
+      "expires_at": "2026-03-19T10:00:00+08:00"
+    }
+  ]
+}
+```
+
+说明：
+
+- 返回当前登录账号按邮箱/手机号匹配到的邀请
+- 可用于被邀请人侧展示“收到的家庭邀请”列表
+- `status` 可能为 `pending`、`revoked`
+- 过期邀请会在服务端自动清理，默认不会继续出现在列表中
+
+### 15.3.6 接受家庭邀请
 
 - **Method**: `POST`
 - **Path**: `/api/families/invitations/accept`
@@ -1275,6 +1316,8 @@ GET /api/users?query=admin
 
 - 当前登录用户的邮箱/手机号必须与邀请目标匹配
 - 邀请接受后会写入 `family_members`
+- 邀请接受后会物理删除所有匹配当前用户邮箱/手机号的家庭邀请记录，不保留已接受记录
+- 邀请已过期时，服务端会删除该邀请记录并返回“邀请已过期”
 
 ### 15.3.6 查询家庭成员
 

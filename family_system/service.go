@@ -163,6 +163,9 @@ func (s *Service) CreateInvitation(ctx context.Context, userID uint, input Creat
 	if err := s.ensureReady(); err != nil {
 		return FamilyInvitationView{}, err
 	}
+	if err := cleanupExpiredInvitations(s.db.WithContext(ctx)); err != nil {
+		return FamilyInvitationView{}, err
+	}
 
 	group, currentMember, err := s.mustGetOwnedFamily(ctx, userID)
 	if err != nil {
@@ -242,6 +245,66 @@ func (s *Service) ListInvitations(ctx context.Context, userID uint) ([]FamilyInv
 	return s.listFamilyInvitations(ctx, group.ID)
 }
 
+// ListReceivedInvitations 返回当前用户收到的家庭邀请。
+func (s *Service) ListReceivedInvitations(ctx context.Context, userID uint) ([]ReceivedFamilyInvitationView, error) {
+	if err := s.ensureReady(); err != nil {
+		return nil, err
+	}
+	if err := cleanupExpiredInvitations(s.db.WithContext(ctx)); err != nil {
+		return nil, err
+	}
+
+	user, err := s.getUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	trimmedEmail := strings.TrimSpace(user.Email)
+	normalizedPhone := derefString(user.Phone)
+	if trimmedEmail == "" && normalizedPhone == "" {
+		return []ReceivedFamilyInvitationView{}, nil
+	}
+
+	rows := make([]FamilyInvitationEntity, 0)
+	query := s.db.WithContext(ctx).Order("created_at desc")
+	switch {
+	case trimmedEmail != "" && normalizedPhone != "":
+		query = query.Where("LOWER(invitee_email) = LOWER(?) OR invitee_phone = ?", trimmedEmail, normalizedPhone)
+	case trimmedEmail != "":
+		query = query.Where("LOWER(invitee_email) = LOWER(?)", trimmedEmail)
+	default:
+		query = query.Where("invitee_phone = ?", normalizedPhone)
+	}
+	if err := query.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	inviterUserIDs := make([]uint, 0, len(rows))
+	familyIDs := make([]uint, 0, len(rows))
+	for _, row := range rows {
+		inviterUserIDs = append(inviterUserIDs, row.InviterUserID)
+		familyIDs = append(familyIDs, row.FamilyID)
+	}
+
+	inviters, err := s.loadUsersByIDs(ctx, inviterUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	groups, err := s.loadFamilyGroupsByIDs(ctx, familyIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]ReceivedFamilyInvitationView, 0, len(rows))
+	for _, row := range rows {
+		if !invitationMatchesUser(row, user) {
+			continue
+		}
+		result = append(result, receivedInvitationViewFromEntity(row, groups[row.FamilyID], inviters[row.InviterUserID]))
+	}
+	return result, nil
+}
+
 // AcceptInvitation 接受家庭邀请。
 func (s *Service) AcceptInvitation(ctx context.Context, userID uint, input AcceptFamilyInvitationInput) (FamilyOverviewResponse, error) {
 	if err := s.ensureReady(); err != nil {
@@ -275,6 +338,7 @@ func (s *Service) AcceptInvitation(ctx context.Context, userID uint, input Accep
 		return FamilyOverviewResponse{}, ErrInvitationProcessed
 	}
 	if invitation.ExpiresAt.Before(time.Now()) {
+		_ = s.db.WithContext(ctx).Unscoped().Delete(&FamilyInvitationEntity{}, invitation.ID).Error
 		return FamilyOverviewResponse{}, ErrInvitationExpired
 	}
 	if !invitationMatchesUser(invitation, user) {
@@ -294,14 +358,7 @@ func (s *Service) AcceptInvitation(ctx context.Context, userID uint, input Accep
 			return err
 		}
 
-		now := time.Now()
-		return tx.Model(&FamilyInvitationEntity{}).
-			Where("id = ?", invitation.ID).
-			Updates(map[string]interface{}{
-				"status":              FamilyInvitationStatusAccepted,
-				"accepted_by_user_id": userID,
-				"accepted_at":         now,
-			}).Error
+		return deleteInvitationsForUser(tx, user)
 	})
 	if err != nil {
 		return FamilyOverviewResponse{}, err
@@ -387,10 +444,15 @@ func (s *Service) RemoveMember(ctx context.Context, userID uint, memberID uint) 
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("family_id = ? AND (guardian_user_id = ? OR member_user_id = ?)", group.ID, member.UserID, member.UserID).Delete(&FamilyGuardianLinkEntity{}).Error; err != nil {
+		if err := tx.Unscoped().
+			Where("family_id = ? AND (guardian_user_id = ? OR member_user_id = ?)", group.ID, member.UserID, member.UserID).
+			Delete(&FamilyGuardianLinkEntity{}).Error; err != nil {
 			return err
 		}
-		return tx.Delete(&member).Error
+		if err := deleteNotificationsForFamilyUser(tx, group.ID, member.UserID); err != nil {
+			return err
+		}
+		return tx.Unscoped().Delete(&member).Error
 	})
 }
 
@@ -444,7 +506,7 @@ func (s *Service) DeleteGuardianLink(ctx context.Context, userID uint, linkID ui
 		return err
 	}
 
-	result := s.db.WithContext(ctx).Where("id = ? AND family_id = ?", linkID, group.ID).Delete(&FamilyGuardianLinkEntity{})
+	result := s.db.WithContext(ctx).Unscoped().Where("id = ? AND family_id = ?", linkID, group.ID).Delete(&FamilyGuardianLinkEntity{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -466,7 +528,7 @@ func (s *Service) ListNotifications(ctx context.Context, userID uint) ([]FamilyN
 	return s.buildNotificationViews(ctx, rows)
 }
 
-// ListRecentUnreadNotifications 返回当前用户最近窗口内的未读家庭通知。
+// ListRecentUnreadNotifications 返回当前用户最近窗口内的家庭通知（无论已读未读）。
 func (s *Service) ListRecentUnreadNotifications(ctx context.Context, userID uint, recentWindow time.Duration) ([]FamilyNotificationView, error) {
 	if err := s.ensureReady(); err != nil {
 		return nil, err
@@ -477,7 +539,7 @@ func (s *Service) ListRecentUnreadNotifications(ctx context.Context, userID uint
 	cutoff := time.Now().Add(-recentWindow)
 	rows := make([]FamilyNotificationEntity, 0)
 	if err := s.db.WithContext(ctx).
-		Where("receiver_user_id = ? AND read_at IS NULL AND event_at >= ?", userID, cutoff).
+		Where("receiver_user_id = ? AND event_at >= ?", userID, cutoff).
 		Order("event_at desc, created_at desc").
 		Find(&rows).Error; err != nil {
 		return nil, err
@@ -652,15 +714,15 @@ func (s *Service) listFamilyMembers(ctx context.Context, familyID uint) ([]Famil
 }
 
 func (s *Service) listFamilyInvitations(ctx context.Context, familyID uint) ([]FamilyInvitationView, error) {
+	if err := cleanupExpiredInvitations(s.db.WithContext(ctx)); err != nil {
+		return nil, err
+	}
 	rows := make([]FamilyInvitationEntity, 0)
 	if err := s.db.WithContext(ctx).Where("family_id = ?", familyID).Order("created_at desc").Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	result := make([]FamilyInvitationView, 0, len(rows))
 	for _, row := range rows {
-		if row.Status == FamilyInvitationStatusPending && row.ExpiresAt.Before(time.Now()) {
-			row.Status = FamilyInvitationStatusExpired
-		}
 		result = append(result, invitationViewFromEntity(row))
 	}
 	return result, nil
@@ -788,6 +850,23 @@ func (s *Service) loadUsersByIDs(ctx context.Context, ids []uint) (map[uint]logi
 	return result, nil
 }
 
+func (s *Service) loadFamilyGroupsByIDs(ctx context.Context, ids []uint) (map[uint]FamilyGroupEntity, error) {
+	result := map[uint]FamilyGroupEntity{}
+	uniqueIDs := uniqueUint(ids)
+	if len(uniqueIDs) == 0 {
+		return result, nil
+	}
+
+	rows := make([]FamilyGroupEntity, 0, len(uniqueIDs))
+	if err := s.db.WithContext(ctx).Where("id IN ?", uniqueIDs).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		result[row.ID] = row
+	}
+	return result, nil
+}
+
 func buildFamilyOverviewViews(group FamilyGroupEntity, currentMember FamilyMemberEntity, members []FamilyMemberView) (*FamilyGroupView, *FamilyMemberView) {
 	var ownerView *FamilyMemberView
 	var currentView *FamilyMemberView
@@ -835,6 +914,48 @@ func invitationMatchesUser(invitation FamilyInvitationEntity, user loginmodel.Us
 	return true
 }
 
+func cleanupExpiredInvitations(tx *gorm.DB) error {
+	if tx == nil {
+		return nil
+	}
+	return tx.Unscoped().
+		Where("status = ? AND expires_at < ?", FamilyInvitationStatusPending, time.Now()).
+		Delete(&FamilyInvitationEntity{}).Error
+}
+
+func deleteInvitationsForUser(tx *gorm.DB, user loginmodel.User) error {
+	if tx == nil {
+		return nil
+	}
+
+	trimmedEmail := strings.TrimSpace(user.Email)
+	normalizedPhone := derefString(user.Phone)
+	query := tx.Unscoped().Model(&FamilyInvitationEntity{})
+
+	switch {
+	case trimmedEmail != "" && normalizedPhone != "":
+		return query.Where("LOWER(invitee_email) = LOWER(?) OR invitee_phone = ?", trimmedEmail, normalizedPhone).
+			Delete(&FamilyInvitationEntity{}).Error
+	case trimmedEmail != "":
+		return query.Where("LOWER(invitee_email) = LOWER(?)", trimmedEmail).
+			Delete(&FamilyInvitationEntity{}).Error
+	case normalizedPhone != "":
+		return query.Where("invitee_phone = ?", normalizedPhone).
+			Delete(&FamilyInvitationEntity{}).Error
+	default:
+		return nil
+	}
+}
+
+func deleteNotificationsForFamilyUser(tx *gorm.DB, familyID uint, userID uint) error {
+	if tx == nil || familyID == 0 || userID == 0 {
+		return nil
+	}
+	return tx.Unscoped().
+		Where("family_id = ? AND (target_user_id = ? OR receiver_user_id = ?)", familyID, userID, userID).
+		Delete(&FamilyNotificationEntity{}).Error
+}
+
 func normalizeFamilyRole(raw string, allowOwner bool) (string, error) {
 	switch strings.TrimSpace(raw) {
 	case "", FamilyMemberRoleMember:
@@ -866,17 +987,35 @@ func memberViewFromEntity(entity FamilyMemberEntity, user loginmodel.User) Famil
 
 func invitationViewFromEntity(entity FamilyInvitationEntity) FamilyInvitationView {
 	return FamilyInvitationView{
-		ID:               entity.ID,
-		FamilyID:         entity.FamilyID,
-		InviterUserID:    entity.InviterUserID,
-		InviteeEmail:     derefString(entity.InviteeEmail),
-		InviteePhone:     derefString(entity.InviteePhone),
-		Role:             strings.TrimSpace(entity.Role),
-		Relation:         strings.TrimSpace(entity.Relation),
-		InviteCode:       strings.TrimSpace(entity.InviteCode),
-		Status:           strings.TrimSpace(entity.Status),
-		ExpiresAt:        entity.ExpiresAt.Format(time.RFC3339),
-		AcceptedByUserID: entity.AcceptedByUserID,
+		ID:            entity.ID,
+		FamilyID:      entity.FamilyID,
+		InviterUserID: entity.InviterUserID,
+		InviteeEmail:  derefString(entity.InviteeEmail),
+		InviteePhone:  derefString(entity.InviteePhone),
+		Role:          strings.TrimSpace(entity.Role),
+		Relation:      strings.TrimSpace(entity.Relation),
+		InviteCode:    strings.TrimSpace(entity.InviteCode),
+		Status:        strings.TrimSpace(entity.Status),
+		ExpiresAt:     entity.ExpiresAt.Format(time.RFC3339),
+	}
+}
+
+func receivedInvitationViewFromEntity(entity FamilyInvitationEntity, group FamilyGroupEntity, inviter loginmodel.User) ReceivedFamilyInvitationView {
+	return ReceivedFamilyInvitationView{
+		ID:            entity.ID,
+		FamilyID:      entity.FamilyID,
+		FamilyName:    strings.TrimSpace(group.Name),
+		InviterUserID: entity.InviterUserID,
+		InviterName:   strings.TrimSpace(inviter.Username),
+		InviterEmail:  strings.TrimSpace(inviter.Email),
+		InviterPhone:  derefString(inviter.Phone),
+		InviteeEmail:  derefString(entity.InviteeEmail),
+		InviteePhone:  derefString(entity.InviteePhone),
+		Role:          strings.TrimSpace(entity.Role),
+		Relation:      strings.TrimSpace(entity.Relation),
+		InviteCode:    strings.TrimSpace(entity.InviteCode),
+		Status:        strings.TrimSpace(entity.Status),
+		ExpiresAt:     entity.ExpiresAt.Format(time.RFC3339),
 	}
 }
 
