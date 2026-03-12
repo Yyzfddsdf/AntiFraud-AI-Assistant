@@ -1661,21 +1661,39 @@ createApp({
             win.document.write(`<img src="${src}" style="max-width:100%; height:auto;">`);
         };
 
+        const escapeHtml = (text) => String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const renderPlainText = (text) => {
+            const escaped = escapeHtml(text);
+            return escaped.replace(/\r?\n/g, '<br>');
+        };
+
         // Markdown Renderer
         const renderMarkdown = (text) => {
             if (!text) return '';
-            if (typeof marked !== 'undefined') {
-                try {
-                    return marked.parse(text, {
-                        breaks: true,
-                        gfm: true
-                    });
-                } catch (e) {
-                    console.error('Markdown parse error:', e);
-                    return text;
-                }
+
+            const parser = window.marked && typeof window.marked.parse === 'function'
+                ? window.marked
+                : (typeof marked !== 'undefined' && marked && typeof marked.parse === 'function' ? marked : null);
+
+            if (!parser) {
+                return renderPlainText(text);
             }
-            return text;
+
+            try {
+                return parser.parse(text, {
+                    breaks: true,
+                    gfm: true
+                });
+            } catch (e) {
+                console.error('Markdown parse error:', e);
+                return renderPlainText(text);
+            }
         };
 
         const buildChatMessage = (message) => {

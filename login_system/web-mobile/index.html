@@ -17,7 +17,15 @@
     <link rel="stylesheet" href="/mobile/assets/css/style.css">
 
     <style>
-        body { -webkit-tap-highlight-color: transparent; }
+        html {
+            font-size: 14px;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            line-height: 1.45;
+        }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -25,8 +33,8 @@
         
         .m-card {
             background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
         }
         
         .m-input {
@@ -34,8 +42,8 @@
             background: transparent;
             border-bottom: 1px solid #e5e7eb;
             border-radius: 0;
-            padding: 14px 0;
-            font-size: 17px;
+            padding: 11px 0;
+            font-size: 15px;
             width: 100%;
             transition: border-color 0.3s;
         }
@@ -50,12 +58,12 @@
             border: 1px solid #dbe3ee;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
             color: #0f172a;
-            border-radius: 16px;
-            padding: 13px 42px 13px 14px;
-            font-size: 14px;
+            border-radius: 14px;
+            padding: 11px 40px 11px 12px;
+            font-size: 13px;
             line-height: 1.4;
             font-weight: 600;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.035);
             transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         }
         .m-select-ui:focus {
@@ -82,12 +90,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            padding: 14px 16px;
-            border-radius: 18px;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 16px;
             border: 1px solid #dbe3ee;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.035);
             text-align: left;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
@@ -99,15 +107,15 @@
             position: absolute;
             left: 0;
             right: 0;
-            top: calc(100% + 8px);
+            top: calc(100% + 6px);
             z-index: 40;
-            padding: 8px;
-            border-radius: 20px;
+            padding: 6px;
+            border-radius: 18px;
             border: 1px solid #dbe3ee;
             background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
             backdrop-filter: blur(14px);
-            max-height: 260px;
+            max-height: 240px;
             overflow-y: auto;
         }
         .m-dropdown-option {
@@ -115,9 +123,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            padding: 12px 12px;
-            border-radius: 14px;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
             text-align: left;
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
@@ -136,8 +144,8 @@
         .m-list-shell {
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(226, 232, 240, 0.92);
-            border-radius: 22px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+            border-radius: 18px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.035);
             overflow: hidden;
         }
         .m-list-row + .m-list-row {
@@ -147,10 +155,10 @@
         .m-btn-primary {
             background: #059669;
             color: #ffffff;
-            border-radius: 24px;
-            padding: 14px;
+            border-radius: 18px;
+            padding: 12px;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 14px;
             width: 100%;
             display: flex;
             justify-content: center;
@@ -176,13 +184,13 @@
         .fade-enter-from, .fade-leave-to { opacity: 0; }
 
         /* Markdown Styles */
-        .markdown-body h1 { font-size: 20px; font-weight: 700; margin: 16px 0 12px; color: #1e293b; }
-        .markdown-body h2 { font-size: 18px; font-weight: 700; margin: 14px 0 10px; color: #1e293b; }
-        .markdown-body h3 { font-size: 16px; font-weight: 600; margin: 12px 0 8px; color: #334155; }
-        .markdown-body p { margin: 8px 0; line-height: 1.7; }
-        .markdown-body ul, .markdown-body ol { margin: 8px 0; padding-left: 20px; }
+        .markdown-body h1 { font-size: 17px; font-weight: 700; margin: 14px 0 10px; color: #1e293b; }
+        .markdown-body h2 { font-size: 15px; font-weight: 700; margin: 12px 0 8px; color: #1e293b; }
+        .markdown-body h3 { font-size: 14px; font-weight: 600; margin: 10px 0 6px; color: #334155; }
+        .markdown-body p { margin: 7px 0; line-height: 1.6; }
+        .markdown-body ul, .markdown-body ol { margin: 7px 0; padding-left: 18px; }
         .markdown-body li { margin: 4px 0; }
-        .markdown-body code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; color: #059669; }
+        .markdown-body code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #059669; }
         .markdown-body pre { background: #1e293b; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 12px 0; }
         .markdown-body pre code { background: transparent; color: #e2e8f0; padding: 0; }
         .markdown-body blockquote { border-left: 3px solid #059669; padding-left: 12px; margin: 12px 0; color: #64748b; font-style: italic; }
@@ -193,6 +201,56 @@
         .markdown-body hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
         .markdown-body strong { font-weight: 700; color: #1e293b; }
         .markdown-body em { font-style: italic; }
+
+        /* Density tuning: reduce oversized mobile feel */
+        .text-3xl { font-size: 1.65rem !important; line-height: 1.05 !important; }
+        .text-2xl { font-size: 1.42rem !important; line-height: 1.1 !important; }
+        .text-xl { font-size: 1.18rem !important; line-height: 1.15 !important; }
+        .text-lg { font-size: 1.02rem !important; line-height: 1.22 !important; }
+        .text-base { font-size: 0.93rem !important; }
+        .text-sm { font-size: 0.82rem !important; }
+        .text-xs { font-size: 0.72rem !important; }
+        .p-5 {
+            padding-inline: 1rem !important;
+            padding-block: 0.8rem !important;
+        }
+        .p-4 {
+            padding-inline: 0.85rem !important;
+            padding-block: 0.68rem !important;
+        }
+        .py-3 {
+            padding-top: 0.62rem !important;
+            padding-bottom: 0.62rem !important;
+        }
+        .py-2 {
+            padding-top: 0.45rem !important;
+            padding-bottom: 0.45rem !important;
+        }
+        .gap-8 { gap: 1.4rem !important; }
+        .gap-6 { gap: 1rem !important; }
+        .gap-5 { gap: 0.9rem !important; }
+        .gap-4 { gap: 0.75rem !important; }
+        .rounded-3xl { border-radius: 1.25rem !important; }
+        .rounded-2xl { border-radius: 0.95rem !important; }
+        .mt-6 { margin-top: 1rem !important; }
+        .mt-4 { margin-top: 0.8rem !important; }
+        .mb-12 { margin-bottom: 2rem !important; }
+        .py-10 {
+            padding-top: 1.6rem !important;
+            padding-bottom: 1.6rem !important;
+        }
+        .py-20 {
+            padding-top: 3.5rem !important;
+            padding-bottom: 3.5rem !important;
+        }
+        .pb-24 { padding-bottom: 5rem !important; }
+        .pb-32 { padding-bottom: 6.5rem !important; }
+        .min-h-\[600px\] { min-height: 540px !important; }
+        .h-26 { height: 5.75rem !important; }
+        .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem !important; }
+        .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.9rem !important; }
+        .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem !important; }
+        .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.6rem !important; }
     </style>
 </head>
 <body class="h-full overflow-hidden text-slate-900 font-sans">
@@ -306,96 +364,96 @@
                 <!-- Dashboard (Tasks) -->
                 <div v-show="activeTab === 'tasks'" class="pb-safe">
                     <!-- Banner Carousel -->
-                    <div class="relative overflow-hidden w-full rounded-3xl" style="min-height: 200px;">
+                    <div class="relative overflow-hidden w-full rounded-2xl" style="min-height: 160px;">
                         <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: 'translateX(-' + currentBannerIndex * 100 + '%)' }">
-                            <div class="w-full flex-shrink-0" style="background-image: url('/mobile/assets/images/background.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 200px;"></div>
-                            <div class="w-full flex-shrink-0" style="background-image: url('/mobile/assets/images/2.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 200px;"></div>
+                            <div class="w-full flex-shrink-0" style="background-image: url('/mobile/assets/images/background.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
+                            <div class="w-full flex-shrink-0" style="background-image: url('/mobile/assets/images/2.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
                         </div>
                         <!-- Carousel Indicators -->
-                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
                             <button @click="currentBannerIndex = 0" :class="['w-2 h-2 rounded-full transition-colors', currentBannerIndex === 0 ? 'bg-white' : 'bg-white/50']"></button>
                             <button @click="currentBannerIndex = 1" :class="['w-2 h-2 rounded-full transition-colors', currentBannerIndex === 1 ? 'bg-white' : 'bg-white/50']"></button>
                         </div>
                     </div>
 
                     <!-- Grid Menu -->
-                    <div class="px-4 mt-4 relative z-20">
-                        <div class="bg-white rounded-2xl shadow-sm p-5 grid grid-cols-4 gap-y-5">
-                            <div @click="activeTab = 'chat'" class="flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    <div class="px-4 mt-3 relative z-20">
+                        <div class="bg-white rounded-2xl shadow-sm p-4 grid grid-cols-4 gap-y-3">
+                            <div @click="activeTab = 'chat'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                                 </div>
-                                <span class="text-sm font-bold text-slate-700">AI助手</span>
+                                <span class="text-xs font-bold text-slate-700">AI助手</span>
                             </div>
-                            <div @click="activeTab = 'history'" class="flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-b from-teal-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            <div @click="activeTab = 'history'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-teal-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                                 </div>
-                                <span class="text-sm font-bold text-slate-700">历史档案</span>
+                                <span class="text-xs font-bold text-slate-700">历史档案</span>
                             </div>
-                            <div @click="activeTab = 'risk_trend'" class="flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-b from-cyan-400 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                            <div @click="activeTab = 'risk_trend'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-cyan-400 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
                                 </div>
-                                <span class="text-sm font-bold text-slate-700">风险趋势</span>
+                                <span class="text-xs font-bold text-slate-700">风险趋势</span>
                             </div>
-                            <div @click="activeTab = 'family'" class="flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-b from-lime-400 to-lime-500 flex items-center justify-center text-white shadow-lg shadow-lime-500/30">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <div @click="activeTab = 'family'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-lime-400 to-lime-500 flex items-center justify-center text-white shadow-lg shadow-lime-500/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 </div>
-                                <span class="text-sm font-bold text-slate-700">家庭守护</span>
+                                <span class="text-xs font-bold text-slate-700">家庭守护</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Stats Cards -->
-                    <div class="px-4 mt-4 grid grid-cols-2 gap-3">
-                        <div class="m-card p-4 h-26 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-100 rounded-bl-full"></div>
-                            <div class="absolute top-3 right-3 text-emerald-600">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="px-4 mt-3 grid grid-cols-2 gap-3">
+                        <div class="m-card p-3 h-24 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-100 rounded-bl-full"></div>
+                            <div class="absolute top-2.5 right-2.5 text-emerald-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
                             <div class="flex flex-col justify-center h-full relative z-10">
-                                <div class="text-emerald-700 text-sm font-bold">今日检测</div>
-                                <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ riskStatsSummary.total }}</div>
+                                <div class="text-emerald-700 text-xs font-bold">今日检测</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ riskStatsSummary.total }}</div>
                             </div>
                         </div>
-                        <div class="m-card p-4 h-26 bg-gradient-to-br from-orange-50 to-white border border-orange-100 shadow-sm relative overflow-hidden">
-                             <div class="absolute top-0 right-0 w-20 h-20 bg-orange-100 rounded-bl-full"></div>
-                             <div class="absolute top-3 right-3 text-orange-500">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div class="m-card p-3 h-24 bg-gradient-to-br from-orange-50 to-white border border-orange-100 shadow-sm relative overflow-hidden">
+                             <div class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full"></div>
+                             <div class="absolute top-2.5 right-2.5 text-orange-500">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </div>
                             <div class="flex flex-col justify-center h-full relative z-10">
-                                <div class="text-orange-600 text-sm font-bold">高风险</div>
-                                <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ riskStatsSummary.high }}</div>
+                                <div class="text-orange-600 text-xs font-bold">高风险</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ riskStatsSummary.high }}</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Trend Chart -->
-                    <div class="px-4 mt-4">
-                        <div class="m-card p-4">
-                            <div class="flex justify-between items-center mb-4">
+                    <div class="px-4 mt-3">
+                        <div class="m-card p-3">
+                            <div class="flex justify-between items-center mb-3">
                                 <h3 class="font-bold text-sm text-slate-800 border-l-4 border-emerald-500 pl-2">风险趋势</h3>
-                                <button @click="activeTab = 'risk_trend'" class="text-sm text-emerald-600 font-medium">查看详情</button>
+                                <button @click="activeTab = 'risk_trend'" class="text-xs text-emerald-600 font-medium">查看详情</button>
                             </div>
                             <div v-if="riskData && riskData.analysis" class="rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-900 text-white">
-                                <div class="px-4 py-4 border-b border-white/10">
+                                <div class="px-3 py-3 border-b border-white/10">
                                     <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/80">
                                         <span class="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.8)]"></span>
                                         AI 风险洞察
                                     </div>
-                                    <h4 class="mt-3 text-lg font-extrabold tracking-tight leading-snug">{{ getRiskTrendHeadline(riskData.analysis) }}</h4>
-                                    <p class="mt-3 text-sm leading-6 text-slate-200/90">{{ riskData.analysis.summary }}</p>
+                                    <h4 class="mt-2 text-base font-extrabold tracking-tight leading-snug">{{ getRiskTrendHeadline(riskData.analysis) }}</h4>
+                                    <p class="mt-2 text-xs leading-5 text-slate-200/90">{{ riskData.analysis.summary }}</p>
                                 </div>
-                                <div class="px-4 py-3 grid grid-cols-2 gap-2 bg-white/5">
-                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-3">
+                                <div class="px-3 py-2.5 grid grid-cols-2 gap-2 bg-white/5">
+                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
                                         <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">整体走势</div>
-                                        <div class="mt-2 text-sm font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.overall_trend) }}</div>
+                                        <div class="mt-1.5 text-xs font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.overall_trend) }}</div>
                                     </div>
-                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-3">
+                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
                                         <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">高危信号</div>
-                                        <div class="mt-2 text-sm font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.high_risk_trend, 'high') }}</div>
+                                        <div class="mt-1.5 text-xs font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.high_risk_trend, 'high') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -403,21 +461,21 @@
                     </div>
 
                     <!-- Recent Tasks List -->
-                    <div class="px-4 mt-4">
-                        <div class="flex justify-between items-center mb-3">
+                    <div class="px-4 mt-3">
+                        <div class="flex justify-between items-center mb-2">
                             <h3 class="font-bold text-sm text-slate-800 border-l-4 border-emerald-500 pl-2">最近任务</h3>
                             <button @click="activeTab = 'history'" class="text-xs text-gray-500">查看全部</button>
                         </div>
-                        <div class="space-y-3">
-                            <div v-for="task in tasks.slice(0, 3)" :key="task.task_id" class="m-card p-4 border-l-4 border-l-transparent hover:border-l-emerald-400 transition-all cursor-pointer active:bg-gray-50" @click="viewTaskDetail(task.task_id)">
-                                <div class="flex justify-between items-start mb-2">
+                        <div class="space-y-2">
+                            <div v-for="task in tasks.slice(0, 3)" :key="task.task_id" class="m-card p-3 border-l-4 border-l-transparent hover:border-l-emerald-400 transition-all cursor-pointer active:bg-gray-50" @click="viewTaskDetail(task.task_id)">
+                                <div class="flex justify-between items-start mb-1.5">
                                     <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
                                     <span class="text-xs text-gray-400">{{ formatTime(task.created_at) }}</span>
                                 </div>
                                 <h4 class="font-bold text-sm truncate text-slate-800">{{ task.title || '未命名任务' }}</h4>
-                                <p class="text-xs text-gray-500 mt-1 line-clamp-1">{{ task.summary || '等待分析...' }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ task.summary || '等待分析...' }}</p>
                             </div>
-                            <div v-if="tasks.length === 0" class="text-center py-8 text-gray-400 text-sm">暂无任务</div>
+                            <div v-if="tasks.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无任务</div>
                         </div>
                     </div>
                 </div>
@@ -552,46 +610,46 @@
                         </button>
                     </div>
 
-                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 bg-white scroll-smooth pb-32">
+                    <div id="chat-container" class="flex-1 overflow-y-auto min-h-0 p-3 space-y-4 bg-white scroll-smooth pb-4">
                         <!-- Welcome Message -->
-                        <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center h-[60vh] text-center px-6 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-                            <div class="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
-                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center h-[56vh] text-center px-5 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+                            <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/30">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                             </div>
-                            <h3 class="text-xl font-bold text-slate-800 mb-2">我是您的反诈助手</h3>
-                            <p class="text-base text-slate-500 max-w-[280px] leading-relaxed">我可以帮您识别诈骗信息、分析风险案例或提供安全建议。请直接发送文字或图片。</p>
+                            <h3 class="text-lg font-bold text-slate-800 mb-1">我是您的反诈助手</h3>
+                            <p class="text-sm text-slate-500 max-w-[260px] leading-relaxed">可帮您识别诈骗信息、分析风险案例或提供安全建议。直接发送文字或图片即可。</p>
                         </div>
 
-                        <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex gap-4 group', msg.type === 'user' ? 'flex-row-reverse' : 'flex-row']">
+                        <div v-for="(msg, idx) in chatMessages" :key="idx" :class="['flex gap-3 group', msg.type === 'user' ? 'flex-row-reverse' : 'flex-row']">
                             <!-- Avatar -->
                             <div class="shrink-0 flex flex-col items-center">
-                                <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm border border-white/20', msg.type === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white']">
+                                <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border border-white/20', msg.type === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white']">
                                     <span v-if="msg.type === 'user'">你</span>
-                                    <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                 </div>
                             </div>
 
                             <!-- Message Content -->
-                            <div :class="['flex flex-col max-w-[85%] min-w-0', msg.type === 'user' ? 'items-end' : 'items-start']">
+                            <div :class="['flex flex-col max-w-[86%] min-w-0', msg.type === 'user' ? 'items-end' : 'items-start']">
                                 <div v-if="msg.type !== 'tool'" class="text-xs font-bold text-slate-400 mb-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {{ msg.type === 'user' ? '你' : '反诈助手' }}
                                 </div>
                                 
-                                <div v-if="msg.type === 'tool'" class="flex items-center gap-2 text-xs font-mono text-slate-500 my-1 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200/60 w-full">
+                                <div v-if="msg.type === 'tool'" class="flex items-center gap-2 text-[11px] font-mono text-slate-500 my-1 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 w-full">
                                     <div class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
                                     <span class="truncate">{{ msg.content }}</span>
                                 </div>
 
-                                <div v-else :class="['relative px-4 py-3 text-[16px] leading-7 shadow-sm', 
+                                <div v-else :class="['relative px-3 py-2.5 text-[14px] leading-6 shadow-sm', 
                                     msg.type === 'user' ? 'bg-[#f4f4f4] text-slate-800 rounded-2xl rounded-tr-sm' : 
                                     msg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100 rounded-2xl rounded-tl-sm' : 
                                     'bg-transparent text-slate-800 p-0 shadow-none']">
                                     <div v-if="msg.type === 'ai' && msg.rendered_content" class="break-words markdown-body" v-html="msg.rendered_content"></div>
                                     <div v-else-if="msg.content" class="whitespace-pre-wrap break-words">{{ msg.content }}</div>
                                     
-                                    <div v-if="msg.images && msg.images.length" class="mt-3 grid grid-cols-2 gap-2">
+                                    <div v-if="msg.images && msg.images.length" class="mt-2 grid grid-cols-2 gap-2">
                                         <button v-for="(img, imgIdx) in msg.images" :key="`${idx}-${imgIdx}`" type="button" class="relative group/img rounded-xl overflow-hidden border border-black/5 shadow-sm transition-transform hover:scale-[1.02] active:scale-95" @click="openImage(img)">
-                                            <img :src="img" class="w-full h-32 object-cover bg-white">
+                                            <img :src="img" class="w-full h-28 object-cover bg-white">
                                             <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors"></div>
                                         </button>
                                     </div>
@@ -600,11 +658,11 @@
                         </div>
 
                         <!-- Typing Indicator -->
-                        <div v-if="isChatting" class="flex gap-4">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <div v-if="isChatting" class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                             </div>
-                            <div class="flex items-center h-8">
+                            <div class="flex items-center h-7">
                                 <div class="flex gap-1">
                                     <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-0"></span>
                                     <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-150"></span>
@@ -615,18 +673,18 @@
                     </div>
 
                     <!-- Input Area -->
-                    <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-safe z-40">
-                        <div v-if="chatImages.length" class="flex gap-3 overflow-x-auto pb-3 mb-1 px-1">
-                            <div v-for="(img, idx) in chatImages" :key="idx" class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
+                    <div class="shrink-0 bg-white border-t border-gray-100 p-3 z-40" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
+                        <div v-if="chatImages.length" class="flex gap-2 overflow-x-auto pb-2 mb-1 px-1">
+                            <div v-for="(img, idx) in chatImages" :key="idx" class="relative w-14 h-14 shrink-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
                                 <img :src="img" class="w-full h-full object-cover">
                                 <button @click="removeChatImage(idx)" class="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-red-500 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                             </div>
                         </div>
                         
                         <form @submit.prevent="sendChatMessage" class="relative max-w-3xl mx-auto">
-                            <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-[28px] p-2.5 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-                                <button type="button" @click="triggerChatImagePicker" :disabled="isChatting" class="p-2.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-gray-200/50 transition-colors shrink-0">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-[22px] p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                                <button type="button" @click="triggerChatImagePicker" :disabled="isChatting" class="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-gray-200/50 transition-colors shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 </button>
                                 <input id="chat-image-input" type="file" accept="image/*" multiple class="hidden" @change="handleChatImageSelect">
                                 
@@ -634,7 +692,7 @@
                                     v-model="chatInput" 
                                     placeholder="发送消息..." 
                                     rows="1"
-                                    class="w-full bg-transparent border-none outline-none text-[16px] text-slate-800 placeholder:text-slate-400 py-3 max-h-32 resize-none leading-normal"
+                                    class="w-full bg-transparent border-none outline-none text-[14px] text-slate-800 placeholder:text-slate-400 py-2 max-h-28 resize-none leading-6"
                                     @keydown.enter.prevent="!isChatting && (chatInput.trim() || chatImages.length) ? sendChatMessage() : null"
                                 ></textarea>
                                 
@@ -671,26 +729,26 @@
                 </div>
 
                 <!-- Family -->
-                <div v-show="activeTab === 'family'" class="p-3 space-y-4">
-                    <div v-if="familyLoading" class="m-card p-5 text-center text-sm text-slate-500 mt-4">
+                <div v-show="activeTab === 'family'" class="p-3 space-y-3">
+                    <div v-if="familyLoading" class="m-card p-4 text-center text-sm text-slate-500 mt-3">
                         正在加载家庭数据...
                     </div>
 
-                    <div v-else-if="!familyHasGroup" class="space-y-6 text-center py-10">
-                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <div v-else-if="!familyHasGroup" class="space-y-3 text-center py-4">
+                        <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                            <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         </div>
-                        <h2 class="text-xl font-bold">加入或创建家庭</h2>
-                        <div class="grid gap-4">
-                            <div class="m-card p-5 text-left">
-                                <div class="flex items-center justify-between gap-3 mb-3">
+                        <h2 class="text-base font-bold">加入或创建家庭</h2>
+                        <div class="grid gap-3">
+                            <div class="m-card p-4 text-left">
+                                <div class="flex items-center justify-between gap-3 mb-2">
                                     <h3 class="font-bold">收到的邀请</h3>
                                     <span class="text-xs text-slate-400">{{ familyReceivedInvitations.length }} 条</span>
                                 </div>
-                                <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-4 text-center">正在加载邀请...</div>
-                                <div v-else-if="familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-4 text-center">当前没有收到新的家庭邀请</div>
-                                <div v-else class="space-y-3">
-                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+                                <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-2 text-center">正在加载邀请...</div>
+                                <div v-else-if="familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-2 text-center">当前没有收到新的家庭邀请</div>
+                                <div v-else class="space-y-2">
+                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3">
                                         <div class="flex items-start justify-between gap-3">
                                             <div class="min-w-0">
                                                 <div class="text-sm font-bold text-slate-800">{{ invitation.family_name || '家庭邀请' }}</div>
@@ -699,52 +757,52 @@
                                             </div>
                                             <span :class="['shrink-0 text-[11px] font-bold px-2 py-1 rounded-full border', invitation.status === 'pending' ? 'bg-white text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
                                         </div>
-                                        <div class="mt-3 rounded-xl bg-white border border-emerald-100 px-3 py-2">
+                                        <div class="mt-1.5 rounded-xl bg-white border border-emerald-100 px-3 py-1.5">
                                             <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">邀请码</div>
-                                            <div class="mt-1 font-mono text-sm font-semibold text-slate-800 break-all">{{ invitation.invite_code }}</div>
+                                            <div class="mt-0.5 font-mono text-sm font-semibold text-slate-800 break-all">{{ invitation.invite_code }}</div>
                                         </div>
-                                        <div class="mt-2 text-xs text-slate-400">有效期至 {{ formatTime(invitation.expires_at) }}</div>
+                                        <div class="mt-1.5 text-xs text-slate-400">有效期至 {{ formatTime(invitation.expires_at) }}</div>
                                         <button
                                             @click="acceptFamilyInvitation(invitation.invite_code, invitation.id)"
                                             :disabled="invitation.status !== 'pending' || familyAcceptingInvitations[invitation.id]"
-                                            class="m-btn-primary mt-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            class="m-btn-primary mt-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
                                             {{ familyAcceptingInvitations[invitation.id] ? '加入中...' : '接受邀请' }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="m-card p-5 text-left">
-                                <h3 class="font-bold mb-2">创建新家庭</h3>
-                                <input v-model="familyCreateForm.name" type="text" placeholder="家庭名称" class="m-input mb-4">
+                            <div class="m-card p-4 text-left">
+                                <h3 class="font-bold mb-1.5">创建新家庭</h3>
+                                <input v-model="familyCreateForm.name" type="text" placeholder="家庭名称" class="m-input mb-2.5">
                                 <button @click="createFamily" class="m-btn-primary">创建</button>
                             </div>
-                            <div class="m-card p-5 text-left">
-                                <h3 class="font-bold mb-2">邀请码加入</h3>
-                                <p class="text-xs text-slate-500 mb-4">输入家人发来的邀请码，快速加入已有家庭。</p>
-                                <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="m-input mb-4 uppercase tracking-[0.16em]">
+                            <div class="m-card p-4 text-left">
+                                <h3 class="font-bold mb-1.5">邀请码加入</h3>
+                                <p class="text-xs text-slate-500 mb-2.5">输入家人发来的邀请码，快速加入已有家庭。</p>
+                                <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="m-input mb-2.5 uppercase tracking-[0.16em]">
                                 <button @click="acceptFamilyInvitation" class="m-btn-primary">加入家庭</button>
                             </div>
                         </div>
                     </div>
 
-                    <div v-else class="space-y-4">
-                        <div class="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.22)]">
-                            <div class="flex justify-between items-start gap-4 mb-4">
+                    <div v-else class="space-y-3">
+                        <div class="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.22)]">
+                            <div class="flex justify-between items-start gap-3 mb-3">
                                 <div class="min-w-0">
                                     <h3 class="font-bold text-lg truncate">{{ familyOverview.family.name }}</h3>
-                                    <p class="mt-1 text-xs text-emerald-50/80">成员 {{ familyMembers.length }} 人 · 未读通知 {{ familyUnreadCount }} 条</p>
+                                    <p class="mt-0.5 text-xs text-emerald-50/80">成员 {{ familyMembers.length }} 人 · 未读通知 {{ familyUnreadCount }} 条</p>
                                 </div>
-                                <button @click="activeTab = 'family_invite'" class="shrink-0 text-xs bg-white/20 hover:bg-white/25 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/15">管理/邀请</button>
+                                <button @click="activeTab = 'family_invite'" class="shrink-0 text-xs bg-white/20 hover:bg-white/25 px-3 py-1 rounded-full backdrop-blur-sm border border-white/15">管理/邀请</button>
                             </div>
-                            <div class="rounded-2xl border border-white/15 bg-white/12 backdrop-blur-sm px-4 py-3 mb-4">
+                            <div class="rounded-2xl border border-white/15 bg-white/12 backdrop-blur-sm px-4 py-2.5 mb-3">
                                 <div class="text-[11px] uppercase tracking-[0.18em] text-white/75 font-bold">家庭邀请码</div>
-                                <div class="mt-2 flex items-start justify-between gap-3">
+                                <div class="mt-1.5 flex items-start justify-between gap-3">
                                     <p class="font-mono text-sm font-semibold break-all">{{ familyOverview.family.invite_code || '暂无邀请码' }}</p>
                                     <span class="shrink-0 text-[11px] text-white/70">加入家庭时使用</span>
                                 </div>
                             </div>
-                            <div class="flex -space-x-2 overflow-hidden py-2">
-                                 <div v-for="member in familyMembers" :key="member.user_id" class="w-10 h-10 rounded-full border-2 border-white/70 bg-white/90 flex items-center justify-center text-teal-700 font-bold text-xs relative shadow-sm">
+                            <div class="flex -space-x-2 overflow-hidden py-1">
+                                 <div v-for="member in familyMembers" :key="member.user_id" class="w-8 h-8 rounded-full border-2 border-white/70 bg-white/90 flex items-center justify-center text-teal-700 font-bold text-[11px] relative shadow-sm">
                                     {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
                                     <div v-if="member.risk_status === 'high'" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border border-white rounded-full"></div>
                                  </div>
@@ -752,14 +810,14 @@
                         </div>
 
                         <div>
-                            <div class="flex items-center justify-between mb-3 px-1">
+                            <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="font-bold text-sm">家庭成员</h3>
                                 <span class="text-xs text-slate-400">{{ familyMembers.length }} 人</span>
                             </div>
-                            <div class="space-y-3">
-                                <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="m-card p-4">
+                            <div class="space-y-2">
+                                <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="m-card p-3">
                                     <div class="flex items-start gap-3">
-                                        <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                        <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
                                             {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
                                         </div>
                                         <div class="min-w-0 flex-1">
@@ -772,17 +830,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div v-if="familyMembers.length === 0" class="text-center py-8 text-gray-400 text-sm">暂无家庭成员</div>
+                                <div v-if="familyMembers.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无家庭成员</div>
                             </div>
                         </div>
 
                         <div>
-                            <div class="flex items-center justify-between mb-3 px-1">
+                            <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="font-bold text-sm">守护关系</h3>
                                 <span class="text-xs text-slate-400">{{ familyGuardianLinks.length }} 条</span>
                             </div>
-                            <div class="space-y-3">
-                                <div v-for="link in familyGuardianLinks" :key="link.id" class="m-card p-4">
+                            <div class="space-y-2">
+                                <div v-for="link in familyGuardianLinks" :key="link.id" class="m-card p-3">
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
                                             <p class="text-sm font-semibold text-slate-800">{{ link.guardian_name }} -> {{ link.member_name }}</p>
@@ -791,15 +849,15 @@
                                         <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-100">守护中</span>
                                     </div>
                                 </div>
-                                <div v-if="familyGuardianLinks.length === 0" class="m-card p-4 text-sm text-slate-400 text-center">当前还没有守护关系</div>
+                                <div v-if="familyGuardianLinks.length === 0" class="m-card p-3 text-sm text-slate-400 text-center">当前还没有守护关系</div>
                             </div>
                         </div>
 
                         <div>
-                            <h3 class="font-bold text-sm mb-3 px-1">最新动态</h3>
-                            <div class="space-y-3">
-                                 <div v-if="familyNotifications.length === 0" class="text-center py-8 text-gray-400 text-sm">无家庭动态</div>
-                                 <div v-for="note in familyNotifications" :key="note.id" class="m-card p-4">
+                            <h3 class="font-bold text-sm mb-2 px-1">最新动态</h3>
+                            <div class="space-y-2">
+                                 <div v-if="familyNotifications.length === 0" class="text-center py-6 text-gray-400 text-sm">无家庭动态</div>
+                                 <div v-for="note in familyNotifications" :key="note.id" class="m-card p-3">
                                      <div class="flex items-start gap-3">
                                          <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
                                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -954,14 +1012,14 @@
             <!-- Manage Family Modal -->
             <div v-if="activeTab === 'family_invite'" class="fixed inset-0 z-[1000] flex items-end bg-black/50 backdrop-blur-sm">
                 <div class="bg-white w-full h-[92vh] rounded-t-2xl overflow-hidden flex flex-col animate-slide-up">
-                    <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-                        <h3 class="font-bold text-lg">家庭管理</h3>
-                        <button @click="activeTab = 'family'" class="text-gray-400 p-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    <div class="p-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                        <h3 class="font-bold text-base">家庭管理</h3>
+                        <button @click="activeTab = 'family'" class="text-gray-400 p-1.5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5 space-y-6 pb-24 pb-safe" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 pb-20 pb-safe" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
                         <div>
-                            <h4 class="font-bold mb-3">邀请成员</h4>
-                            <div class="space-y-3">
+                            <h4 class="font-bold mb-2">邀请成员</h4>
+                            <div class="space-y-2">
                                 <input v-model="familyInviteForm.invitee_email" type="email" placeholder="邮箱" class="m-input">
                                 <input v-model="familyInviteForm.invitee_phone" type="tel" placeholder="手机号" class="m-input">
                                 <div class="m-dropdown" data-custom-dropdown>
@@ -990,12 +1048,12 @@
                                     </transition>
                                 </div>
                                 <input v-model="familyInviteForm.relation" type="text" placeholder="关系 (如: 父亲)" class="m-input">
-                                <button @click="createFamilyInvitation" class="m-btn-primary h-10 text-sm">发送邀请</button>
+                                <button @click="createFamilyInvitation" class="m-btn-primary h-9 text-sm">发送邀请</button>
                             </div>
                         </div>
                         <div>
-                            <h4 class="font-bold mb-3">配置守护</h4>
-                            <div class="space-y-3">
+                            <h4 class="font-bold mb-2">配置守护</h4>
+                            <div class="space-y-2">
                                 <div class="m-dropdown" data-custom-dropdown>
                                     <button type="button" @click="toggleDropdown('guardian-user')" :class="['m-dropdown-trigger', openDropdownKey === 'guardian-user' ? 'is-open' : '']">
                                         <div class="min-w-0">
@@ -1046,13 +1104,13 @@
                                         </div>
                                     </transition>
                                 </div>
-                                <button @click="createGuardianLink" class="m-btn-primary h-10 text-sm">保存关系</button>
+                                <button @click="createGuardianLink" class="m-btn-primary h-9 text-sm">保存关系</button>
                             </div>
                         </div>
                         <div>
-                            <h4 class="font-bold mb-3">家庭成员</h4>
-                            <div class="space-y-3">
-                                <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="m-card p-4">
+                            <h4 class="font-bold mb-2">家庭成员</h4>
+                            <div class="space-y-2">
+                                <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="m-card p-3">
                                     <div class="flex justify-between gap-3">
                                         <div>
                                             <div class="font-bold text-sm">{{ member.username }}</div>
@@ -1063,7 +1121,7 @@
                                             v-if="familyOverview.current_member && familyOverview.current_member.role === 'owner' && member.role !== 'owner'"
                                             @click="deleteFamilyMember(member)"
                                             :disabled="familyDeletingMembers[member.member_id]"
-                                            class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-50">
+                                            class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-lg disabled:opacity-50">
                                             移除
                                         </button>
                                     </div>
