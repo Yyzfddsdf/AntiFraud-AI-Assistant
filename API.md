@@ -965,7 +965,7 @@ data:{"type":"done","reason":"stop"}
 
 ---
 
-## 13.1) 实时高风险告警 WebSocket（需鉴权）
+## 13.1) 实时风险预警 WebSocket（需鉴权，中高风险）
 
 - **Method**: `GET`
 - **Path**: `/api/alert/ws`
@@ -975,7 +975,7 @@ data:{"type":"done","reason":"stop"}
 
 - 连接建立后，服务端按配置轮询当前用户 `history_cases`：
   - `config/config.json -> alert_ws.poll_interval_seconds`
-- 当发现“`risk_level = 高` 且 `created_at` 在告警窗口内”的记录时，主动推送告警消息：
+- 当发现“`risk_level = 中/高` 且 `created_at` 在告警窗口内”的记录时，主动推送风险预警消息：
   - `config/config.json -> alert_ws.recent_window_minutes`
 - 同一连接内，同一 `record_id` 只推送一次。
 - 连接断开后，后台轮询 goroutine 自动退出。
@@ -995,7 +995,7 @@ data:{"type":"done","reason":"stop"}
 
 ```json
 {
-  "type": "high_risk_alert",
+  "type": "risk_alert",
   "user_id": "1",
   "record_id": "TASK-123456",
   "title": "疑似冒充客服退款",
@@ -1016,8 +1016,8 @@ const ws = new WebSocket(`${protocol}://${location.host}/api/alert/ws?token=${en
 
 ws.onmessage = (event) => {
   const payload = JSON.parse(event.data);
-  if (payload.type === 'high_risk_alert') {
-    console.log('收到高风险告警', payload);
+  if (payload.type === 'risk_alert') {
+    console.log('收到风险预警', payload);
   }
 };
 ```

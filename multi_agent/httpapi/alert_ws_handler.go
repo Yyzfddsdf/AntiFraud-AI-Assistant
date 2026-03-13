@@ -37,9 +37,9 @@ type alertWSMessage struct {
 	SentAt      string `json:"sent_at"`
 }
 
-// AlertWebSocketHandle 提供高风险告警推送连接：
+// AlertWebSocketHandle 提供中高风险预警推送连接：
 // 1) 建立连接后按配置轮询 history_cases；
-// 2) 命中“高风险 + 告警窗口内创建”的记录时主动推送；
+// 2) 命中“中/高风险 + 告警窗口内创建”的记录时主动推送；
 // 3) 连接断开后轮询协程自动退出。
 func AlertWebSocketHandle(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
@@ -90,7 +90,7 @@ func runAlertWSSession(ws *websocket.Conn, userID string, runtimeCfg alertWSRunt
 	defer ticker.Stop()
 
 	sentRecordIDs := make(map[string]struct{})
-	if err := pushRecentHighRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
+	if err := pushRecentRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
 		stop()
 	}
 
@@ -99,7 +99,7 @@ func runAlertWSSession(ws *websocket.Conn, userID string, runtimeCfg alertWSRunt
 		case <-done:
 			return
 		case <-ticker.C:
-			if err := pushRecentHighRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
+			if err := pushRecentRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
 				stop()
 				return
 			}
@@ -107,7 +107,7 @@ func runAlertWSSession(ws *websocket.Conn, userID string, runtimeCfg alertWSRunt
 	}
 }
 
-func pushRecentHighRiskAlerts(ws *websocket.Conn, userID string, sentRecordIDs map[string]struct{}, recentWindow time.Duration) error {
+func pushRecentRiskAlerts(ws *websocket.Conn, userID string, sentRecordIDs map[string]struct{}, recentWindow time.Duration) error {
 	if ws == nil {
 		return fmt.Errorf("websocket connection is nil")
 	}
@@ -133,7 +133,8 @@ func pushRecentHighRiskAlerts(ws *websocket.Conn, userID string, sentRecordIDs m
 		if _, exists := sentRecordIDs[recordID]; exists {
 			continue
 		}
-		if strings.TrimSpace(item.RiskLevel) != "高" {
+		riskLevel := normalizeAlertRiskLevel(item.RiskLevel)
+		if riskLevel == "" {
 			continue
 		}
 		if item.CreatedAt.Before(cutoff) {
@@ -141,23 +142,34 @@ func pushRecentHighRiskAlerts(ws *websocket.Conn, userID string, sentRecordIDs m
 		}
 
 		msg := alertWSMessage{
-			Type:        "high_risk_alert",
+			Type:        "risk_alert",
 			UserID:      normalizedUserID,
 			RecordID:    recordID,
 			Title:       strings.TrimSpace(item.Title),
 			CaseSummary: strings.TrimSpace(item.CaseSummary),
 			ScamType:    strings.TrimSpace(item.ScamType),
-			RiskLevel:   "高",
+			RiskLevel:   riskLevel,
 			CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
 			SentAt:      time.Now().UTC().Format(time.RFC3339),
 		}
 		if err := websocket.JSON.Send(ws, msg); err != nil {
-			return fmt.Errorf("send high risk alert failed: %w", err)
+			return fmt.Errorf("send risk alert failed: %w", err)
 		}
 		sentRecordIDs[recordID] = struct{}{}
 	}
 
 	return nil
+}
+
+func normalizeAlertRiskLevel(value string) string {
+	switch strings.TrimSpace(value) {
+	case "高":
+		return "高"
+	case "中":
+		return "中"
+	default:
+		return ""
+	}
 }
 
 func loadAlertWSRuntimeConfig() alertWSRuntimeConfig {

@@ -6,7 +6,7 @@
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档）
 - **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
 - 主分析流程按需自动更新案件库（典型案例自动向量化入库）
-- 实时高风险告警（WebSocket 连接下的主动预警推送）
+- 实时风险预警（WebSocket 连接下的中高风险主动推送）
 - **家庭协同守护系统（MVP）**：家庭组、成员邀请、守护关系配置、家庭高风险通知
 
 默认服务端口：`8081`
@@ -503,11 +503,11 @@ python scripts/backfill_user_history_vectors.py
   - **视角切换交互**：支持点击人群锚点自动高亮关联的所有诈骗手法，实现“计算在类型，观察在人群”的混合分析逻辑。
   - **独立交互空间**：图谱以全屏模态框形式展现，避免滚轮缩放操作干扰主页面滚动。
 
-### 9.8 实时高风险告警推送（WebSocket）
+### 9.8 实时风险预警推送（WebSocket）
 
 - 新增接口：`GET /api/alert/ws`
-- 触发规则：连接建立后按 `config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“高风险且在告警窗口内”记录时主动推送。
-- 推送消息类型：`high_risk_alert`，包含 `record_id/title/case_summary/scam_type/risk_level/created_at/sent_at`。
+- 触发规则：连接建立后按 `config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“中/高风险且在告警窗口内”记录时主动推送。
+- 推送消息类型：`risk_alert`，包含 `record_id/title/case_summary/scam_type/risk_level/created_at/sent_at`。
 - 连接中断后服务端轮询协程自动退出，前端负责重连策略（建议指数退避）。
 - 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
 - 默认值（配置缺失或非法时回退）：`poll_interval_seconds=30`、`recent_window_minutes=60`。
