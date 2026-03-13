@@ -1162,6 +1162,44 @@
 
                     <template v-else-if="!familyHasGroup">
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-900">收到的家庭邀请</h2>
+                                        <p class="mt-2 text-sm text-slate-500">如果家人已经向你发起邀请，可以在这里直接查看并加入对应家庭。</p>
+                                    </div>
+                                    <span class="shrink-0 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{{ familyReceivedInvitations.length }} 条</span>
+                                </div>
+                                <div class="mt-5 space-y-3">
+                                    <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+                                        正在加载收到的邀请...
+                                    </div>
+                                    <div v-else-if="familyReceivedInvitations.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-400">
+                                        当前还没有收到新的家庭邀请
+                                    </div>
+                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-4">
+                                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h3 class="text-sm font-bold text-slate-900">{{ invitation.family_name || '家庭邀请' }}</h3>
+                                                    <span :class="['text-[11px] font-bold px-2 py-1 rounded-full border', invitation.status === 'pending' ? 'bg-white text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
+                                                </div>
+                                                <p class="mt-2 text-sm text-slate-600">邀请人：{{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</p>
+                                                <p class="mt-1 text-sm text-slate-500">角色：{{ invitation.role }} / 关系：{{ invitation.relation || '未填写' }}</p>
+                                                <p class="mt-1 text-xs text-slate-400 font-mono break-all">邀请码：{{ invitation.invite_code }}</p>
+                                                <p class="mt-1 text-xs text-slate-400">有效期至：{{ formatTime(invitation.expires_at) }}</p>
+                                            </div>
+                                            <button
+                                                @click="acceptReceivedFamilyInvitation(invitation.invite_code, invitation.id)"
+                                                :disabled="invitation.status !== 'pending' || familyAcceptingInvitations[invitation.id]"
+                                                class="shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                                {{ familyAcceptingInvitations[invitation.id] ? '加入中...' : '接受邀请' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
                             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                                 <h2 class="text-lg font-bold text-slate-900">创建家庭</h2>
                                 <p class="mt-2 text-sm text-slate-500">创建后你将成为家庭创建者，可邀请家人并配置守护关系。</p>

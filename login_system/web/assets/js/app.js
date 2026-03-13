@@ -27,9 +27,11 @@ createApp({
         const familyOverview = ref(null);
         const familyMembers = ref([]);
         const familyInvitations = ref([]);
+        const familyReceivedInvitations = ref([]);
         const familyGuardianLinks = ref([]);
         const familyNotifications = ref([]);
         const familyLoading = ref(false);
+        const familyReceivedLoading = ref(false);
         const familyNotificationConnectionStatus = ref('disconnected'); // disconnected | connecting | connected | reconnecting
         const familyAlertModalVisible = ref(false);
         const activeFamilyNotification = ref(null);
@@ -53,6 +55,7 @@ createApp({
         const deletingHistory = reactive({});
         const familyDeletingMembers = reactive({});
         const familyDeletingGuardianLinks = reactive({});
+        const familyAcceptingInvitations = reactive({});
         const familyMarkingNotifications = reactive({});
         const selectedTask = ref(null);
         const userSearch = ref('');
@@ -584,7 +587,6 @@ createApp({
         const familyHasGroup = computed(() => !!familyOverview.value?.family);
         const familyGuardianCandidates = computed(() => (familyMembers.value || []).filter(item => item && (item.role === 'owner' || item.role === 'guardian')));
         const familyProtectedCandidates = computed(() => (familyMembers.value || []).filter(item => item && item.role !== 'owner'));
-
         const getUserDisplayName = (userInfo) => {
             const candidate = userInfo && typeof userInfo === 'object' ? userInfo : {};
             return String(candidate.username || '').trim()
@@ -772,7 +774,10 @@ createApp({
             familyOverview.value = null;
             familyMembers.value = [];
             familyInvitations.value = [];
+            familyReceivedInvitations.value = [];
             familyGuardianLinks.value = [];
+            familyReceivedLoading.value = false;
+            Object.keys(familyAcceptingInvitations).forEach((key) => delete familyAcceptingInvitations[key]);
             familyAlertModalVisible.value = false;
             activeFamilyNotification.value = null;
         };
@@ -961,6 +966,10 @@ createApp({
             familyMembers.value = Array.isArray(overview?.members) ? overview.members : [];
             familyInvitations.value = Array.isArray(overview?.invitations) ? overview.invitations : [];
             familyGuardianLinks.value = Array.isArray(overview?.guardian_links) ? overview.guardian_links : [];
+            if (overview?.family) {
+                replaceListIfChanged(familyReceivedInvitations, []);
+                familyReceivedLoading.value = false;
+            }
             pruneFamilyNotificationsByMembers(familyMembers.value);
         };
 
@@ -971,6 +980,16 @@ createApp({
             familyLoading.value = false;
             if (res) {
                 hydrateFamilyOverview(res);
+            }
+        };
+
+        const fetchReceivedFamilyInvitations = async ({ silent = false } = {}) => {
+            if (!isAuthenticated.value) return;
+            familyReceivedLoading.value = !silent;
+            const res = await request('/families/invitations/received', 'GET', null, { silent });
+            familyReceivedLoading.value = false;
+            if (res && Array.isArray(res.invitations)) {
+                replaceListIfChanged(familyReceivedInvitations, res.invitations);
             }
         };
 
@@ -1015,6 +1034,30 @@ createApp({
                 familyNotifications.value = [];
                 familyNotificationSeenIDs.clear();
                 connectFamilyNotificationWebSocket();
+            }
+        };
+
+        const acceptReceivedFamilyInvitation = async (rawInviteCode = '', invitationID = 0) => {
+            const inviteCode = String(rawInviteCode || familyAcceptForm.invite_code || '').trim();
+            if (!inviteCode) {
+                showToast('璇疯緭鍏ュ搴個璇风爜', 'error');
+                return;
+            }
+
+            if (invitationID) {
+                familyAcceptingInvitations[invitationID] = true;
+            }
+            try {
+                familyAcceptForm.invite_code = inviteCode;
+                await acceptFamilyInvitation();
+                if (familyHasGroup.value) {
+                    replaceListIfChanged(familyReceivedInvitations, []);
+                    familyReceivedLoading.value = false;
+                }
+            } finally {
+                if (invitationID) {
+                    familyAcceptingInvitations[invitationID] = false;
+                }
             }
         };
 
@@ -2034,8 +2077,13 @@ createApp({
                 fetchCaseOptionLists();
             }
             if (newTab === 'family') {
-                fetchFamilyOverview();
-                connectFamilyNotificationWebSocket();
+                fetchFamilyOverview().then(() => {
+                    if (familyHasGroup.value) {
+                        connectFamilyNotificationWebSocket();
+                    } else {
+                        fetchReceivedFamilyInvitations();
+                    }
+                });
             }
             if (newTab === 'users') fetchUsers();
             if (newTab === 'history') fetchHistory();
@@ -2056,7 +2104,11 @@ createApp({
             pollInterval = setInterval(() => {
                 if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
                 if (isAuthenticated.value && activeTab.value === 'family') {
-                    fetchFamilyOverview({ silent: true });
+                    fetchFamilyOverview({ silent: true }).then(() => {
+                        if (!familyHasGroup.value) {
+                            fetchReceivedFamilyInvitations({ silent: true });
+                        }
+                    });
                 }
             }, 5000);
         };
@@ -2634,11 +2686,11 @@ createApp({
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass,
             updateAge, deleteAccount, upgradeAccount, inviteCode, openImage, exportData, printReport,
             getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
-            familyOverview, familyMembers, familyInvitations, familyGuardianLinks, familyNotifications,
-            familyLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyAcceptForm, familyGuardianForm,
+            familyOverview, familyMembers, familyInvitations, familyReceivedInvitations, familyGuardianLinks, familyNotifications,
+            familyLoading, familyReceivedLoading, familyNotificationConnectionStatus, familyNotificationConnectionLabel, familyAlertModalVisible, activeFamilyNotification, familyCreateForm, familyInviteForm, familyAcceptForm, familyGuardianForm,
             familyUnreadCount, familyHasGroup, familyGuardianCandidates, familyProtectedCandidates,
-            createFamily, createFamilyInvitation, acceptFamilyInvitation, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
-            familyDeletingMembers, familyDeletingGuardianLinks, familyMarkingNotifications,
+            createFamily, createFamilyInvitation, acceptFamilyInvitation, acceptReceivedFamilyInvitation, fetchReceivedFamilyInvitations, createGuardianLink, deleteFamilyMember, deleteGuardianLink, markFamilyNotificationRead, acknowledgeFamilyAlert, openFamilyNotificationCenter,
+            familyDeletingMembers, familyDeletingGuardianLinks, familyAcceptingInvitations, familyMarkingNotifications,
             showChat, chatMessages, chatInput, chatImages, isChatting, toggleChat, sendChatMessage, clearChatHistory,
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state
