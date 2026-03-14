@@ -1488,11 +1488,10 @@
                                     <div v-if="selectedReview.keywords && selectedReview.keywords.length"><span class="font-bold text-slate-600">关键词：</span><span class="text-slate-700">{{ selectedReview.keywords.join('、') }}</span></div>
                                     <div><span class="font-bold text-slate-600">涉及法律：</span>{{ selectedReview.violated_law || '-' }}</div>
                                     <div v-if="selectedReview.suggestion"><span class="font-bold text-slate-600">防范建议：</span>{{ selectedReview.suggestion }}</div>
-                                    <div><span class="font-bold text-slate-600">状态：</span>{{ selectedReview.status === 'pending_review' ? '待审核' : '已通过' }}</div>
                                 </div>
                                 <div class="mt-8 flex justify-end gap-3">
                                     <button @click="showReviewDetailModal = false" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">关闭</button>
-                                    <button v-if="selectedReview.status === 'pending_review'" @click="approveReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">通过入库</button>
+                                    <button @click="approveReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">通过入库</button>
                                 </div>
                             </div>
                         </div>

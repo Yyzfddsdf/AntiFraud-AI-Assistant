@@ -47,3 +47,12 @@ func TestUploadHistoricalCaseToVectorDBHandler_InvalidJSON(t *testing.T) {
 		t.Fatalf("expected error in payload")
 	}
 }
+
+func TestNormalizeViolatedLaw_DefaultsToFraudCrime(t *testing.T) {
+	if got := normalizeViolatedLaw("   "); got != "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）" {
+		t.Fatalf("unexpected default violated law: %q", got)
+	}
+	if got := normalizeViolatedLaw("  涉嫌违反其他条款 "); got != "涉嫌违反其他条款" {
+		t.Fatalf("unexpected normalized violated law: %q", got)
+	}
+}

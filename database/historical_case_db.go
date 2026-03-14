@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -53,6 +54,10 @@ func GetHistoricalCaseDB() (*gorm.DB, error) {
 			historicalCaseDBErr = fmt.Errorf("auto migrate historical case db failed: %w", err)
 			return
 		}
+		if err := dropPendingReviewLegacyStatusColumn(db); err != nil {
+			historicalCaseDBErr = fmt.Errorf("drop pending review legacy status column failed: %w", err)
+			return
+		}
 
 		log.Printf("[case_library] historical case db path: %s", dbPath)
 		historicalCaseDB = db
@@ -61,6 +66,42 @@ func GetHistoricalCaseDB() (*gorm.DB, error) {
 		return nil, historicalCaseDBErr
 	}
 	return historicalCaseDB, nil
+}
+
+func dropPendingReviewLegacyStatusColumn(db *gorm.DB) error {
+	if db == nil {
+		return nil
+	}
+
+	rows, err := db.Raw("PRAGMA table_info(pending_review_cases);").Rows()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	hasStatus := false
+	for rows.Next() {
+		var (
+			cid          int
+			name         string
+			columnType   string
+			notNull      int
+			defaultValue sql.NullString
+			pk           int
+		)
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
+			return err
+		}
+		if strings.EqualFold(strings.TrimSpace(name), "status") {
+			hasStatus = true
+			break
+		}
+	}
+	if !hasStatus {
+		return nil
+	}
+
+	return db.Exec("ALTER TABLE pending_review_cases DROP COLUMN status;").Error
 }
 
 func resolveHistoricalCaseDBPath() string {

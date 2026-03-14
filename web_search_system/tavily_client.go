@@ -17,8 +17,8 @@ const (
 	defaultBaseURL       = "https://api.tavily.com"
 	defaultIncludeAnswer = "advanced"
 	defaultSearchDepth   = "advanced"
-	defaultMaxResults    = 10
-	maxAllowedResults    = 20
+	defaultMaxResults    = 3
+	maxAllowedResults    = 5
 	defaultTimeoutMS     = 15000
 	maxAnswerRunes       = 1200
 	maxContentRunes      = 600

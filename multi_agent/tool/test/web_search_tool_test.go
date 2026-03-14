@@ -82,20 +82,20 @@ func TestExecuteWebSearchUsesDefaultResultCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if payload["max_results"] != 10 {
-		t.Fatalf("expected default max_results 10, got %#v", payload["max_results"])
+	if payload["max_results"] != 3 {
+		t.Fatalf("expected default max_results 3, got %#v", payload["max_results"])
 	}
 }
 
 func TestExecuteWebSearchRejectsOutOfRangeMaxResults(t *testing.T) {
 	_, err := agenttool.ExecuteWebSearch(context.Background(), stubSearcher{}, agenttool.WebSearchInput{
 		Query:      "risk event",
-		MaxResults: 21,
+		MaxResults: 6,
 	})
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "max_results must be between 1 and 20") {
+	if !strings.Contains(err.Error(), "max_results must be between 1 and 5") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

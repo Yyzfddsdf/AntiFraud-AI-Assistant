@@ -123,8 +123,8 @@ func TestTavilyClientSearchCapsResultCountAtTwenty(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode body failed: %v", err)
 		}
-		if payload["max_results"] != float64(20) {
-			t.Fatalf("expected max_results to be capped at 20, got %#v", payload["max_results"])
+		if payload["max_results"] != float64(5) {
+			t.Fatalf("expected max_results to be capped at 5, got %#v", payload["max_results"])
 		}
 
 		if err := json.NewEncoder(w).Encode(map[string]interface{}{

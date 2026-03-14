@@ -13,9 +13,9 @@ import (
 const WebSearchToolName = "search_web"
 
 const (
-	defaultWebSearchResults = 10
+	defaultWebSearchResults = 3
 	minWebSearchResults     = 1
-	maxWebSearchResults     = 20
+	maxWebSearchResults     = 5
 )
 
 // WebSearchInput 定义联网搜索工具的输入参数。
@@ -38,7 +38,7 @@ var WebSearchTool = openai.Tool{
 				},
 				"max_results": map[string]interface{}{
 					"type":        "integer",
-					"description": "可选，返回结果数量，取值范围 1-20。未传时默认 10。",
+					"description": "可选，返回结果数量，取值范围 1-5。未传时默认 3。",
 				},
 			},
 			"required": []string{"query"},

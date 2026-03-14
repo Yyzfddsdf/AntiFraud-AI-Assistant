@@ -35,7 +35,6 @@ func CreatePendingReview(userID string, input CreateHistoricalCaseInput) (Pendin
 		Keywords:        encodeStringList(normalizedInput.Keywords),
 		ViolatedLaw:     normalizedInput.ViolatedLaw,
 		Suggestion:      normalizedInput.Suggestion,
-		Status:          "pending_review",
 	}
 
 	db, err := database.GetHistoricalCaseDB()
@@ -50,7 +49,7 @@ func CreatePendingReview(userID string, input CreateHistoricalCaseInput) (Pendin
 
 // APPEND_MARKER
 
-// ListPendingReviewPreviews 返回所有 pending_review 状态的案件预览。
+// ListPendingReviewPreviews 返回所有待审核案件预览。
 func ListPendingReviewPreviews() ([]PendingReviewPreview, error) {
 	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
@@ -59,7 +58,6 @@ func ListPendingReviewPreviews() ([]PendingReviewPreview, error) {
 
 	var rows []pendingReviewEntity
 	if err := db.Select("record_id", "title", "target_group", "risk_level", "scam_type", "violated_law", "created_at").
-		Where("status = ?", "pending_review").
 		Order("created_at desc").
 		Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("query pending review previews failed: %w", err)
@@ -109,7 +107,7 @@ func GetPendingReviewByID(recordID string) (PendingReviewRecord, bool, error) {
 
 // APPEND_MARKER_2
 
-// ApprovePendingReview 审核通过：读取待审核记录 → 调用 CreateHistoricalCase 入库 → 更新状态为 approved。
+// ApprovePendingReview 审核通过：读取待审核记录 → 调用 CreateHistoricalCase 入库 → 删除待审核记录。
 func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseRecord, error) {
 	trimmed := strings.TrimSpace(recordID)
 	if trimmed == "" {
@@ -122,12 +120,12 @@ func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseR
 	}
 
 	var entity pendingReviewEntity
-	query := db.Where("record_id = ? AND status = ?", trimmed, "pending_review").Limit(1).Find(&entity)
+	query := db.Where("record_id = ?", trimmed).Limit(1).Find(&entity)
 	if query.Error != nil {
 		return HistoricalCaseRecord{}, fmt.Errorf("query pending review failed: %w", query.Error)
 	}
 	if query.RowsAffected == 0 {
-		return HistoricalCaseRecord{}, fmt.Errorf("pending review case not found or already approved")
+		return HistoricalCaseRecord{}, fmt.Errorf("pending review case not found or already processed")
 	}
 
 	record, createErr := CreateHistoricalCase(ctx, entity.UserID, CreateHistoricalCaseInput{
@@ -145,8 +143,8 @@ func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseR
 		return HistoricalCaseRecord{}, fmt.Errorf("approve and create historical case failed: %w", createErr)
 	}
 
-	if err := db.Model(&pendingReviewEntity{}).Where("record_id = ?", trimmed).Update("status", "approved").Error; err != nil {
-		return record, fmt.Errorf("update pending review status failed (case already created): %w", err)
+	if err := db.Where("record_id = ?", trimmed).Delete(&pendingReviewEntity{}).Error; err != nil {
+		return record, fmt.Errorf("delete pending review record failed (case already created): %w", err)
 	}
 
 	return record, nil
@@ -178,7 +176,6 @@ func pendingReviewRecordFromEntity(entity pendingReviewEntity) PendingReviewReco
 		Keywords:        decodeStringList(entity.Keywords),
 		ViolatedLaw:     strings.TrimSpace(entity.ViolatedLaw),
 		Suggestion:      strings.TrimSpace(entity.Suggestion),
-		Status:          strings.TrimSpace(entity.Status),
 		CreatedAt:       entity.CreatedAt,
 		UpdatedAt:       entity.UpdatedAt,
 	}

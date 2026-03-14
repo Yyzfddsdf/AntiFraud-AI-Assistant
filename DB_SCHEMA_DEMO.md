@@ -270,7 +270,7 @@
 
 - 与 `historical_case_library` 同一次 `AutoMigrate` 创建。
 - 智能体分析完成后，通过 `upload_historical_case_to_vector_db` 工具写入此表（不再直接入库知识库）。
-- 管理员审核通过后，记录状态更新为 `approved`，同时调用 `CreateHistoricalCase` 写入 `historical_case_library`。
+- 管理员审核通过后，会先调用 `CreateHistoricalCase` 写入 `historical_case_library`，随后从本表物理删除对应待审核记录。
 - 管理员待审核列表与详情页都会直接读取本表中的 `violated_law` 字段；若为空，前端按“未提供”处理。
 
 字段：
@@ -289,7 +289,6 @@
 | `keywords` | `string` / `text` | `not null` | 关键词数组（JSON 字符串） |
 | `violated_law` | `string` / `text` | `not null` | 违反法律说明 |
 | `suggestion` | `string` / `text` | `not null` | 处置建议 |
-| `status` | `string` / `varchar(32)` | 索引, `not null`, 默认值 `pending_review` | 审核状态（`pending_review` / `approved`） |
 | `created_at` | `time.Time` / `datetime` | 索引 | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
 

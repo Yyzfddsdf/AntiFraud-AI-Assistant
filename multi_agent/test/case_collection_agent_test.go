@@ -56,7 +56,6 @@ func TestCaseCollectionAgentCollectCasesSuccess(t *testing.T) {
 						"title":      "冒充客服退款诈骗",
 						"risk_level": "高",
 						"scam_type":  "冒充电商物流客服类",
-						"status":     "pending_review",
 						"created_at": "2026-03-14T20:00:00Z",
 					},
 				}},

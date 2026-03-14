@@ -30,7 +30,6 @@ type PendingReviewDetailItem struct {
 	Keywords        []string `json:"keywords"`
 	ViolatedLaw     string   `json:"violated_law"`
 	Suggestion      string   `json:"suggestion"`
-	Status          string   `json:"status"`
 	CreatedAt       string   `json:"created_at"`
 	UpdatedAt       string   `json:"updated_at"`
 }

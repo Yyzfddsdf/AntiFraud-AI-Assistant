@@ -93,7 +93,6 @@ type PendingReviewEntity struct {
 	Keywords        string    `gorm:"type:text;not null"`
 	ViolatedLaw     string    `gorm:"type:text;not null"`
 	Suggestion      string    `gorm:"type:text;not null"`
-	Status          string    `gorm:"size:32;index;not null;default:'pending_review'"`
 	CreatedAt       time.Time `gorm:"index"`
 	UpdatedAt       time.Time
 }
@@ -115,7 +114,6 @@ type PendingReviewRecord struct {
 	Keywords        []string
 	ViolatedLaw     string
 	Suggestion      string
-	Status          string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

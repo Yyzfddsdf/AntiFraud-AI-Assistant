@@ -12,6 +12,8 @@ import (
 
 const UploadHistoricalCaseToVectorDBToolName = "upload_historical_case_to_vector_db"
 
+const defaultFraudViolatedLaw = "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）"
+
 // UploadHistoricalCaseToVectorDBInput 表示“上传向量数据库”工具输入。
 // 该工具会自动完成 embedding 生成并写入 historical_case_library。
 type UploadHistoricalCaseToVectorDBInput struct {
@@ -57,7 +59,7 @@ var UploadHistoricalCaseToVectorDBTool = openai.Tool{
 				},
 				"violated_law": map[string]interface{}{
 					"type":        "string",
-					"description": "涉及法律条款（可选）。只有在当前信息中明确提到法律条款、罪名或监管定性时才填写；没有明确依据就不要传该字段。",
+					"description": "涉及法律条款（可选）。未传时默认使用《中华人民共和国刑法》第二百六十六条（诈骗罪）；若当前案件有更明确、不同的法律依据，则应填写实际适用的法律条款。",
 				},
 				"suggestion": map[string]interface{}{
 					"type":        "string",
@@ -92,7 +94,7 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 		CaseDescription: input.CaseDescription,
 		TypicalScripts:  append([]string{}, input.TypicalScripts...),
 		Keywords:        append([]string{}, input.Keywords...),
-		ViolatedLaw:     input.ViolatedLaw,
+		ViolatedLaw:     normalizeViolatedLaw(input.ViolatedLaw),
 		Suggestion:      input.Suggestion,
 	})
 	if createErr != nil {
@@ -119,7 +121,6 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 			"title":      record.Title,
 			"risk_level": record.RiskLevel,
 			"scam_type":  record.ScamType,
-			"status":     record.Status,
 			"created_at": record.CreatedAt.Format(time.RFC3339),
 		},
 	}}, nil
@@ -142,6 +143,14 @@ func buildTargetGroupSchema(description string) map[string]interface{} {
 		schema["enum"] = allowed
 	}
 	return schema
+}
+
+func normalizeViolatedLaw(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return defaultFraudViolatedLaw
+	}
+	return trimmed
 }
 
 func buildRiskLevelSchema(description string) map[string]interface{} {

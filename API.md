@@ -2150,7 +2150,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 ### 说明
 
 - 仅管理员可调用此接口。
-- 返回所有状态为 `pending_review` 的待审核案件预览列表。
+- 返回当前待审核案件预览列表。
 - 案件来源：用户通过多模态分析后，智能体自动提交的典型案例（不再直接入库，而是先进入待审核队列）。
 - 返回结果会携带 `violated_law`，便于管理员在列表页快速查看是否存在明确法律依据。
 
@@ -2210,7 +2210,6 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
     "keywords": ["客服退款", "安全账户"],
     "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
     "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。",
-    "status": "pending_review",
     "created_at": "2026-03-14T10:30:00Z",
     "updated_at": "2026-03-14T10:30:00Z"
   }
@@ -2239,7 +2238,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 
 - 仅管理员可调用此接口。
 - 审核通过后，系统会自动调用 `CreateHistoricalCase` 完成 embedding 生成并写入 `historical_case_library` 知识库。
-- 待审核记录状态更新为 `approved`。
+- 对应待审核记录会从 `pending_review_cases` 物理删除，不再保留已通过副本。
 
 ### 成功响应（200）
 
@@ -2255,7 +2254,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 - `400` `recordId` 为空。
 - `401` 未认证。
 - `403` 权限不足（非管理员）。
-- `500` 审核入库失败（可能原因：待审核记录不存在或已审核、embedding 生成失败等）。
+- `500` 审核入库失败（可能原因：待审核记录不存在或已处理、embedding 生成失败、待审核记录删除失败等）。
 
 ### cURL 示例
 

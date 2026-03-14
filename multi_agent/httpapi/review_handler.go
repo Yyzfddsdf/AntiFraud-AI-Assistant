@@ -71,7 +71,6 @@ func GetPendingReviewCaseDetailHandle(c *gin.Context) {
 			Keywords:        append([]string{}, record.Keywords...),
 			ViolatedLaw:     record.ViolatedLaw,
 			Suggestion:      record.Suggestion,
-			Status:          record.Status,
 			CreatedAt:       record.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:       record.UpdatedAt.Format(time.RFC3339),
 		},
