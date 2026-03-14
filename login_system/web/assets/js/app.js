@@ -36,6 +36,9 @@ createApp({
         const familyAlertModalVisible = ref(false);
         const activeFamilyNotification = ref(null);
         const caseLibrary = ref([]); // Admin Case Library
+        const pendingReviews = ref([]); // Admin Pending Reviews
+        const selectedReview = ref(null);
+        const showReviewDetailModal = ref(false);
         const scamTypeOptions = ref([]);
         const targetGroupOptions = ref([]);
         const selectedCase = ref(null); // For admin view details
@@ -1174,6 +1177,33 @@ createApp({
             }
         };
 
+        // Pending Review Management
+        const fetchPendingReviews = async () => {
+            if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
+            const res = await request('/scam/review/cases');
+            if (res && res.cases) {
+                replaceListIfChanged(pendingReviews, res.cases);
+            }
+        };
+
+        const viewReviewDetail = async (recordId) => {
+            const res = await request(`/scam/review/cases/${recordId}`);
+            if (res && res.case) {
+                selectedReview.value = res.case;
+                showReviewDetailModal.value = true;
+            }
+        };
+
+        const approveReview = async (recordId) => {
+            if (!confirm('确认通过该案件审核并入库知识库？')) return;
+            const res = await request(`/scam/review/cases/${recordId}/approve`, 'POST');
+            if (res && res.case_id) {
+                showReviewDetailModal.value = false;
+                selectedReview.value = null;
+                fetchPendingReviews();
+            }
+        };
+
         const fetchCaseOptionLists = async () => {
             if (!isAuthenticated.value || (user.value.role !== 'admin')) return;
             const [scamTypeRes, targetGroupRes] = await Promise.all([
@@ -2112,6 +2142,9 @@ createApp({
         };
 
         watch(activeTab, (newTab) => {
+            if (newTab === 'case_review') {
+                fetchPendingReviews();
+            }
             if (newTab === 'case_library') {
                 fetchCaseLibrary();
                 fetchCaseOptionLists();
@@ -2737,6 +2770,7 @@ createApp({
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
+            pendingReviews, selectedReview, showReviewDetailModal, fetchPendingReviews, viewReviewDetail, approveReview,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
             showGraphModal, openGraphModal, resetGraphZoom,

@@ -5,7 +5,7 @@
 - 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档）
 - **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
-- 主分析流程按需自动更新案件库（典型案例自动向量化入库）
+- 主分析流程按需自动提交案件审核（典型案例先进入待审核队列，管理员审核通过后入库知识库）
 - 实时风险预警（WebSocket 连接下的中高风险主动推送）
 - **家庭协同守护系统（MVP）**：家庭组、成员邀请、守护关系配置、家庭高风险通知
 
@@ -112,6 +112,7 @@ flowchart LR
     G --> C[聊天系统<br/>chat_system]
     G --> M[多智能体编排<br/>multi_agent]
     G --> L[案件库管理 API<br/>multi_agent/httpapi/historical_case_handler]
+    G --> RV[案件审核 API<br/>multi_agent/httpapi/review_handler]
 
     C --> R[(Redis<br/>统一缓存层)]
     A --> R
@@ -131,13 +132,14 @@ flowchart LR
     S --> DB1
     CL --> DB2[(SQLite: historical_case_library.db)]
     L --> CL
+    RV --> CL
 
     O --> X[OpenAI 兼容模型服务]
 ```
 
 架构说明（摘要）：
 
-- API 层统一接入鉴权、聊天、多模态分析、案件库管理。
+- API 层统一接入鉴权、聊天、多模态分析、案件库管理、案件审核。
 - 启动阶段通过 `database.InitPersistence()` 一次性完成主业务库连接、历史案件库连接以及主业务 schema 初始化，减少分散建表点。
 - 家庭系统通过独立路由管理“家庭组 / 家庭成员 / 邀请 / 守护关系 / 家庭通知”，与鉴权和多模态主流程解耦。
 - 多模态任务走“入队 -> 子智能体并发分析 -> 主智能体工具闭环 -> 归档”流程。
@@ -152,7 +154,7 @@ flowchart LR
 
 字符串式简流程：
 
-`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例入库 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
+`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例提交审核 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
 
 ```mermaid
 flowchart LR
@@ -171,7 +173,7 @@ flowchart LR
 交互规则（关键约束）：
 
 - 子智能体只负责各自模态的结构化提取，不直接写历史归档。
-- 主智能体必须先 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`；最终必须 `write_user_history_case` 并结束。
+- 主智能体必须先 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`（案件进入待审核队列，管理员审核通过后才真正入库知识库）；最终必须 `write_user_history_case` 并结束。
 - 任务状态由 `state` 统一维护：`pending -> processing -> completed/failed`。
 - 工具层负责“查询/归档动作”，模型层负责“推理与决策”。
 
@@ -307,7 +309,7 @@ python scripts/backfill_user_history_vectors.py
 
 ### 8.3 历史案件库（`historical_case_library.db`）
 
-核心表：`historical_case_library`
+核心表：`historical_case_library`、`pending_review_cases`
 
 关键字段：
 
@@ -512,16 +514,22 @@ python scripts/backfill_user_history_vectors.py
 - 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
 - 默认值（配置缺失或非法时回退）：`poll_interval_seconds=30`、`recent_window_minutes=60`。
 
-### 9.9 主流程按需自动更新案件库（新增）
+### 9.9 主流程按需自动提交案件审核（更新）
 
-- 主智能体工具链新增：`upload_historical_case_to_vector_db`（自动 embedding + 入库）。
-- 触发原则：当案件被判定为“典型案例”时可写入案件库，风险等级不设门槛（高/中/低均可）。
-- 跳过原则：若案件不具备典型性，或证据不足、字段不完整，则不执行入库。
+- 主智能体工具链：`upload_historical_case_to_vector_db`（案件提交至待审核队列）。
+- 行为变更：工具不再直接调用 `CreateHistoricalCase` 入库，而是写入 `pending_review_cases` 表，状态为 `pending_review`。
+- 管理员审核通过后，系统调用 `CreateHistoricalCase` 完成 embedding 生成并写入 `historical_case_library` 知识库，待审核记录状态更新为 `approved`。
+- 触发原则：当案件被判定为”典型案例”时可提交审核，风险等级不设门槛（高/中/低均可）。
+- 跳过原则：若案件不具备典型性，或证据不足、字段不完整，则不执行提交。
 - 调用顺序约束：
   - `submit_final_report`
   - （可选）`upload_historical_case_to_vector_db`
   - `write_user_history_case`（必需终态步骤）
-- 设计目标：在不强制每案入库的前提下，持续沉淀可复用样本，控制知识库质量并避免冗余写入。
+- 管理员审核接口：
+  - `GET /api/scam/review/cases`：待审核列表
+  - `GET /api/scam/review/cases/:recordId`：待审核详情
+  - `POST /api/scam/review/cases/:recordId/approve`：审核通过入库
+- 设计目标：在不强制每案入库的前提下，增加人工审核环节，确保知识库质量可控。
 
 ---
 
@@ -533,6 +541,7 @@ python scripts/backfill_user_history_vectors.py
 - 管理员权限：
   - `GET /api/users`
   - 历史案件库上传/查询/删除接口
+  - 案件审核列表/详情/通过接口
 - 全局限流：按 IP + 时间窗口限制请求速率（计数存储于 Redis）
 - 注册安全策略：
   - 密码复杂度校验（大写+小写+符号）
@@ -593,6 +602,12 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 - `GET /api/scam/case-library/cases/:caseId`
 - `DELETE /api/scam/case-library/cases/:caseId`
 
+案件审核（admin）：
+
+- `GET /api/scam/review/cases`
+- `GET /api/scam/review/cases/:recordId`
+- `POST /api/scam/review/cases/:recordId/approve`
+
 聊天：
 
 - `POST /api/chat`：支持文本，或文本 + 多张图片（`images` 传 Base64 Data URL 数组）
@@ -626,6 +641,7 @@ go test ./...
 3. 提交多模态任务并轮询详情
 4. 检查历史归档、风险等级、report 与实时告警一致性
 5. 使用管理员账号上传历史案件并验证相似检索结果
+6. 提交多模态分析后，检查 `pending_review_cases` 表有新记录；管理员审核通过后检查 `historical_case_library` 表有新增
 
 ---
 

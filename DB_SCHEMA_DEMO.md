@@ -235,7 +235,7 @@
 
 来源：
 
-- 服务启动阶段由 `database.InitHistoricalCaseDB()` 主动初始化连接，并执行 `AutoMigrate(&model.HistoricalCaseEntity{})`。
+- 服务启动阶段由 `database.InitHistoricalCaseDB()` 主动初始化连接，并执行 `AutoMigrate(&model.HistoricalCaseEntity{}, &model.PendingReviewEntity{})`。
 
 字段：
 
@@ -264,7 +264,35 @@
 - `typical_scripts`、`keywords`、`embedding_vector` 都是 JSON 字符串列。
 - `embedding_vector` 示例（截断）：`[0.0123,-0.0456,...]`。
 
-### 3.2 历史案件库枚举与校验补充
+### 3.2 `pending_review_cases`（待审核案件表）
+
+来源：
+
+- 与 `historical_case_library` 同一次 `AutoMigrate` 创建。
+- 智能体分析完成后，通过 `upload_historical_case_to_vector_db` 工具写入此表（不再直接入库知识库）。
+- 管理员审核通过后，记录状态更新为 `approved`，同时调用 `CreateHistoricalCase` 写入 `historical_case_library`。
+
+字段：
+
+| 字段名 | 类型（GORM/SQLite） | 约束 | 说明 |
+|---|---|---|---|
+| `id` | `uint` / `integer` | 主键 | 自增主键 |
+| `record_id` | `string` / `varchar(32)` | `uniqueIndex`, `not null` | 业务记录 ID（如 `PREV-XXXX`） |
+| `user_id` | `string` / `varchar(64)` | 索引, `not null` | 提交用户 ID |
+| `title` | `string` / `text` | `not null` | 案件标题 |
+| `target_group` | `string` / `varchar(32)` | 索引, `not null` | 目标人群（固定枚举） |
+| `risk_level` | `string` / `varchar(16)` | 索引, `not null`, 默认值 `中` | 风险等级（高/中/低） |
+| `scam_type` | `string` / `varchar(64)` | 索引, `not null`, 默认值 `其他诈骗类` | 诈骗类型 |
+| `case_description` | `string` / `text` | `not null` | 案件描述 |
+| `typical_scripts` | `string` / `text` | `not null` | 典型话术数组（JSON 字符串） |
+| `keywords` | `string` / `text` | `not null` | 关键词数组（JSON 字符串） |
+| `violated_law` | `string` / `text` | `not null` | 违反法律说明 |
+| `suggestion` | `string` / `text` | `not null` | 处置建议 |
+| `status` | `string` / `varchar(32)` | 索引, `not null`, 默认值 `pending_review` | 审核状态（`pending_review` / `approved`） |
+| `created_at` | `time.Time` / `datetime` | 索引 | 创建时间 |
+| `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
+
+### 3.3 历史案件库枚举与校验补充
 
 说明：
 
@@ -322,6 +350,7 @@ sqlite3 DB/auth_system.db ".schema user_history_vectors"
 ```bash
 sqlite3 DB/historical_case_library.db ".tables"
 sqlite3 DB/historical_case_library.db ".schema historical_case_library"
+sqlite3 DB/historical_case_library.db ".schema pending_review_cases"
 ```
 
 ### 4.4 逐字段查看（PRAGMA）
@@ -337,4 +366,5 @@ sqlite3 DB/auth_system.db "PRAGMA table_info(pending_tasks);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(history_cases);"
 sqlite3 DB/auth_system.db "PRAGMA table_info(user_history_vectors);"
 sqlite3 DB/historical_case_library.db "PRAGMA table_info(historical_case_library);"
+sqlite3 DB/historical_case_library.db "PRAGMA table_info(pending_review_cases);"
 ```

@@ -127,6 +127,15 @@ func main() {
 			adminCaseLibrary.GET("/cases/:caseId", httpapi.GetHistoricalCaseDetailHandle)
 			adminCaseLibrary.DELETE("/cases/:caseId", httpapi.DeleteHistoricalCaseHandle)
 		}
+
+		// 管理员案件审核接口（需要管理员权限）。
+		adminReview := api.Group("/scam/review")
+		adminReview.Use(middleware.AdminMiddleware(authUserReader))
+		{
+			adminReview.GET("/cases", httpapi.GetPendingReviewCasesHandle)
+			adminReview.GET("/cases/:recordId", httpapi.GetPendingReviewCaseDetailHandle)
+			adminReview.POST("/cases/:recordId/approve", httpapi.ApprovePendingReviewCaseHandle)
+		}
 	}
 
 	port := os.Getenv("PORT")

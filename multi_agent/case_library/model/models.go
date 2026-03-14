@@ -78,3 +78,54 @@ type HistoricalCaseEntity struct {
 func (HistoricalCaseEntity) TableName() string {
 	return "historical_case_library"
 }
+
+// PendingReviewEntity 是 pending_review_cases 表 ORM 映射实体。
+type PendingReviewEntity struct {
+	ID              uint      `gorm:"primaryKey"`
+	RecordID        string    `gorm:"size:32;uniqueIndex;not null"`
+	UserID          string    `gorm:"size:64;index;not null"`
+	Title           string    `gorm:"type:text;not null"`
+	TargetGroup     string    `gorm:"size:32;index;not null"`
+	RiskLevel       string    `gorm:"size:16;index;not null;default:'中'"`
+	ScamType        string    `gorm:"size:64;index;not null;default:'其他诈骗类'"`
+	CaseDescription string    `gorm:"type:text;not null"`
+	TypicalScripts  string    `gorm:"type:text;not null"`
+	Keywords        string    `gorm:"type:text;not null"`
+	ViolatedLaw     string    `gorm:"type:text;not null"`
+	Suggestion      string    `gorm:"type:text;not null"`
+	Status          string    `gorm:"size:32;index;not null;default:'pending_review'"`
+	CreatedAt       time.Time `gorm:"index"`
+	UpdatedAt       time.Time
+}
+
+func (PendingReviewEntity) TableName() string {
+	return "pending_review_cases"
+}
+
+// PendingReviewRecord 表示待审核案件完整记录模型。
+type PendingReviewRecord struct {
+	RecordID        string
+	UserID          string
+	Title           string
+	TargetGroup     string
+	RiskLevel       string
+	ScamType        string
+	CaseDescription string
+	TypicalScripts  []string
+	Keywords        []string
+	ViolatedLaw     string
+	Suggestion      string
+	Status          string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// PendingReviewPreview 表示待审核案件预览模型。
+type PendingReviewPreview struct {
+	RecordID    string
+	Title       string
+	TargetGroup string
+	RiskLevel   string
+	ScamType    string
+	CreatedAt   time.Time
+}

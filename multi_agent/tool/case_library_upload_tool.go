@@ -84,7 +84,7 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 		}}, nil
 	}
 
-	record, createErr := case_library.CreateHistoricalCase(ctx, CurrentUserID(ctx), case_library.CreateHistoricalCaseInput{
+	record, createErr := case_library.CreatePendingReview(CurrentUserID(ctx), case_library.CreateHistoricalCaseInput{
 		Title:           input.Title,
 		TargetGroup:     input.TargetGroup,
 		RiskLevel:       input.RiskLevel,
@@ -105,24 +105,22 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 		}
 
 		if !case_library.IsValidationError(createErr) {
-			payload["message"] = "historical case vectorization or storage failed"
+			payload["message"] = "pending review case storage failed"
 		}
 		return ToolResponse{Payload: payload}, nil
 	}
 
 	return ToolResponse{Payload: map[string]interface{}{
 		"status":  "success",
-		"message": "historical case embedded and stored",
-		"case": map[string]interface{}{
-			"case_id":             strings.TrimSpace(record.CaseID),
-			"created_by":          strings.TrimSpace(record.CreatedBy),
-			"title":               record.Title,
-			"target_group":        record.TargetGroup,
-			"risk_level":          record.RiskLevel,
-			"scam_type":           record.ScamType,
-			"embedding_model":     strings.TrimSpace(record.EmbeddingModel),
-			"embedding_dimension": record.EmbeddingDimension,
-			"created_at":          record.CreatedAt.Format(time.RFC3339),
+		"message": "案件已提交，等待管理员审核后入库",
+		"review": map[string]interface{}{
+			"record_id":  strings.TrimSpace(record.RecordID),
+			"user_id":    strings.TrimSpace(record.UserID),
+			"title":      record.Title,
+			"risk_level": record.RiskLevel,
+			"scam_type":  record.ScamType,
+			"status":     record.Status,
+			"created_at": record.CreatedAt.Format(time.RFC3339),
 		},
 	}}, nil
 }

@@ -358,6 +358,12 @@
                             <div v-if="isSidebarCollapsed" class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">用户管理</div>
                         </button>
                         
+                        <button @click="activeTab = 'case_review'" :class="['w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'case_review' ? 'bg-brand-50/80 text-brand-700 shadow-sm ring-1 ring-brand-100/50' : 'text-slate-600 hover:bg-white/30 hover:text-slate-900']" :title="isSidebarCollapsed ? '案件审核' : ''">
+                            <svg class="w-5 h-5 min-w-[20px] transition-colors" :class="activeTab === 'case_review' ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">案件审核</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700">案件审核</div>
+                        </button>
+
                         <button @click="activeTab = 'case_library'" :class="['w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'case_library' ? 'bg-brand-50/80 text-brand-700 shadow-sm ring-1 ring-brand-100/50' : 'text-slate-600 hover:bg-white/30 hover:text-slate-900']" :title="isSidebarCollapsed ? '案件库管理' : ''">
                             <svg class="w-5 h-5 min-w-[20px] transition-colors" :class="activeTab === 'case_library' ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-700'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                             <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">案件库管理</span>
@@ -1380,6 +1386,84 @@
                         </section>
                     </template>
                 </div>
+
+                <!-- Case Review View (Admin Only) -->
+                <div v-if="activeTab === 'case_review' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">案件审核</h1>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">记录ID</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">标题</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">目标人群</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">提交时间</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="r in pendingReviews" :key="r.record_id" class="hover:bg-slate-50/80 transition-colors group">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ r.record_id.substring(0,12) }}...</td>
+                                        <td class="px-6 py-4 font-bold text-slate-900">{{ r.title }}</td>
+                                        <td class="px-6 py-4 text-slate-600">{{ r.target_group }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="['px-2.5 py-1 rounded-full text-xs font-bold border', getRiskClass(r.risk_level)]">
+                                                {{ normalizeRiskLevelText(r.risk_level) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ r.scam_type || '-' }}</td>
+                                        <td class="px-6 py-4 text-slate-500 text-xs">{{ formatTime(r.created_at) }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewReviewDetail(r.record_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-lg">查看</button>
+                                                <button @click="approveReview(r.record_id)" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs bg-emerald-50 px-3 py-1.5 rounded-lg">通过入库</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="pendingReviews.length === 0" class="p-12 text-center text-slate-400">暂无待审核案件</div>
+                    </div>
+                </div>
+
+                <!-- Review Detail Modal -->
+                <teleport to="body">
+                    <transition name="fade">
+                        <div v-if="showReviewDetailModal && selectedReview" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showReviewDetailModal = false">
+                            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 mx-4">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h2 class="text-xl font-extrabold text-slate-900">待审核案件详情</h2>
+                                    <button @click="showReviewDetailModal = false" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                                </div>
+                                <div class="space-y-4 text-sm">
+                                    <div><span class="font-bold text-slate-600">记录ID：</span><span class="font-mono text-slate-500">{{ selectedReview.record_id }}</span></div>
+                                    <div><span class="font-bold text-slate-600">提交用户：</span>{{ selectedReview.user_id }}</div>
+                                    <div><span class="font-bold text-slate-600">标题：</span>{{ selectedReview.title }}</div>
+                                    <div><span class="font-bold text-slate-600">目标人群：</span>{{ selectedReview.target_group }}</div>
+                                    <div><span class="font-bold text-slate-600">风险等级：</span><span :class="['px-2.5 py-1 rounded-full text-xs font-bold border', getRiskClass(selectedReview.risk_level)]">{{ normalizeRiskLevelText(selectedReview.risk_level) }}</span></div>
+                                    <div><span class="font-bold text-slate-600">诈骗类型：</span>{{ selectedReview.scam_type }}</div>
+                                    <div><span class="font-bold text-slate-600">案件描述：</span><p class="mt-1 text-slate-700 whitespace-pre-wrap">{{ selectedReview.case_description }}</p></div>
+                                    <div v-if="selectedReview.typical_scripts && selectedReview.typical_scripts.length"><span class="font-bold text-slate-600">典型话术：</span><ul class="mt-1 list-disc list-inside text-slate-700"><li v-for="s in selectedReview.typical_scripts">{{ s }}</li></ul></div>
+                                    <div v-if="selectedReview.keywords && selectedReview.keywords.length"><span class="font-bold text-slate-600">关键词：</span><span class="text-slate-700">{{ selectedReview.keywords.join('、') }}</span></div>
+                                    <div v-if="selectedReview.violated_law"><span class="font-bold text-slate-600">涉及法律：</span>{{ selectedReview.violated_law }}</div>
+                                    <div v-if="selectedReview.suggestion"><span class="font-bold text-slate-600">防范建议：</span>{{ selectedReview.suggestion }}</div>
+                                    <div><span class="font-bold text-slate-600">状态：</span>{{ selectedReview.status === 'pending_review' ? '待审核' : '已通过' }}</div>
+                                </div>
+                                <div class="mt-8 flex justify-end gap-3">
+                                    <button @click="showReviewDetailModal = false" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">关闭</button>
+                                    <button v-if="selectedReview.status === 'pending_review'" @click="approveReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">通过入库</button>
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+                </teleport>
 
                 <!-- Case Library View (Admin Only) -->
                 <div v-if="activeTab === 'case_library' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">

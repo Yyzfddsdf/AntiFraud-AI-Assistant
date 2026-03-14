@@ -49,7 +49,7 @@ func GetHistoricalCaseDB() (*gorm.DB, error) {
 			historicalCaseDBErr = fmt.Errorf("open historical case db failed: %w", err)
 			return
 		}
-		if err := db.AutoMigrate(&casemodel.HistoricalCaseEntity{}); err != nil {
+		if err := db.AutoMigrate(&casemodel.HistoricalCaseEntity{}, &casemodel.PendingReviewEntity{}); err != nil {
 			historicalCaseDBErr = fmt.Errorf("auto migrate historical case db failed: %w", err)
 			return
 		}

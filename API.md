@@ -2137,6 +2137,124 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 - `404` 指定 `caseId` 不存在。
 - `500` 删除失败。
 
+---
+
+## 21) 待审核案件列表（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/review/cases`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 返回所有状态为 `pending_review` 的待审核案件预览列表。
+- 案件来源：用户通过多模态分析后，智能体自动提交的典型案例（不再直接入库，而是先进入待审核队列）。
+
+### 成功响应（200）
+
+```json
+{
+  "total": 2,
+  "cases": [
+    {
+      "record_id": "PREV-5F3C91AA12DE",
+      "title": "冒充客服退款引导转账",
+      "target_group": "老人",
+      "risk_level": "高",
+      "scam_type": "冒充客服类",
+      "created_at": "2026-03-14T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 查询失败。
+
+---
+
+## 22) 待审核案件详情（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/review/cases/:recordId`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 返回指定 `recordId` 的待审核案件完整详情。
+
+### 成功响应（200）
+
+```json
+{
+  "case": {
+    "record_id": "PREV-5F3C91AA12DE",
+    "user_id": "42",
+    "title": "冒充客服退款引导转账",
+    "target_group": "老人",
+    "risk_level": "高",
+    "scam_type": "冒充客服类",
+    "case_description": "诈骗方冒充平台客服，以"会员自动续费"名义要求受害者将资金转入所谓安全账户。",
+    "typical_scripts": ["您不开通取消会每月自动扣费。"],
+    "keywords": ["客服退款", "安全账户"],
+    "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
+    "suggestion": "立即停止转账，保存聊天和转账凭证，并第一时间报警。",
+    "status": "pending_review",
+    "created_at": "2026-03-14T10:30:00Z",
+    "updated_at": "2026-03-14T10:30:00Z"
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` `recordId` 为空。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `404` 指定 `recordId` 不存在。
+- `500` 查询失败。
+
+---
+
+## 23) 审核通过待审核案件（仅管理员）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/review/cases/:recordId/approve`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 审核通过后，系统会自动调用 `CreateHistoricalCase` 完成 embedding 生成并写入 `historical_case_library` 知识库。
+- 待审核记录状态更新为 `approved`。
+
+### 成功响应（200）
+
+```json
+{
+  "message": "审核通过，案件已入库知识库",
+  "case_id": "HCASE-5F3C91AA12DE"
+}
+```
+
+### 常见失败响应
+
+- `400` `recordId` 为空。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 审核入库失败（可能原因：待审核记录不存在或已审核、embedding 生成失败等）。
+
 ### cURL 示例
 
 ```bash
