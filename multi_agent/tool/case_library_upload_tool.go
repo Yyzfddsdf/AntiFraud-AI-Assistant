@@ -14,6 +14,8 @@ const UploadHistoricalCaseToVectorDBToolName = "upload_historical_case_to_vector
 
 const defaultFraudViolatedLaw = "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）"
 
+var createPendingReview = case_library.CreatePendingReview
+
 // UploadHistoricalCaseToVectorDBInput 表示“上传向量数据库”工具输入。
 // 该工具会自动完成 embedding 生成并写入 historical_case_library。
 type UploadHistoricalCaseToVectorDBInput struct {
@@ -86,7 +88,7 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 		}}, nil
 	}
 
-	record, createErr := case_library.CreatePendingReview(CurrentUserID(ctx), case_library.CreateHistoricalCaseInput{
+	record, createErr := createPendingReview(ctx, CurrentUserID(ctx), case_library.CreateHistoricalCaseInput{
 		Title:           input.Title,
 		TargetGroup:     input.TargetGroup,
 		RiskLevel:       input.RiskLevel,
@@ -104,6 +106,18 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 			"allowed_target_groups": append([]string{}, case_library.ListTargetGroups()...),
 			"allowed_risk_levels":   append([]string{}, case_library.FixedRiskLevels...),
 			"allowed_scam_types":    append([]string{}, case_library.ListScamTypes()...),
+		}
+		if duplicateErr, ok := case_library.AsDuplicateHistoricalCaseError(createErr); ok && duplicateErr != nil {
+			payload["duplicate_case"] = map[string]interface{}{
+				"case_id":      strings.TrimSpace(duplicateErr.TopMatch.CaseID),
+				"title":        strings.TrimSpace(duplicateErr.TopMatch.Title),
+				"target_group": strings.TrimSpace(duplicateErr.TopMatch.TargetGroup),
+				"risk_level":   strings.TrimSpace(duplicateErr.TopMatch.RiskLevel),
+				"scam_type":    strings.TrimSpace(duplicateErr.TopMatch.ScamType),
+				"similarity":   duplicateErr.TopMatch.Similarity,
+			}
+			payload["message"] = "pending review case rejected because it is too similar to an existing historical case"
+			return ToolResponse{Payload: payload}, nil
 		}
 
 		if !case_library.IsValidationError(createErr) {

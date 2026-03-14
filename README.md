@@ -519,6 +519,7 @@ python scripts/backfill_user_history_vectors.py
 
 - 主智能体工具链：`upload_historical_case_to_vector_db`（案件提交至待审核队列）。
 - 行为变更：工具不再直接调用 `CreateHistoricalCase` 入库，而是写入 `pending_review_cases` 表。
+- 待审核写入前会先生成 embedding，并与真实案件库做 top1 向量比对；若相似度 `>= 0.9`，则视为重复案件并直接拒绝写入待审核表。
 - 管理员审核通过后，系统调用 `CreateHistoricalCase` 完成 embedding 生成并写入 `historical_case_library` 知识库，随后从 `pending_review_cases` 物理删除该待审核记录。
 - 触发原则：当案件被判定为”典型案例”时可提交审核，风险等级不设门槛（高/中/低均可）。
 - 跳过原则：若案件不具备典型性，或证据不足、字段不完整，则不执行提交。

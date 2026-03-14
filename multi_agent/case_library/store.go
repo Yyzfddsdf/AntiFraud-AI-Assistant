@@ -56,34 +56,58 @@ type HistoricalCaseRecord = model.HistoricalCaseRecord
 type HistoricalCasePreview = model.HistoricalCasePreview
 type historicalCaseEntity = model.HistoricalCaseEntity
 
+type preparedHistoricalCaseInput struct {
+	normalizedInput CreateHistoricalCaseInput
+	vector          []float64
+	modelName       string
+}
+
+var generateCaseEmbedding = embedding.GenerateVector
+
 // CreateHistoricalCase 将历史案件写入独立数据库，并保存 embedding 向量。
 func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistoricalCaseInput) (HistoricalCaseRecord, error) {
-	normalizedInput, err := normalizeAndValidateInput(input)
+	prepared, err := prepareHistoricalCaseInput(ctx, input)
 	if err != nil {
 		return HistoricalCaseRecord{}, err
 	}
+	return insertHistoricalCasePrepared(userID, prepared)
+}
 
-	embeddingText := BuildEmbeddingInput(normalizedInput)
-	vector, modelName, err := embedding.GenerateVector(ctx, embeddingText)
+func prepareHistoricalCaseInput(ctx context.Context, input CreateHistoricalCaseInput) (preparedHistoricalCaseInput, error) {
+	normalizedInput, err := normalizeAndValidateInput(input)
 	if err != nil {
-		return HistoricalCaseRecord{}, fmt.Errorf("generate embedding failed: %w", err)
+		return preparedHistoricalCaseInput{}, err
 	}
 
+	embeddingText := BuildEmbeddingInput(normalizedInput)
+	vector, modelName, err := generateCaseEmbedding(ctx, embeddingText)
+	if err != nil {
+		return preparedHistoricalCaseInput{}, fmt.Errorf("generate embedding failed: %w", err)
+	}
+
+	return preparedHistoricalCaseInput{
+		normalizedInput: normalizedInput,
+		vector:          append([]float64{}, vector...),
+		modelName:       strings.TrimSpace(modelName),
+	}, nil
+}
+
+func insertHistoricalCasePrepared(userID string, prepared preparedHistoricalCaseInput) (HistoricalCaseRecord, error) {
 	entity := historicalCaseEntity{
 		CaseID:             newHistoricalCaseID(),
 		CreatedBy:          normalizeUserID(userID),
-		Title:              normalizedInput.Title,
-		TargetGroup:        normalizedInput.TargetGroup,
-		RiskLevel:          normalizedInput.RiskLevel,
-		ScamType:           normalizedInput.ScamType,
-		CaseDescription:    normalizedInput.CaseDescription,
-		TypicalScripts:     encodeStringList(normalizedInput.TypicalScripts),
-		Keywords:           encodeStringList(normalizedInput.Keywords),
-		ViolatedLaw:        normalizedInput.ViolatedLaw,
-		Suggestion:         normalizedInput.Suggestion,
-		EmbeddingVector:    encodeFloatList(vector),
-		EmbeddingModel:     strings.TrimSpace(modelName),
-		EmbeddingDimension: len(vector),
+		Title:              prepared.normalizedInput.Title,
+		TargetGroup:        prepared.normalizedInput.TargetGroup,
+		RiskLevel:          prepared.normalizedInput.RiskLevel,
+		ScamType:           prepared.normalizedInput.ScamType,
+		CaseDescription:    prepared.normalizedInput.CaseDescription,
+		TypicalScripts:     encodeStringList(prepared.normalizedInput.TypicalScripts),
+		Keywords:           encodeStringList(prepared.normalizedInput.Keywords),
+		ViolatedLaw:        prepared.normalizedInput.ViolatedLaw,
+		Suggestion:         prepared.normalizedInput.Suggestion,
+		EmbeddingVector:    encodeFloatList(prepared.vector),
+		EmbeddingModel:     strings.TrimSpace(prepared.modelName),
+		EmbeddingDimension: len(prepared.vector),
 	}
 
 	db, err := database.GetHistoricalCaseDB()

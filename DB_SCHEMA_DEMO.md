@@ -270,6 +270,7 @@
 
 - 与 `historical_case_library` 同一次 `AutoMigrate` 创建。
 - 智能体分析完成后，通过 `upload_historical_case_to_vector_db` 工具写入此表（不再直接入库知识库）。
+- 写入前会先生成 embedding，并与真实案件库做 top1 向量比对；若相似度 `>= 0.9`，则视为重复案件并拒绝写入待审核表。
 - 管理员审核通过后，会先调用 `CreateHistoricalCase` 写入 `historical_case_library`，随后从本表物理删除对应待审核记录。
 - 管理员待审核列表与详情页都会直接读取本表中的 `violated_law` 字段；若为空，前端按“未提供”处理。
 
@@ -289,6 +290,9 @@
 | `keywords` | `string` / `text` | `not null` | 关键词数组（JSON 字符串） |
 | `violated_law` | `string` / `text` | `not null` | 违反法律说明 |
 | `suggestion` | `string` / `text` | `not null` | 处置建议 |
+| `embedding_vector` | `string` / `text` | `not null` | 向量数组（JSON 字符串，`[]float64`） |
+| `embedding_model` | `string` / `varchar(128)` | `not null` | 向量模型名 |
+| `embedding_dimension` | `int` / `integer` | `not null` | 向量维度 |
 | `created_at` | `time.Time` / `datetime` | 索引 | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 无 | 更新时间 |
 

@@ -50,12 +50,12 @@ func GetHistoricalCaseDB() (*gorm.DB, error) {
 			historicalCaseDBErr = fmt.Errorf("open historical case db failed: %w", err)
 			return
 		}
-		if err := db.AutoMigrate(&casemodel.HistoricalCaseEntity{}, &casemodel.PendingReviewEntity{}); err != nil {
+		if err := db.AutoMigrate(&casemodel.HistoricalCaseEntity{}); err != nil {
 			historicalCaseDBErr = fmt.Errorf("auto migrate historical case db failed: %w", err)
 			return
 		}
-		if err := dropPendingReviewLegacyStatusColumn(db); err != nil {
-			historicalCaseDBErr = fmt.Errorf("drop pending review legacy status column failed: %w", err)
+		if err := ensurePendingReviewSchema(db); err != nil {
+			historicalCaseDBErr = fmt.Errorf("ensure pending review schema failed: %w", err)
 			return
 		}
 
@@ -68,9 +68,12 @@ func GetHistoricalCaseDB() (*gorm.DB, error) {
 	return historicalCaseDB, nil
 }
 
-func dropPendingReviewLegacyStatusColumn(db *gorm.DB) error {
+func ensurePendingReviewSchema(db *gorm.DB) error {
 	if db == nil {
 		return nil
+	}
+	if !db.Migrator().HasTable(&casemodel.PendingReviewEntity{}) {
+		return db.AutoMigrate(&casemodel.PendingReviewEntity{})
 	}
 
 	rows, err := db.Raw("PRAGMA table_info(pending_review_cases);").Rows()
@@ -80,6 +83,9 @@ func dropPendingReviewLegacyStatusColumn(db *gorm.DB) error {
 	defer rows.Close()
 
 	hasStatus := false
+	hasEmbeddingVector := false
+	hasEmbeddingModel := false
+	hasEmbeddingDimension := false
 	for rows.Next() {
 		var (
 			cid          int
@@ -94,14 +100,25 @@ func dropPendingReviewLegacyStatusColumn(db *gorm.DB) error {
 		}
 		if strings.EqualFold(strings.TrimSpace(name), "status") {
 			hasStatus = true
-			break
+		}
+		if strings.EqualFold(strings.TrimSpace(name), "embedding_vector") {
+			hasEmbeddingVector = true
+		}
+		if strings.EqualFold(strings.TrimSpace(name), "embedding_model") {
+			hasEmbeddingModel = true
+		}
+		if strings.EqualFold(strings.TrimSpace(name), "embedding_dimension") {
+			hasEmbeddingDimension = true
 		}
 	}
-	if !hasStatus {
-		return nil
+	if !hasStatus && hasEmbeddingVector && hasEmbeddingModel && hasEmbeddingDimension {
+		return db.AutoMigrate(&casemodel.PendingReviewEntity{})
 	}
 
-	return db.Exec("ALTER TABLE pending_review_cases DROP COLUMN status;").Error
+	if err := db.Migrator().DropTable(&casemodel.PendingReviewEntity{}); err != nil {
+		return err
+	}
+	return db.AutoMigrate(&casemodel.PendingReviewEntity{})
 }
 
 func resolveHistoricalCaseDBPath() string {

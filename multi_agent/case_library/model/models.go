@@ -81,20 +81,23 @@ func (HistoricalCaseEntity) TableName() string {
 
 // PendingReviewEntity 是 pending_review_cases 表 ORM 映射实体。
 type PendingReviewEntity struct {
-	ID              uint      `gorm:"primaryKey"`
-	RecordID        string    `gorm:"size:32;uniqueIndex;not null"`
-	UserID          string    `gorm:"size:64;index;not null"`
-	Title           string    `gorm:"type:text;not null"`
-	TargetGroup     string    `gorm:"size:32;index;not null"`
-	RiskLevel       string    `gorm:"size:16;index;not null;default:'中'"`
-	ScamType        string    `gorm:"size:64;index;not null;default:'其他诈骗类'"`
-	CaseDescription string    `gorm:"type:text;not null"`
-	TypicalScripts  string    `gorm:"type:text;not null"`
-	Keywords        string    `gorm:"type:text;not null"`
-	ViolatedLaw     string    `gorm:"type:text;not null"`
-	Suggestion      string    `gorm:"type:text;not null"`
-	CreatedAt       time.Time `gorm:"index"`
-	UpdatedAt       time.Time
+	ID                 uint      `gorm:"primaryKey"`
+	RecordID           string    `gorm:"size:32;uniqueIndex;not null"`
+	UserID             string    `gorm:"size:64;index;not null"`
+	Title              string    `gorm:"type:text;not null"`
+	TargetGroup        string    `gorm:"size:32;index;not null"`
+	RiskLevel          string    `gorm:"size:16;index;not null;default:'中'"`
+	ScamType           string    `gorm:"size:64;index;not null;default:'其他诈骗类'"`
+	CaseDescription    string    `gorm:"type:text;not null"`
+	TypicalScripts     string    `gorm:"type:text;not null"`
+	Keywords           string    `gorm:"type:text;not null"`
+	ViolatedLaw        string    `gorm:"type:text;not null"`
+	Suggestion         string    `gorm:"type:text;not null"`
+	EmbeddingVector    string    `gorm:"type:text;not null"`
+	EmbeddingModel     string    `gorm:"size:128;not null"`
+	EmbeddingDimension int       `gorm:"not null"`
+	CreatedAt          time.Time `gorm:"index"`
+	UpdatedAt          time.Time
 }
 
 func (PendingReviewEntity) TableName() string {

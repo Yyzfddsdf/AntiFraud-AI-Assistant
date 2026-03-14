@@ -16,25 +16,60 @@ type PendingReviewRecord = model.PendingReviewRecord
 type PendingReviewPreview = model.PendingReviewPreview
 type pendingReviewEntity = model.PendingReviewEntity
 
+const pendingReviewDuplicateThreshold = 0.9
+
+type DuplicateHistoricalCaseError struct {
+	TopMatch SimilarCaseResult
+}
+
+func (e *DuplicateHistoricalCaseError) Error() string {
+	if e == nil {
+		return "duplicate historical case detected"
+	}
+	return fmt.Sprintf("duplicate historical case detected: top1 similarity=%.4f case_id=%s title=%s",
+		e.TopMatch.Similarity,
+		strings.TrimSpace(e.TopMatch.CaseID),
+		strings.TrimSpace(e.TopMatch.Title),
+	)
+}
+
+func IsDuplicateHistoricalCaseError(err error) bool {
+	_, ok := err.(*DuplicateHistoricalCaseError)
+	return ok
+}
+
+func AsDuplicateHistoricalCaseError(err error) (*DuplicateHistoricalCaseError, bool) {
+	duplicateErr, ok := err.(*DuplicateHistoricalCaseError)
+	return duplicateErr, ok
+}
+
+var searchHistoricalCasesByVector = SearchTopKSimilarCasesByVector
+
 // CreatePendingReview 将案件写入待审核表。
-func CreatePendingReview(userID string, input CreateHistoricalCaseInput) (PendingReviewRecord, error) {
-	normalizedInput, err := normalizeAndValidateInput(input)
+func CreatePendingReview(ctx context.Context, userID string, input CreateHistoricalCaseInput) (PendingReviewRecord, error) {
+	prepared, err := prepareHistoricalCaseInput(ctx, input)
 	if err != nil {
 		return PendingReviewRecord{}, err
 	}
+	if duplicateErr := detectDuplicateHistoricalCase(prepared.vector); duplicateErr != nil {
+		return PendingReviewRecord{}, duplicateErr
+	}
 
 	entity := pendingReviewEntity{
-		RecordID:        newPendingReviewID(),
-		UserID:          normalizeUserID(userID),
-		Title:           normalizedInput.Title,
-		TargetGroup:     normalizedInput.TargetGroup,
-		RiskLevel:       normalizedInput.RiskLevel,
-		ScamType:        normalizedInput.ScamType,
-		CaseDescription: normalizedInput.CaseDescription,
-		TypicalScripts:  encodeStringList(normalizedInput.TypicalScripts),
-		Keywords:        encodeStringList(normalizedInput.Keywords),
-		ViolatedLaw:     normalizedInput.ViolatedLaw,
-		Suggestion:      normalizedInput.Suggestion,
+		RecordID:           newPendingReviewID(),
+		UserID:             normalizeUserID(userID),
+		Title:              prepared.normalizedInput.Title,
+		TargetGroup:        prepared.normalizedInput.TargetGroup,
+		RiskLevel:          prepared.normalizedInput.RiskLevel,
+		ScamType:           prepared.normalizedInput.ScamType,
+		CaseDescription:    prepared.normalizedInput.CaseDescription,
+		TypicalScripts:     encodeStringList(prepared.normalizedInput.TypicalScripts),
+		Keywords:           encodeStringList(prepared.normalizedInput.Keywords),
+		ViolatedLaw:        prepared.normalizedInput.ViolatedLaw,
+		Suggestion:         prepared.normalizedInput.Suggestion,
+		EmbeddingVector:    encodeFloatList(prepared.vector),
+		EmbeddingModel:     strings.TrimSpace(prepared.modelName),
+		EmbeddingDimension: len(prepared.vector),
 	}
 
 	db, err := database.GetHistoricalCaseDB()
@@ -107,7 +142,7 @@ func GetPendingReviewByID(recordID string) (PendingReviewRecord, bool, error) {
 
 // APPEND_MARKER_2
 
-// ApprovePendingReview 审核通过：读取待审核记录 → 调用 CreateHistoricalCase 入库 → 删除待审核记录。
+// ApprovePendingReview 审核通过：读取待审核记录 → 直接写入历史案件库 → 删除待审核记录。
 func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseRecord, error) {
 	trimmed := strings.TrimSpace(recordID)
 	if trimmed == "" {
@@ -128,16 +163,28 @@ func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseR
 		return HistoricalCaseRecord{}, fmt.Errorf("pending review case not found or already processed")
 	}
 
-	record, createErr := CreateHistoricalCase(ctx, entity.UserID, CreateHistoricalCaseInput{
-		Title:           strings.TrimSpace(entity.Title),
-		TargetGroup:     strings.TrimSpace(entity.TargetGroup),
-		RiskLevel:       strings.TrimSpace(entity.RiskLevel),
-		ScamType:        strings.TrimSpace(entity.ScamType),
-		CaseDescription: strings.TrimSpace(entity.CaseDescription),
-		TypicalScripts:  decodeStringList(entity.TypicalScripts),
-		Keywords:        decodeStringList(entity.Keywords),
-		ViolatedLaw:     strings.TrimSpace(entity.ViolatedLaw),
-		Suggestion:      strings.TrimSpace(entity.Suggestion),
+	vector := decodeFloatList(entity.EmbeddingVector)
+	if len(vector) == 0 {
+		return HistoricalCaseRecord{}, fmt.Errorf("pending review record missing embedding vector")
+	}
+	if entity.EmbeddingDimension > 0 && len(vector) != entity.EmbeddingDimension {
+		return HistoricalCaseRecord{}, fmt.Errorf("pending review embedding dimension mismatch")
+	}
+
+	record, createErr := insertHistoricalCasePrepared(entity.UserID, preparedHistoricalCaseInput{
+		normalizedInput: CreateHistoricalCaseInput{
+			Title:           strings.TrimSpace(entity.Title),
+			TargetGroup:     strings.TrimSpace(entity.TargetGroup),
+			RiskLevel:       strings.TrimSpace(entity.RiskLevel),
+			ScamType:        strings.TrimSpace(entity.ScamType),
+			CaseDescription: strings.TrimSpace(entity.CaseDescription),
+			TypicalScripts:  decodeStringList(entity.TypicalScripts),
+			Keywords:        decodeStringList(entity.Keywords),
+			ViolatedLaw:     strings.TrimSpace(entity.ViolatedLaw),
+			Suggestion:      strings.TrimSpace(entity.Suggestion),
+		},
+		vector:    vector,
+		modelName: strings.TrimSpace(entity.EmbeddingModel),
 	})
 	if createErr != nil {
 		return HistoricalCaseRecord{}, fmt.Errorf("approve and create historical case failed: %w", createErr)
@@ -179,4 +226,20 @@ func pendingReviewRecordFromEntity(entity pendingReviewEntity) PendingReviewReco
 		CreatedAt:       entity.CreatedAt,
 		UpdatedAt:       entity.UpdatedAt,
 	}
+}
+
+func detectDuplicateHistoricalCase(queryVector []float64) error {
+	results, _, err := searchHistoricalCasesByVector(queryVector, 1)
+	if err != nil {
+		return fmt.Errorf("compare with historical case library failed: %w", err)
+	}
+	if len(results) == 0 {
+		return nil
+	}
+
+	top1 := results[0]
+	if top1.Similarity >= pendingReviewDuplicateThreshold {
+		return &DuplicateHistoricalCaseError{TopMatch: top1}
+	}
+	return nil
 }
