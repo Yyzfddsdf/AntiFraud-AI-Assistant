@@ -101,11 +101,8 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 	})
 	if createErr != nil {
 		payload := map[string]interface{}{
-			"status":                "failed",
-			"error":                 createErr.Error(),
-			"allowed_target_groups": append([]string{}, case_library.ListTargetGroups()...),
-			"allowed_risk_levels":   append([]string{}, case_library.FixedRiskLevels...),
-			"allowed_scam_types":    append([]string{}, case_library.ListScamTypes()...),
+			"status": "failed",
+			"error":  createErr.Error(),
 		}
 		if duplicateErr, ok := case_library.AsDuplicateHistoricalCaseError(createErr); ok && duplicateErr != nil {
 			payload["duplicate_case"] = map[string]interface{}{
@@ -120,7 +117,11 @@ func (h *UploadHistoricalCaseToVectorDBHandler) Handle(ctx context.Context, args
 			return ToolResponse{Payload: payload}, nil
 		}
 
-		if !case_library.IsValidationError(createErr) {
+		if case_library.IsValidationError(createErr) {
+			payload["allowed_target_groups"] = append([]string{}, case_library.ListTargetGroups()...)
+			payload["allowed_risk_levels"] = append([]string{}, case_library.FixedRiskLevels...)
+			payload["allowed_scam_types"] = append([]string{}, case_library.ListScamTypes()...)
+		} else {
 			payload["message"] = "pending review case storage failed"
 		}
 		return ToolResponse{Payload: payload}, nil

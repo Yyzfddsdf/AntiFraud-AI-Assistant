@@ -194,6 +194,18 @@ func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {
 	if err != nil {
 		log.Printf("[case_library] load vector cache from redis failed: %v", err)
 	} else if ready {
+		if len(records) > 0 {
+			count, countErr := countHistoricalCasesFromDB()
+			if countErr != nil {
+				log.Printf("[case_library] count historical cases failed during cache validation: %v", countErr)
+			} else if count == 0 {
+				log.Printf("[case_library] detected stale vector cache: redis_records=%d db_records=0, rebuilding cache", len(records))
+				if cacheErr := replaceHistoricalCaseVectorCache([]HistoricalCaseRecord{}); cacheErr != nil {
+					log.Printf("[case_library] clear stale vector cache failed: %v", cacheErr)
+				}
+				return []HistoricalCaseRecord{}, nil
+			}
+		}
 		return cloneHistoricalCaseRecords(records), nil
 	}
 
@@ -207,6 +219,19 @@ func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {
 		log.Printf("[case_library] refresh vector cache to redis failed: %v", cacheErr)
 	}
 	return cloneHistoricalCaseRecords(recordsFromDB), nil
+}
+
+func countHistoricalCasesFromDB() (int64, error) {
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	if err := db.Model(&historicalCaseEntity{}).Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("count historical cases failed: %w", err)
+	}
+	return count, nil
 }
 
 func loadHistoricalCaseVectorCacheFromRedis() ([]HistoricalCaseRecord, bool, error) {
