@@ -27,6 +27,7 @@ func GetPendingReviewCasesHandle(c *gin.Context) {
 			TargetGroup: p.TargetGroup,
 			RiskLevel:   p.RiskLevel,
 			ScamType:    p.ScamType,
+			ViolatedLaw: p.ViolatedLaw,
 			CreatedAt:   p.CreatedAt.Format(time.RFC3339),
 		})
 	}
@@ -36,6 +37,7 @@ func GetPendingReviewCasesHandle(c *gin.Context) {
 		Cases: items,
 	})
 }
+
 // APPEND_MARKER
 
 // GetPendingReviewCaseDetailHandle 返回指定 recordId 的待审核案件详情。

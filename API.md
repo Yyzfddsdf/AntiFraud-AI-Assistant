@@ -2152,6 +2152,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 - 仅管理员可调用此接口。
 - 返回所有状态为 `pending_review` 的待审核案件预览列表。
 - 案件来源：用户通过多模态分析后，智能体自动提交的典型案例（不再直接入库，而是先进入待审核队列）。
+- 返回结果会携带 `violated_law`，便于管理员在列表页快速查看是否存在明确法律依据。
 
 ### 成功响应（200）
 
@@ -2165,6 +2166,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
       "target_group": "老人",
       "risk_level": "高",
       "scam_type": "冒充客服类",
+      "violated_law": "涉嫌违反《中华人民共和国刑法》第二百六十六条（诈骗罪）。",
       "created_at": "2026-03-14T10:30:00Z"
     }
   ]
@@ -2258,6 +2260,66 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 ### cURL 示例
 
 ```bash
-curl -X DELETE "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12DE" \
+curl -X POST "http://localhost:8081/api/scam/review/cases/PREV-5F3C91AA12DE/approve" \
   -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+---
+
+## 24) 后台启动案件采集（仅管理员）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/case-collection/search`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "query": "冒充客服退款诈骗",
+  "case_count": 5
+}
+```
+
+### 说明
+
+- 仅管理员可调用此接口。
+- 接口只负责启动后台 goroutine，不会等待案件采集执行完成。
+- 后台流程会驱动案件采集智能体持续调用 `search_web` 和 `upload_historical_case_to_vector_db`，逐条把结果写入待审核案件库。
+- 该接口不会创建任务记录，也不会把请求写入数据库。
+- 当前没有配套的“任务状态查询接口”；启动后可直接到“待审核案件列表”查看新增结果。
+
+### 参数说明
+
+- `query`：采集主题或检索方向，不能为空。
+- `case_count`：希望后台尝试生成的待审核案件数量，取值范围 `1-20`。
+
+### 成功响应（202）
+
+```json
+{
+  "message": "案件采集任务已在后台启动"
+}
+```
+
+### 常见失败响应
+
+- `400` 请求参数错误，或 `query` 为空，或 `case_count` 超出 `1-20`。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 后台入队失败。
+
+### cURL 示例
+
+```bash
+curl -X POST "http://localhost:8081/api/scam/case-collection/search" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "冒充客服退款诈骗",
+    "case_count": 5
+  }'
 ```

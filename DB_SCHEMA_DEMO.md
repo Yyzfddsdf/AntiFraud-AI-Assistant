@@ -271,6 +271,7 @@
 - 与 `historical_case_library` 同一次 `AutoMigrate` 创建。
 - 智能体分析完成后，通过 `upload_historical_case_to_vector_db` 工具写入此表（不再直接入库知识库）。
 - 管理员审核通过后，记录状态更新为 `approved`，同时调用 `CreateHistoricalCase` 写入 `historical_case_library`。
+- 管理员待审核列表与详情页都会直接读取本表中的 `violated_law` 字段；若为空，前端按“未提供”处理。
 
 字段：
 

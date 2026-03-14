@@ -33,6 +33,15 @@ type ChatConfig struct {
 	BaseURL string `json:"base_url"`
 }
 
+// TavilyConfig 定义联网搜索服务配置。
+type TavilyConfig struct {
+	APIKey        string `json:"api_key"`
+	BaseURL       string `json:"base_url"`
+	IncludeAnswer string `json:"include_answer"`
+	SearchDepth   string `json:"search_depth"`
+	TimeoutMS     int    `json:"timeout_ms"`
+}
+
 // RedisConfig 定义统一 Redis 连接配置。
 type RedisConfig struct {
 	Addr     string `json:"addr"`
@@ -54,18 +63,20 @@ type AlertWSConfig struct {
 
 // AgentModelConfig 按智能体拆分模型与调用参数，便于后续扩展新 provider/model。
 type AgentModelConfig struct {
-	Main  ModelConfig `json:"main"`
-	Image ModelConfig `json:"image"`
-	Video ModelConfig `json:"video"`
-	Audio ModelConfig `json:"audio"`
+	Main           ModelConfig `json:"main"`
+	Image          ModelConfig `json:"image"`
+	Video          ModelConfig `json:"video"`
+	Audio          ModelConfig `json:"audio"`
+	CaseCollection ModelConfig `json:"case_collection"`
 }
 
 // PromptConfig 统一托管各智能体提示词，避免硬编码散落在代码里。
 type PromptConfig struct {
-	Main  string `json:"main"`
-	Image string `json:"image"`
-	Video string `json:"video"`
-	Audio string `json:"audio"`
+	Main           string `json:"main"`
+	Image          string `json:"image"`
+	Video          string `json:"video"`
+	Audio          string `json:"audio"`
+	CaseCollection string `json:"case_collection"`
 }
 
 // Config 是项目总配置对象。
@@ -73,6 +84,7 @@ type Config struct {
 	Agents        AgentModelConfig `json:"agents"`
 	Embedding     EmbeddingConfig  `json:"embedding"`
 	Chat          ChatConfig       `json:"chat"`
+	Tavily        TavilyConfig     `json:"tavily"`
 	Redis         RedisConfig      `json:"redis"`
 	Prompts       PromptConfig     `json:"prompts"`
 	Retry         RetryConfig      `json:"retry"`
@@ -142,13 +154,16 @@ func (c *Config) normalize() {
 	c.Agents.Image = normalizeModel(c.Agents.Image)
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
+	c.Agents.CaseCollection = normalizeModel(c.Agents.CaseCollection)
 	c.Embedding = normalizeEmbedding(c.Embedding)
 	c.Chat = normalizeChat(c.Chat, c.Agents.Main)
+	c.Tavily = normalizeTavily(c.Tavily)
 	c.Redis = normalizeRedis(c.Redis)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
 	c.Prompts.Audio = strings.TrimSpace(c.Prompts.Audio)
+	c.Prompts.CaseCollection = strings.TrimSpace(c.Prompts.CaseCollection)
 	c.AlertWS = normalizeAlertWS(c.AlertWS)
 	c.FamilyAlertWS = normalizeAlertWS(c.FamilyAlertWS)
 }
@@ -184,6 +199,26 @@ func normalizeChat(chatCfg ChatConfig, mainModelCfg ModelConfig) ChatConfig {
 		chatCfg.Model = strings.TrimSpace(mainModelCfg.Model)
 	}
 	return chatCfg
+}
+
+func normalizeTavily(tavilyCfg TavilyConfig) TavilyConfig {
+	tavilyCfg.APIKey = strings.TrimSpace(tavilyCfg.APIKey)
+	tavilyCfg.BaseURL = strings.TrimRight(strings.TrimSpace(tavilyCfg.BaseURL), "/")
+	tavilyCfg.IncludeAnswer = strings.TrimSpace(tavilyCfg.IncludeAnswer)
+	tavilyCfg.SearchDepth = strings.TrimSpace(tavilyCfg.SearchDepth)
+	if tavilyCfg.BaseURL == "" {
+		tavilyCfg.BaseURL = "https://api.tavily.com"
+	}
+	if tavilyCfg.IncludeAnswer == "" {
+		tavilyCfg.IncludeAnswer = "advanced"
+	}
+	if tavilyCfg.SearchDepth == "" {
+		tavilyCfg.SearchDepth = "advanced"
+	}
+	if tavilyCfg.TimeoutMS <= 0 {
+		tavilyCfg.TimeoutMS = 15000
+	}
+	return tavilyCfg
 }
 
 func normalizeRedis(redisCfg RedisConfig) RedisConfig {
@@ -229,10 +264,16 @@ func (c Config) validate() error {
 	if err := validateModel("agents.audio", c.Agents.Audio); err != nil {
 		return err
 	}
+	if err := validateModel("agents.case_collection", c.Agents.CaseCollection); err != nil {
+		return err
+	}
 	if err := validateEmbedding("embedding", c.Embedding); err != nil {
 		return err
 	}
 	if err := validateChat("chat", c.Chat); err != nil {
+		return err
+	}
+	if err := validateTavily("tavily", c.Tavily); err != nil {
 		return err
 	}
 	if err := validatePrompt("prompts.main", c.Prompts.Main); err != nil {
@@ -245,6 +286,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validatePrompt("prompts.audio", c.Prompts.Audio); err != nil {
+		return err
+	}
+	if err := validatePrompt("prompts.case_collection", c.Prompts.CaseCollection); err != nil {
 		return err
 	}
 	return nil
@@ -298,6 +342,26 @@ func validateChat(name string, chatCfg ChatConfig) error {
 	}
 	if chatCfg.BaseURL == "" {
 		return fmt.Errorf("%s.base_url is required", name)
+	}
+	return nil
+}
+
+func validateTavily(name string, tavilyCfg TavilyConfig) error {
+	if tavilyCfg.APIKey == "" &&
+		tavilyCfg.BaseURL == "https://api.tavily.com" &&
+		tavilyCfg.IncludeAnswer == "advanced" &&
+		tavilyCfg.SearchDepth == "advanced" &&
+		tavilyCfg.TimeoutMS == 15000 {
+		return nil
+	}
+	if tavilyCfg.APIKey == "" {
+		return fmt.Errorf("%s.api_key is required", name)
+	}
+	if tavilyCfg.BaseURL == "" {
+		return fmt.Errorf("%s.base_url is required", name)
+	}
+	if tavilyCfg.TimeoutMS <= 0 {
+		return fmt.Errorf("%s.timeout_ms must be > 0", name)
 	}
 	return nil
 }

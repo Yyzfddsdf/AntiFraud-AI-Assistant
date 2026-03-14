@@ -43,25 +43,25 @@ var UploadHistoricalCaseToVectorDBTool = openai.Tool{
 				"scam_type":    buildScamTypeSchema("诈骗类型（必填）。必须来自 config/scam_types.json 配置。"),
 				"case_description": map[string]interface{}{
 					"type":        "string",
-					"description": "案件描述（必填，建议详细描述诈骗过程与风险线索）。",
+					"description": "案件描述（必填）。必须基于当前已掌握的事实客观整理，建议包含受害对象、诈骗手法、关键诱导步骤和风险线索，不要编造未被事实支持的细节。",
 				},
 				"typical_scripts": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "典型话术列表（可选）。",
+					"description": "典型话术列表（可选）。仅在当前信息中能明确提炼出原话术、诱导语或高频表达时填写；没有明确依据就不要传该字段。",
 				},
 				"keywords": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
-					"description": "关键词列表（可选）。",
+					"description": "关键词列表（可选）。仅填写可明确抽取的诈骗关键词、平台名、话术标签或关键实体；不要为了凑字段随意概括。",
 				},
 				"violated_law": map[string]interface{}{
 					"type":        "string",
-					"description": "涉及法律条款（可选）。",
+					"description": "涉及法律条款（可选）。只有在当前信息中明确提到法律条款、罪名或监管定性时才填写；没有明确依据就不要传该字段。",
 				},
 				"suggestion": map[string]interface{}{
 					"type":        "string",
-					"description": "防范建议（可选）。",
+					"description": "防范建议（可选）。可根据当前已确认的风险点提炼简洁防范建议；若信息不足以支撑建议，可不传。",
 				},
 			},
 			"required": []string{"title", "target_group", "risk_level", "scam_type", "case_description"},

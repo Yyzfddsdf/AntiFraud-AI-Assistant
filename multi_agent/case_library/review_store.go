@@ -47,6 +47,7 @@ func CreatePendingReview(userID string, input CreateHistoricalCaseInput) (Pendin
 	}
 	return pendingReviewRecordFromEntity(entity), nil
 }
+
 // APPEND_MARKER
 
 // ListPendingReviewPreviews 返回所有 pending_review 状态的案件预览。
@@ -57,7 +58,7 @@ func ListPendingReviewPreviews() ([]PendingReviewPreview, error) {
 	}
 
 	var rows []pendingReviewEntity
-	if err := db.Select("record_id", "title", "target_group", "risk_level", "scam_type", "created_at").
+	if err := db.Select("record_id", "title", "target_group", "risk_level", "scam_type", "violated_law", "created_at").
 		Where("status = ?", "pending_review").
 		Order("created_at desc").
 		Find(&rows).Error; err != nil {
@@ -76,6 +77,7 @@ func ListPendingReviewPreviews() ([]PendingReviewPreview, error) {
 			TargetGroup: strings.TrimSpace(row.TargetGroup),
 			RiskLevel:   normalizedRiskLevel,
 			ScamType:    strings.TrimSpace(row.ScamType),
+			ViolatedLaw: strings.TrimSpace(row.ViolatedLaw),
 			CreatedAt:   row.CreatedAt,
 		})
 	}
@@ -104,6 +106,7 @@ func GetPendingReviewByID(recordID string) (PendingReviewRecord, bool, error) {
 	}
 	return pendingReviewRecordFromEntity(entity), true, nil
 }
+
 // APPEND_MARKER_2
 
 // ApprovePendingReview 审核通过：读取待审核记录 → 调用 CreateHistoricalCase 入库 → 更新状态为 approved。

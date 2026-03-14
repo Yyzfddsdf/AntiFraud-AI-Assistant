@@ -127,5 +127,6 @@ type PendingReviewPreview struct {
 	TargetGroup string
 	RiskLevel   string
 	ScamType    string
+	ViolatedLaw string
 	CreatedAt   time.Time
 }

@@ -21,10 +21,11 @@ func validConfig() appcfg.Config {
 	}
 	return appcfg.Config{
 		Agents: appcfg.AgentModelConfig{
-			Main:  model,
-			Image: model,
-			Video: model,
-			Audio: model,
+			Main:           model,
+			Image:          model,
+			Video:          model,
+			Audio:          model,
+			CaseCollection: model,
 		},
 		Embedding: appcfg.EmbeddingConfig{
 			Model:   "text-embedding-3-large",
@@ -38,10 +39,11 @@ func validConfig() appcfg.Config {
 			BaseURL: "https://chat.example.com/v1",
 		},
 		Prompts: appcfg.PromptConfig{
-			Main:  "m",
-			Image: "i",
-			Video: "v",
-			Audio: "a",
+			Main:           "m",
+			Image:          "i",
+			Video:          "v",
+			Audio:          "a",
+			CaseCollection: "c",
 		},
 		Retry: appcfg.RetryConfig{
 			MaxRetries:   3,
@@ -154,11 +156,25 @@ func TestConfigValidate(t *testing.T) {
 			wantInErr: "embedding.base_url",
 		},
 		{
+			name: "missing case collection api key",
+			modify: func(c *appcfg.Config) {
+				c.Agents.CaseCollection.APIKey = ""
+			},
+			wantInErr: "agents.case_collection.api_key",
+		},
+		{
 			name: "empty prompt",
 			modify: func(c *appcfg.Config) {
 				c.Prompts.Audio = "   "
 			},
 			wantInErr: "prompts.audio",
+		},
+		{
+			name: "empty case collection prompt",
+			modify: func(c *appcfg.Config) {
+				c.Prompts.CaseCollection = "   "
+			},
+			wantInErr: "prompts.case_collection",
 		},
 		{
 			name: "empty chat prompt",
@@ -183,5 +199,50 @@ func TestConfigValidate(t *testing.T) {
 				t.Fatalf("unexpected validation error: %v", err)
 			}
 		})
+	}
+}
+
+func TestConfigNormalizeTavilyDefaults(t *testing.T) {
+	cfg := validConfig()
+	cfg.Tavily = appcfg.TavilyConfig{
+		APIKey: "  tavily-key  ",
+	}
+
+	file := writeConfigFile(t, cfg)
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.Tavily.APIKey != "tavily-key" {
+		t.Fatalf("expected trimmed tavily api key, got %q", loaded.Tavily.APIKey)
+	}
+	if loaded.Tavily.BaseURL != "https://api.tavily.com" {
+		t.Fatalf("expected default tavily base url, got %q", loaded.Tavily.BaseURL)
+	}
+	if loaded.Tavily.IncludeAnswer != "advanced" {
+		t.Fatalf("expected default include_answer, got %q", loaded.Tavily.IncludeAnswer)
+	}
+	if loaded.Tavily.SearchDepth != "advanced" {
+		t.Fatalf("expected default search_depth, got %q", loaded.Tavily.SearchDepth)
+	}
+	if loaded.Tavily.TimeoutMS != 15000 {
+		t.Fatalf("expected default timeout_ms, got %d", loaded.Tavily.TimeoutMS)
+	}
+}
+
+func TestConfigValidateTavilyRequiresAPIKeyWhenConfigured(t *testing.T) {
+	cfg := validConfig()
+	cfg.Tavily = appcfg.TavilyConfig{
+		BaseURL: "https://proxy.example.com",
+	}
+
+	file := writeConfigFile(t, cfg)
+	_, err := appcfg.LoadConfig(file)
+	if err == nil {
+		t.Fatal("expected tavily validation error")
+	}
+	if !strings.Contains(err.Error(), "tavily.api_key") {
+		t.Fatalf("unexpected validation error: %v", err)
 	}
 }

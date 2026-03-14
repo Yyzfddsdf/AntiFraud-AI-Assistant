@@ -6,6 +6,7 @@
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档）
 - **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
 - 主分析流程按需自动提交案件审核（典型案例先进入待审核队列，管理员审核通过后入库知识库）
+- 管理员可发起后台案件采集任务，智能体联网检索后会逐条写入待审核案件库
 - 实时风险预警（WebSocket 连接下的中高风险主动推送）
 - **家庭协同守护系统（MVP）**：家庭组、成员邀请、守护关系配置、家庭高风险通知
 
@@ -529,6 +530,8 @@ python scripts/backfill_user_history_vectors.py
   - `GET /api/scam/review/cases`：待审核列表
   - `GET /api/scam/review/cases/:recordId`：待审核详情
   - `POST /api/scam/review/cases/:recordId/approve`：审核通过入库
+- 管理员后台案件采集接口：
+  - `POST /api/scam/case-collection/search`：后台启动案件采集，按主题联网检索并逐条写入待审核案件库
 - 设计目标：在不强制每案入库的前提下，增加人工审核环节，确保知识库质量可控。
 
 ---
@@ -542,6 +545,7 @@ python scripts/backfill_user_history_vectors.py
   - `GET /api/users`
   - 历史案件库上传/查询/删除接口
   - 案件审核列表/详情/通过接口
+  - 后台案件采集启动接口
 - 全局限流：按 IP + 时间窗口限制请求速率（计数存储于 Redis）
 - 注册安全策略：
   - 密码复杂度校验（大写+小写+符号）
@@ -608,6 +612,10 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 - `GET /api/scam/review/cases/:recordId`
 - `POST /api/scam/review/cases/:recordId/approve`
 
+后台案件采集（admin）：
+
+- `POST /api/scam/case-collection/search`
+
 聊天：
 
 - `POST /api/chat`：支持文本，或文本 + 多张图片（`images` 传 Base64 Data URL 数组）
@@ -642,6 +650,7 @@ go test ./...
 4. 检查历史归档、风险等级、report 与实时告警一致性
 5. 使用管理员账号上传历史案件并验证相似检索结果
 6. 提交多模态分析后，检查 `pending_review_cases` 表有新记录；管理员审核通过后检查 `historical_case_library` 表有新增
+7. 使用管理员账号调用 `/api/scam/case-collection/search`，确认后台采集任务会逐条把案件写入 `pending_review_cases`
 
 ---
 

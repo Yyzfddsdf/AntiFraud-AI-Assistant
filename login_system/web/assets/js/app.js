@@ -37,6 +37,7 @@ createApp({
         const activeFamilyNotification = ref(null);
         const caseLibrary = ref([]); // Admin Case Library
         const pendingReviews = ref([]); // Admin Pending Reviews
+        const startingCaseCollection = ref(false);
         const selectedReview = ref(null);
         const showReviewDetailModal = ref(false);
         const scamTypeOptions = ref([]);
@@ -54,6 +55,10 @@ createApp({
             keywords_raw: '',
             violated_law: '',
             suggestion: ''
+        });
+        const caseCollectionForm = reactive({
+            query: '',
+            case_count: 5
         });
         const deletingHistory = reactive({});
         const familyDeletingMembers = reactive({});
@@ -1201,6 +1206,34 @@ createApp({
                 showReviewDetailModal.value = false;
                 selectedReview.value = null;
                 fetchPendingReviews();
+            }
+        };
+
+        const submitCaseCollection = async () => {
+            const query = String(caseCollectionForm.query || '').trim();
+            const caseCount = Number(caseCollectionForm.case_count);
+            if (!query) {
+                showToast('采集主题不能为空', 'error');
+                return;
+            }
+            if (!Number.isInteger(caseCount) || caseCount < 1 || caseCount > 20) {
+                showToast('案件数量取值范围应为 1-20', 'error');
+                return;
+            }
+
+            startingCaseCollection.value = true;
+            try {
+                const res = await request('/scam/case-collection/search', 'POST', {
+                    query,
+                    case_count: caseCount
+                });
+                showToast((res && res.message) || '案件采集任务已在后台启动');
+                caseCollectionForm.query = '';
+                setTimeout(() => fetchPendingReviews(), 1200);
+            } catch (e) {
+                showToast('启动失败: ' + e.message, 'error');
+            } finally {
+                startingCaseCollection.value = false;
             }
         };
 
@@ -2771,6 +2804,7 @@ createApp({
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
             pendingReviews, selectedReview, showReviewDetailModal, fetchPendingReviews, viewReviewDetail, approveReview,
+            caseCollectionForm, startingCaseCollection, submitCaseCollection,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,
             showGraphModal, openGraphModal, resetGraphZoom,

@@ -54,6 +54,16 @@ var mainAgentToolHandlers = map[string]ToolHandler{
 	UploadHistoricalCaseToVectorDBToolName: &UploadHistoricalCaseToVectorDBHandler{},
 }
 
+var caseCollectionToolRegistry = []openai.Tool{
+	WebSearchTool,
+	UploadHistoricalCaseToVectorDBTool,
+}
+
+var caseCollectionToolHandlers = map[string]ToolHandler{
+	WebSearchToolName:                      &WebSearchHandler{},
+	UploadHistoricalCaseToVectorDBToolName: &UploadHistoricalCaseToVectorDBHandler{},
+}
+
 // MainAgentTools 返回主智能体可用工具列表（已过滤黑名单）。
 func MainAgentTools() []openai.Tool {
 	tools := make([]openai.Tool, 0, len(mainAgentToolRegistry))
@@ -70,4 +80,16 @@ func MainAgentTools() []openai.Tool {
 
 func GetToolHandler(name string) ToolHandler {
 	return mainAgentToolHandlers[name]
+}
+
+// CaseCollectionTools 返回案件采集智能体可用工具列表。
+func CaseCollectionTools() []openai.Tool {
+	tools := make([]openai.Tool, 0, len(caseCollectionToolRegistry))
+	tools = append(tools, caseCollectionToolRegistry...)
+	return tools
+}
+
+// GetCaseCollectionToolHandler 返回案件采集智能体的工具处理器。
+func GetCaseCollectionToolHandler(name string) ToolHandler {
+	return caseCollectionToolHandlers[name]
 }

@@ -136,6 +136,10 @@ func main() {
 			adminReview.GET("/cases/:recordId", httpapi.GetPendingReviewCaseDetailHandle)
 			adminReview.POST("/cases/:recordId/approve", httpapi.ApprovePendingReviewCaseHandle)
 		}
+
+		adminCaseCollection := api.Group("/scam/case-collection")
+		adminCaseCollection.Use(middleware.AdminMiddleware(authUserReader))
+		adminCaseCollection.POST("/search", httpapi.CollectCaseCollectionHandle)
 	}
 
 	port := os.Getenv("PORT")

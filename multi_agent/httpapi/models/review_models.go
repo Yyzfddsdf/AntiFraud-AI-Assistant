@@ -7,6 +7,7 @@ type PendingReviewPreviewItem struct {
 	TargetGroup string `json:"target_group"`
 	RiskLevel   string `json:"risk_level"`
 	ScamType    string `json:"scam_type"`
+	ViolatedLaw string `json:"violated_law"`
 	CreatedAt   string `json:"created_at"`
 }
 
