@@ -622,6 +622,8 @@
     "title": "TED学术演讲视频风险核查",
     "status": "completed",
     "scam_type": "冒充客服类",
+    "risk_score": 12,
+    "risk_summary": "{\"score\":12,\"risk_level\":\"低\",\"dimensions\":{\"social_engineering\":0,\"requested_actions\":0,\"evidence_strength\":12,\"loss_exposure\":0},\"victim_action_stage\":\"未操作\",\"similar_case_strength\":\"无\",\"multimodal_evidence\":\"中\",\"hit_rules\":[\"出现仿冒官方视觉证据\"],\"key_evidence\":[]}",
     "summary": "该内容以公开演讲为主，未发现直接诈骗指令。",
     "created_at": "2026-02-20T23:57:30+08:00",
     "updated_at": "2026-02-20T23:57:45+08:00",
@@ -651,6 +653,8 @@
     "title": "批量视频线索核查",
     "status": "completed",
     "scam_type": "冒充客服类",
+    "risk_score": 58,
+    "risk_summary": "{\"score\":58,\"risk_level\":\"中\",\"dimensions\":{\"social_engineering\":8,\"requested_actions\":36,\"evidence_strength\":14,\"loss_exposure\":0},\"victim_action_stage\":\"未操作\",\"similar_case_strength\":\"中\",\"multimodal_evidence\":\"中\",\"hit_rules\":[\"紧迫催促\",\"要求转账/充值\",\"要求点击链接/安装应用\"],\"key_evidence\":[\"立即转账\",\"私下联系\"]}",
     "summary": "3 条视频中有 1-2 条出现明显风险信号，需人工复核。",
     "created_at": "2026-02-21T10:00:00+08:00",
     "updated_at": "2026-02-21T10:00:24+08:00",
@@ -681,6 +685,8 @@
     "user_id": "5",
     "title": "多模态线索核查",
     "status": "processing",
+    "risk_score": 0,
+    "risk_summary": "",
     "summary": "",
     "created_at": "2026-02-21T11:00:00+08:00",
     "updated_at": "2026-02-21T11:00:05+08:00",
@@ -972,7 +978,7 @@ data:{"type":"done","reason":"stop"}
     {
       "role": "tool",
       "tool_call_id": "chatcmpl-tool-9948fb773791ad7c",
-      "content": "{\"user\":{\"user_name\":\"用户1\",\"age\":28,\"occupation\":\"企业职员\",\"recent_tags\":[\"近期频繁网购\"],\"total_case_count\":1,\"historical_risk\":\"低\",\"high_risk_case_ratio\":0,\"mid_risk_case_ratio\":0,\"low_risk_case_ratio\":1,\"risk_trend_analysis\":{\"interval\":\"day\",\"current_bucket\":\"2026-03-10~2026-03-16\",\"previous_bucket\":\"2026-03-03~2026-03-09\",\"overall_trend\":\"持平\",\"high_risk_trend\":\"持平\",\"summary\":\"基于最近7天与上一窗口的对比，高风险案件持平（0→0），整体风险持平（1→1）。\"}}}"
+      "content": "{\"user\":{\"user_name\":\"用户1\",\"age\":28,\"occupation\":\"企业职员\",\"recent_tags\":[\"近期频繁网购\"],\"total_case_count\":1,\"historical_score\":18,\"high_risk_case_ratio\":0,\"mid_risk_case_ratio\":0,\"low_risk_case_ratio\":1,\"risk_trend_analysis\":{\"interval\":\"day\",\"current_bucket\":\"2026-03-10~2026-03-16\",\"previous_bucket\":\"2026-03-03~2026-03-09\",\"overall_trend\":\"持平\",\"high_risk_trend\":\"持平\",\"summary\":\"基于最近7天与上一窗口的对比，高风险案件持平（0→0），整体风险持平（1→1）。\"}}}"
     },
     {
       "role": "assistant",

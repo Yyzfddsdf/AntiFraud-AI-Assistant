@@ -3,12 +3,14 @@ package user_profile_system
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"antifraud/database"
@@ -23,7 +25,6 @@ const (
 	maxRecentTagsCount     = 10
 	maxRecentTagRuneLength = 120
 	defaultDisplayUserName = "user"
-	defaultHistoricalRisk  = "低"
 )
 
 type UpdateProfileInput struct {
@@ -46,7 +47,7 @@ type UserRiskInfo struct {
 	Occupation        string                `json:"occupation,omitempty"`
 	RecentTags        []string              `json:"recent_tags"`
 	TotalCaseCount    int                   `json:"total_case_count"`
-	HistoricalRisk    string                `json:"historical_risk"`
+	HistoricalScore   int                   `json:"historical_score"`
 	HighRiskCaseRatio float64               `json:"high_risk_case_ratio"`
 	MidRiskCaseRatio  float64               `json:"mid_risk_case_ratio"`
 	LowRiskCaseRatio  float64               `json:"low_risk_case_ratio"`
@@ -168,21 +169,14 @@ func BuildUserRiskInfo(userID string, interval string) (UserRiskInfo, error) {
 		"中": 0,
 		"高": 0,
 	}
-	historicalRisk := defaultHistoricalRisk
-
 	for _, item := range history {
 		level := normalizeRiskLevel(item.RiskLevel)
 		riskCaseCount[level]++
-		if level == "高" {
-			historicalRisk = "高"
-		}
-		if historicalRisk != "高" && level == "中" {
-			historicalRisk = "中"
-		}
 	}
 
 	totalCaseCount := len(history)
 	riskOverview := overview.BuildRiskOverviewFromHistory(trimmedUserID, history, strings.TrimSpace(interval))
+	historicalScore := calculateHistoricalScore(history)
 
 	return UserRiskInfo{
 		UserName:          userName,
@@ -190,7 +184,7 @@ func BuildUserRiskInfo(userID string, interval string) (UserRiskInfo, error) {
 		Occupation:        occupation,
 		RecentTags:        recentTags,
 		TotalCaseCount:    totalCaseCount,
-		HistoricalRisk:    historicalRisk,
+		HistoricalScore:   historicalScore,
 		HighRiskCaseRatio: calculateRatio(riskCaseCount["高"], totalCaseCount),
 		MidRiskCaseRatio:  calculateRatio(riskCaseCount["中"], totalCaseCount),
 		LowRiskCaseRatio:  calculateRatio(riskCaseCount["低"], totalCaseCount),
@@ -259,6 +253,56 @@ func calculateRatio(count int, total int) float64 {
 	}
 	ratio := float64(count) / float64(total)
 	return float64(int(ratio*10000+0.5)) / 10000
+}
+
+func calculateHistoricalScore(history []state.CaseHistoryRecord) int {
+	if len(history) == 0 {
+		return 0
+	}
+
+	now := time.Now().UTC()
+	totalWeighted := 0.0
+	for _, item := range history {
+		baseScore := item.RiskScore
+		if baseScore <= 0 {
+			baseScore = fallbackRiskScoreByLevel(item.RiskLevel)
+		}
+		ageHours := now.Sub(item.CreatedAt.UTC()).Hours()
+		if ageHours < 0 {
+			ageHours = 0
+		}
+		timeDecay := 1.0 / (1.0 + ageHours/240.0)
+		severityBoost := 1.0
+		switch normalizeRiskLevel(item.RiskLevel) {
+		case "高":
+			severityBoost = 1.2
+		case "中":
+			severityBoost = 1.0
+		default:
+			severityBoost = 0.7
+		}
+		totalWeighted += float64(baseScore) * timeDecay * severityBoost
+	}
+
+	historicalScore := int(100 * (1 - math.Exp(-totalWeighted/140.0)))
+	if historicalScore < 0 {
+		return 0
+	}
+	if historicalScore > 100 {
+		return 100
+	}
+	return historicalScore
+}
+
+func fallbackRiskScoreByLevel(level string) int {
+	switch normalizeRiskLevel(level) {
+	case "高":
+		return 78
+	case "中":
+		return 52
+	default:
+		return 26
+	}
 }
 
 func getUserByAnyID(userID interface{}) (loginmodel.User, error) {

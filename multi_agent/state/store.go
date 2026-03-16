@@ -196,6 +196,8 @@ func MarkTaskCompleted(userID, taskID, report string) {
 				ScamType:             "",
 				Status:               TaskStatusCompleted,
 				RiskLevel:            normalizeRiskLevel(""),
+				RiskScore:            0,
+				RiskSummary:          "",
 				PayloadText:          pending.PayloadText,
 				PayloadVideos:        pending.PayloadVideos,
 				PayloadAudios:        pending.PayloadAudios,
@@ -291,6 +293,8 @@ func MarkTaskFailed(userID, taskID, errMsg string) {
 			ScamType:             "",
 			Status:               TaskStatusFailed,
 			RiskLevel:            normalizeRiskLevel("中"),
+			RiskScore:            0,
+			RiskSummary:          "",
 			PayloadText:          pending.PayloadText,
 			PayloadVideos:        pending.PayloadVideos,
 			PayloadAudios:        pending.PayloadAudios,
@@ -495,7 +499,7 @@ func expireStalePendingTasks(userID, taskID string) {
 }
 
 // AddCaseHistory 直接写入历史记录（用于工具显式归档场景）。
-func AddCaseHistory(userID, taskID, title, summary, scamType, riskLevel string, payload TaskPayload, report string) CaseHistoryRecord {
+func AddCaseHistory(userID, taskID, title, summary, scamType, riskLevel string, riskScore int, riskSummary string, payload TaskPayload, report string) CaseHistoryRecord {
 	uid := normalizeUserID(userID)
 	now := time.Now()
 	recordID := strings.TrimSpace(taskID)
@@ -511,6 +515,8 @@ func AddCaseHistory(userID, taskID, title, summary, scamType, riskLevel string, 
 		CaseSummary: strings.TrimSpace(summary),
 		ScamType:    strings.TrimSpace(scamType),
 		RiskLevel:   normalizeRiskLevel(riskLevel),
+		RiskScore:   normalizeRiskScore(riskScore),
+		RiskSummary: strings.TrimSpace(riskSummary),
 		CreatedAt:   now,
 		Payload: TaskPayload{
 			Text:          strings.TrimSpace(payload.Text),
@@ -658,6 +664,8 @@ func historyEntityFromRecord(record CaseHistoryRecord, status string) historyCas
 		ScamType:             strings.TrimSpace(record.ScamType),
 		Status:               strings.TrimSpace(status),
 		RiskLevel:            normalizeRiskLevel(record.RiskLevel),
+		RiskScore:            normalizeRiskScore(record.RiskScore),
+		RiskSummary:          strings.TrimSpace(record.RiskSummary),
 		PayloadText:          strings.TrimSpace(record.Payload.Text),
 		PayloadVideos:        encodeStringList(record.Payload.Videos),
 		PayloadAudios:        encodeStringList(record.Payload.Audios),
@@ -690,6 +698,8 @@ func historyFromEntity(entity historyCaseEntity) CaseHistoryRecord {
 		CaseSummary: strings.TrimSpace(entity.CaseSummary),
 		ScamType:    strings.TrimSpace(entity.ScamType),
 		RiskLevel:   normalizeRiskLevel(entity.RiskLevel),
+		RiskScore:   normalizeRiskScore(entity.RiskScore),
+		RiskSummary: strings.TrimSpace(entity.RiskSummary),
 		CreatedAt:   entity.CreatedAt,
 		Report:      strings.TrimSpace(entity.Report),
 		Payload: TaskPayload{
@@ -718,13 +728,15 @@ func taskFromHistoryEntity(entity historyCaseEntity) TaskRecord {
 	}
 
 	return TaskRecord{
-		TaskID:    record.RecordID,
-		UserID:    record.UserID,
-		Title:     record.Title,
-		Status:    record.Status,
-		ScamType:  strings.TrimSpace(record.ScamType),
-		CreatedAt: record.CreatedAt,
-		UpdatedAt: entity.UpdatedAt,
+		TaskID:      record.RecordID,
+		UserID:      record.UserID,
+		Title:       record.Title,
+		Status:      record.Status,
+		ScamType:    strings.TrimSpace(record.ScamType),
+		RiskScore:   normalizeRiskScore(record.RiskScore),
+		RiskSummary: strings.TrimSpace(record.RiskSummary),
+		CreatedAt:   record.CreatedAt,
+		UpdatedAt:   entity.UpdatedAt,
 		Payload: TaskPayload{
 			Text:          strings.TrimSpace(record.Payload.Text),
 			Videos:        append([]string{}, record.Payload.Videos...),
@@ -821,6 +833,16 @@ func normalizeRiskLevel(level string) string {
 	default:
 		return "\u4e2d"
 	}
+}
+
+func normalizeRiskScore(score int) int {
+	if score < 0 {
+		return 0
+	}
+	if score > 100 {
+		return 100
+	}
+	return score
 }
 
 // normalizeCaseTitle 生成合法案件标题。

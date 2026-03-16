@@ -327,6 +327,9 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 			}
 
 			appendToolResponse(call.ID, response.Payload)
+			if response.ContextMutator != nil {
+				ctx = response.ContextMutator(ctx)
+			}
 			if response.FinalResultStr != "" {
 				finalResult = response.FinalResultStr
 				// submit_final_report 返回最终报告后，写入 ctx，

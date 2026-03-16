@@ -26,11 +26,13 @@ func ParseArgs[T any](args string) (T, error) {
 type ToolResponse struct {
 	Payload        map[string]interface{}
 	FinalResultStr string // 当工具输出为终态时，这里携带最终报告文本。
+	ContextMutator func(context.Context) context.Context
 }
 
 var mainAgentToolRegistry = []openai.Tool{
 	CaseSearchTool,
 	QueryUserInfoTool,
+	RiskAssessmentTool,
 	UpdateUserRecentTagsTool,
 	SearchUserHistoryTool,
 	UploadHistoricalCaseToVectorDBTool,
@@ -46,6 +48,7 @@ var mainAgentToolBlacklist = map[string]struct{}{
 var mainAgentToolHandlers = map[string]ToolHandler{
 	CaseSearchToolName:                     &CaseSearchHandler{},
 	QueryUserInfoToolName:                  &QueryUserInfoHandler{},
+	RiskAssessmentToolName:                 &RiskAssessmentHandler{},
 	UpdateUserRecentTagsToolName:           &UpdateUserRecentTagsHandler{},
 	SearchUserHistoryToolName:              &SearchUserHistoryHandler{},
 	WriteUserHistoryCaseToolName:           &WriteUserHistoryCaseHandler{},

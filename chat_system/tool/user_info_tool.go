@@ -56,7 +56,7 @@ func QueryUserInfo(userID string, interval string) (map[string]interface{}, erro
 		"occupation":           info.Occupation,
 		"recent_tags":          info.RecentTags,
 		"total_case_count":     info.TotalCaseCount,
-		"historical_risk":      info.HistoricalRisk,
+		"historical_score":     info.HistoricalScore,
 		"high_risk_case_ratio": info.HighRiskCaseRatio,
 		"mid_risk_case_ratio":  info.MidRiskCaseRatio,
 		"low_risk_case_ratio":  info.LowRiskCaseRatio,

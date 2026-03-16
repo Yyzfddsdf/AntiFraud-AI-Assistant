@@ -162,7 +162,7 @@ func QueryUserInfo(ctx context.Context, interval string) (map[string]interface{}
 		"occupation":           info.Occupation,
 		"recent_tags":          info.RecentTags,
 		"total_case_count":     info.TotalCaseCount,
-		"historical_risk":      info.HistoricalRisk,
+		"historical_score":     info.HistoricalScore,
 		"high_risk_case_ratio": info.HighRiskCaseRatio,
 		"mid_risk_case_ratio":  info.MidRiskCaseRatio,
 		"low_risk_case_ratio":  info.LowRiskCaseRatio,
@@ -183,7 +183,11 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 
 	payload := CurrentTaskPayload(ctx)
 	insights := CurrentTaskInsights(ctx)
-	record := state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, normalizedScamType, input.RiskLevel, state.TaskPayload{
+	assessment := CurrentRiskAssessment(ctx)
+	if strings.TrimSpace(assessment.StructuredSummary) == "" {
+		return nil, fmt.Errorf("risk assessment is missing, please call %s first", RiskAssessmentToolName)
+	}
+	record := state.AddCaseHistory(CurrentUserID(ctx), CurrentTaskID(ctx), input.Title, input.CaseSummary, normalizedScamType, input.RiskLevel, assessment.Score, assessment.StructuredSummary, state.TaskPayload{
 		Text:          payload.Text,
 		Videos:        append([]string{}, payload.Videos...),
 		Audios:        append([]string{}, payload.Audios...),
@@ -204,6 +208,8 @@ func WriteUserHistoryCase(ctx context.Context, input WriteUserHistoryCaseInput) 
 		"scam_type":    record.ScamType,
 		"report":       record.Report,
 		"stored_level": record.RiskLevel,
+		"risk_score":   record.RiskScore,
+		"risk_summary": record.RiskSummary,
 	}
 
 	indexRecord, indexErr := user_history_index.UpsertHistoryVector(ctx, user_history_index.ArchiveInput{

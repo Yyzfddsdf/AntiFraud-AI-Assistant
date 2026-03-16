@@ -1966,6 +1966,16 @@ createApp({
             return keywords;
         };
 
+        const parseRiskSummary = (raw) => {
+            if (!raw || !String(raw).trim()) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) {
+                return null;
+            }
+        };
+
         const parseInsight = (text) => {
             if (!text) return [];
             const sections = [];
@@ -2285,7 +2295,7 @@ createApp({
             triggerChatImagePicker, handleChatImageSelect, removeChatImage,
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
-            parseReport, extractAttackSteps, extractScamKeywordSentences, parseInsight,
+            parseReport, extractAttackSteps, extractScamKeywordSentences, parseRiskSummary, parseInsight,
             riskInterval, fetchRiskTrend, riskData, riskStatsSummary, getRiskTrendAnalysisClass, formatRiskTrendDescriptor, getRiskTrendHeadline, getRecentRiskTrendRows, formatChartLabel,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentRiskAlerts, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,

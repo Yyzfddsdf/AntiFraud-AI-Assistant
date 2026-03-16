@@ -196,6 +196,8 @@
 | `scam_type` | `string` / `varchar(64)` | 索引 | 诈骗类型（可空，来源于归档/工具写入） |
 | `status` | `string` / `varchar(32)` | 索引, `not null` | `completed/failed` |
 | `risk_level` | `string` / `varchar(32)` | 索引 | 风险等级（高/中/低） |
+| `risk_score` | `int` / `integer` | 默认值 `0` | 当前案件风险分（0-100） |
+| `risk_summary` | `string` / `text` | 无 | 风险结构化摘要（JSON 字符串） |
 | `payload_text` | `string` / `text` | 无 | 原始文本 |
 | `payload_videos` | `string` / `text` | 无 | 原始视频数组（逗号分隔 Base64 字符串） |
 | `payload_audios` | `string` / `text` | 无 | 原始音频数组（逗号分隔 Base64 字符串） |
@@ -206,6 +208,11 @@
 | `report` | `string` / `text` | 无 | 最终报告 |
 | `created_at` | `time.Time` / `datetime` | 索引, `not null` | 创建时间 |
 | `updated_at` | `time.Time` / `datetime` | 索引, `not null` | 更新时间 |
+
+说明：
+
+- `risk_score` 由主分析阶段调用 `submit_current_risk_assessment` 后由系统规则计算，不允许模型直接编造。
+- `risk_summary` 为结构化 JSON 文本，保存各维度得分、命中规则与关键证据摘要，供详情页展示与后续历史分数算法使用。
 
 ### 2.4 `user_history_vectors`（用户历史语义索引表）
 

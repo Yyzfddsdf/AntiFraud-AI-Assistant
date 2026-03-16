@@ -1234,6 +1234,37 @@
                             <div class="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">{{ selectedTask.summary }}</div>
                         </div>
 
+                        <div v-if="selectedTask.risk_score || selectedTask.risk_summary" class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-sm text-slate-700">风险评分</h4>
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-extrabold">{{ selectedTask.risk_score || 0 }}</span>
+                            </div>
+                            <div v-if="parseRiskSummary(selectedTask.risk_summary)" class="space-y-3">
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span>社工话术</span>
+                                        <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.social_engineering || 0 }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>诱导动作</span>
+                                        <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.requested_actions || 0 }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>证据强度</span>
+                                        <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.evidence_strength || 0 }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>受害暴露</span>
+                                        <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.loss_exposure || 0 }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="parseRiskSummary(selectedTask.risk_summary).hit_rules && parseRiskSummary(selectedTask.risk_summary).hit_rules.length" class="flex flex-wrap gap-2">
+                                    <span v-for="item in parseRiskSummary(selectedTask.risk_summary).hit_rules" :key="`risk-rule-${item}`" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600">{{ item }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="text-xs text-slate-600 whitespace-pre-wrap">{{ selectedTask.risk_summary }}</div>
+                        </div>
+
                         <div v-if="selectedTask.report" class="space-y-3">
                             <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                                 <h4 class="font-bold text-sm mb-3 text-slate-700">综合分析报告</h4>

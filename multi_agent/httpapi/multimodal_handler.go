@@ -140,13 +140,15 @@ func GetMultimodalTaskDetailHandle(c *gin.Context) {
 // toTaskItem 将内部任务结构转换为 API 任务详情结构。
 func toTaskItem(task state.TaskRecord) apimodel.MultimodalTaskItem {
 	return apimodel.MultimodalTaskItem{
-		TaskID:    task.TaskID,
-		UserID:    task.UserID,
-		Title:     task.Title,
-		Status:    task.Status,
-		ScamType:  task.ScamType,
-		CreatedAt: task.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: task.UpdatedAt.Format(time.RFC3339),
+		TaskID:      task.TaskID,
+		UserID:      task.UserID,
+		Title:       task.Title,
+		Status:      task.Status,
+		ScamType:    task.ScamType,
+		RiskScore:   task.RiskScore,
+		RiskSummary: strings.TrimSpace(task.RiskSummary),
+		CreatedAt:   task.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   task.UpdatedAt.Format(time.RFC3339),
 		Payload: apimodel.MultimodalTaskPayload{
 			Text:          task.Payload.Text,
 			Videos:        append([]string{}, task.Payload.Videos...),

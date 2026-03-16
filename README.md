@@ -156,7 +156,7 @@ flowchart LR
 
 字符串式简流程：
 
-`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例提交审核 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
+`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 提交风险因子 submit_current_risk_assessment -> 系统计算 risk_score/结构化摘要 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例提交审核 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
 
 ```mermaid
 flowchart LR
@@ -165,17 +165,18 @@ flowchart LR
     I[多模态 insights]
     MA[主智能体聚合分析<br/>MainAgent]
     T[工具补充证据<br/>相似案件/用户信息]
+    S[submit_current_risk_assessment<br/>本次案件评分]
     R[submit_final_report 最终结论]
     H[write_user_history_case 历史归档]
     E[任务结束]
 
-    U --> SA --> I --> MA --> T --> MA --> R --> H --> E
+    U --> SA --> I --> MA --> T --> MA --> S --> MA --> R --> H --> E
 ```
 
 交互规则（关键约束）：
 
 - 子智能体只负责各自模态的结构化提取，不直接写历史归档。
-- 主智能体必须先 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`（案件进入待审核队列，管理员审核通过后才真正入库知识库）；最终必须 `write_user_history_case` 并结束。
+- 主智能体必须先调用 `submit_current_risk_assessment` 计算本次案件 `risk_score`，再调用 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`（案件进入待审核队列，管理员审核通过后才真正入库知识库）；最终必须 `write_user_history_case` 并结束。
 - 任务状态由 `state` 统一维护：`pending -> processing -> completed/failed`。
 - 工具层负责“查询/归档动作”，模型层负责“推理与决策”。
 

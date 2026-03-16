@@ -28,18 +28,20 @@ type MultimodalTaskPayload struct {
 
 // MultimodalTaskItem 多模态任务详情。
 type MultimodalTaskItem struct {
-	TaskID     string                `json:"task_id"`
-	UserID     string                `json:"user_id"`
-	Title      string                `json:"title"`
-	Status     string                `json:"status"`
-	ScamType   string                `json:"scam_type,omitempty"`
-	CreatedAt  string                `json:"created_at"`
-	UpdatedAt  string                `json:"updated_at"`
-	Payload    MultimodalTaskPayload `json:"payload"`
-	Summary    string                `json:"summary"`
-	Report     string                `json:"report,omitempty"`
-	Error      string                `json:"error,omitempty"`
-	HistoryRef string                `json:"history_ref,omitempty"`
+	TaskID      string                `json:"task_id"`
+	UserID      string                `json:"user_id"`
+	Title       string                `json:"title"`
+	Status      string                `json:"status"`
+	ScamType    string                `json:"scam_type,omitempty"`
+	RiskScore   int                   `json:"risk_score,omitempty"`
+	RiskSummary string                `json:"risk_summary,omitempty"`
+	CreatedAt   string                `json:"created_at"`
+	UpdatedAt   string                `json:"updated_at"`
+	Payload     MultimodalTaskPayload `json:"payload"`
+	Summary     string                `json:"summary"`
+	Report      string                `json:"report,omitempty"`
+	Error       string                `json:"error,omitempty"`
+	HistoryRef  string                `json:"history_ref,omitempty"`
 }
 
 // MultimodalTaskListItem 多模态任务状态列表条目（轻量，不返回原始payload）。

@@ -95,9 +95,9 @@ func TestBuildUserRiskInfoIncludesRatios(t *testing.T) {
 		t.Fatalf("update recent tags failed: %v", err)
 	}
 
-	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-1", "高风险案件", "summary", "其他诈骗类", "高", state.TaskPayload{}, "report")
-	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-2", "中风险案件", "summary", "其他诈骗类", "中", state.TaskPayload{}, "report")
-	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-3", "低风险案件", "summary", "其他诈骗类", "低", state.TaskPayload{}, "report")
+	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-1", "高风险案件", "summary", "其他诈骗类", "高", 82, `{"score":82}`, state.TaskPayload{}, "report")
+	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-2", "中风险案件", "summary", "其他诈骗类", "中", 56, `{"score":56}`, state.TaskPayload{}, "report")
+	state.AddCaseHistory(fmt.Sprintf("%d", user.ID), "TASK-3", "低风险案件", "summary", "其他诈骗类", "低", 24, `{"score":24}`, state.TaskPayload{}, "report")
 
 	info, err := userprofile.BuildUserRiskInfo(fmt.Sprintf("%d", user.ID), "day")
 	if err != nil {
@@ -115,6 +115,9 @@ func TestBuildUserRiskInfoIncludesRatios(t *testing.T) {
 	}
 	if info.TotalCaseCount != 3 {
 		t.Fatalf("unexpected total_case_count: %d", info.TotalCaseCount)
+	}
+	if info.HistoricalScore <= 0 {
+		t.Fatalf("expected historical_score > 0, got %d", info.HistoricalScore)
 	}
 	if info.HighRiskCaseRatio != 0.3333 || info.MidRiskCaseRatio != 0.3333 || info.LowRiskCaseRatio != 0.3333 {
 		t.Fatalf("unexpected ratios: high=%v mid=%v low=%v", info.HighRiskCaseRatio, info.MidRiskCaseRatio, info.LowRiskCaseRatio)

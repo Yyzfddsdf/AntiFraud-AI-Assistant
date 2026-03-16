@@ -15,18 +15,20 @@ type TaskPayload struct {
 
 // TaskRecord 表示“任务视角”的统一记录模型。
 type TaskRecord struct {
-	TaskID     string      `json:"task_id"`
-	UserID     string      `json:"user_id"`
-	Title      string      `json:"title"`
-	Status     string      `json:"status"`
-	ScamType   string      `json:"scam_type,omitempty"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
-	Payload    TaskPayload `json:"payload"`
-	Summary    string      `json:"summary"`
-	Report     string      `json:"report,omitempty"`
-	Error      string      `json:"error,omitempty"`
-	HistoryRef string      `json:"history_ref,omitempty"`
+	TaskID      string      `json:"task_id"`
+	UserID      string      `json:"user_id"`
+	Title       string      `json:"title"`
+	Status      string      `json:"status"`
+	ScamType    string      `json:"scam_type,omitempty"`
+	RiskScore   int         `json:"risk_score,omitempty"`
+	RiskSummary string      `json:"risk_summary,omitempty"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Payload     TaskPayload `json:"payload"`
+	Summary     string      `json:"summary"`
+	Report      string      `json:"report,omitempty"`
+	Error       string      `json:"error,omitempty"`
+	HistoryRef  string      `json:"history_ref,omitempty"`
 }
 
 // CaseHistoryRecord 表示“历史案件视角”的归档记录模型。
@@ -38,6 +40,8 @@ type CaseHistoryRecord struct {
 	CaseSummary string      `json:"case_summary"`
 	ScamType    string      `json:"scam_type,omitempty"`
 	RiskLevel   string      `json:"risk_level"`
+	RiskScore   int         `json:"risk_score,omitempty"`
+	RiskSummary string      `json:"risk_summary,omitempty"`
 	CreatedAt   time.Time   `json:"created_at"`
 	Payload     TaskPayload `json:"payload"`
 	Report      string      `json:"report,omitempty"`
@@ -86,6 +90,8 @@ type HistoryCaseEntity struct {
 	ScamType    string `gorm:"size:64;index"`
 	Status      string `gorm:"size:32;index;not null"`
 	RiskLevel   string `gorm:"size:32;index"`
+	RiskScore   int    `gorm:"default:0"`
+	RiskSummary string `gorm:"type:text"`
 
 	PayloadText          string `gorm:"type:text"`
 	PayloadVideos        string `gorm:"type:text"`

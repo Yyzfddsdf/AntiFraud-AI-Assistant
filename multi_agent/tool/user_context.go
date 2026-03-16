@@ -10,6 +10,7 @@ type taskIDContextKey struct{}
 type taskPayloadContextKey struct{}
 type taskInsightContextKey struct{}
 type finalReportContextKey struct{}
+type riskAssessmentContextKey struct{}
 
 type TaskPayloadContext struct {
 	Text   string
@@ -22,6 +23,11 @@ type TaskInsightContext struct {
 	VideoInsights []string
 	AudioInsights []string
 	ImageInsights []string
+}
+
+type RiskAssessmentContext struct {
+	Score             int
+	StructuredSummary string
 }
 
 // BindUserID 将当前请求关联的用户 ID 绑定到 ctx。
@@ -151,4 +157,32 @@ func CurrentFinalReport(ctx context.Context) string {
 		return ""
 	}
 	return strings.TrimSpace(report)
+}
+
+// BindRiskAssessment 将风险评分结果写入 ctx，供归档与报告阶段复用。
+func BindRiskAssessment(ctx context.Context, score int, structuredSummary string) context.Context {
+	return context.WithValue(ctx, riskAssessmentContextKey{}, RiskAssessmentContext{
+		Score:             score,
+		StructuredSummary: strings.TrimSpace(structuredSummary),
+	})
+}
+
+// CurrentRiskAssessment 返回当前请求的风险评分上下文。
+func CurrentRiskAssessment(ctx context.Context) RiskAssessmentContext {
+	if ctx == nil {
+		return RiskAssessmentContext{}
+	}
+	value := ctx.Value(riskAssessmentContextKey{})
+	assessment, ok := value.(RiskAssessmentContext)
+	if !ok {
+		return RiskAssessmentContext{}
+	}
+	if assessment.Score < 0 {
+		assessment.Score = 0
+	}
+	if assessment.Score > 100 {
+		assessment.Score = 100
+	}
+	assessment.StructuredSummary = strings.TrimSpace(assessment.StructuredSummary)
+	return assessment
 }
