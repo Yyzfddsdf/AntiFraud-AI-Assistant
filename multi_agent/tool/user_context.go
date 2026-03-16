@@ -11,6 +11,7 @@ type taskPayloadContextKey struct{}
 type taskInsightContextKey struct{}
 type finalReportContextKey struct{}
 type riskAssessmentContextKey struct{}
+type historicalScoreContextKey struct{}
 
 type TaskPayloadContext struct {
 	Text   string
@@ -28,6 +29,10 @@ type TaskInsightContext struct {
 type RiskAssessmentContext struct {
 	Score             int
 	StructuredSummary string
+}
+
+type HistoricalScoreContext struct {
+	Score int
 }
 
 // BindUserID 将当前请求关联的用户 ID 绑定到 ctx。
@@ -185,4 +190,34 @@ func CurrentRiskAssessment(ctx context.Context) RiskAssessmentContext {
 	}
 	assessment.StructuredSummary = strings.TrimSpace(assessment.StructuredSummary)
 	return assessment
+}
+
+// BindHistoricalScore 将用户历史分写入 ctx，供动态风险等级工具复用。
+func BindHistoricalScore(ctx context.Context, score int) context.Context {
+	if score < 0 {
+		score = 0
+	}
+	if score > 100 {
+		score = 100
+	}
+	return context.WithValue(ctx, historicalScoreContextKey{}, HistoricalScoreContext{Score: score})
+}
+
+// CurrentHistoricalScore 返回当前上下文中的用户历史分。
+func CurrentHistoricalScore(ctx context.Context) (int, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	value := ctx.Value(historicalScoreContextKey{})
+	historical, ok := value.(HistoricalScoreContext)
+	if !ok {
+		return 0, false
+	}
+	if historical.Score < 0 {
+		historical.Score = 0
+	}
+	if historical.Score > 100 {
+		historical.Score = 100
+	}
+	return historical.Score, true
 }

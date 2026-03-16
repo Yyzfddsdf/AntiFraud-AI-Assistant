@@ -299,7 +299,13 @@ func (h *QueryUserInfoHandler) Handle(ctx context.Context, args string) (ToolRes
 	if queryErr != nil {
 		return ToolResponse{Payload: map[string]interface{}{"error": queryErr.Error(), "user": map[string]interface{}{"user_name": "user"}}}, nil
 	}
-	return ToolResponse{Payload: map[string]interface{}{"user": userInfo}}, nil
+	historicalScore, _ := userInfo["historical_score"].(int)
+	return ToolResponse{
+		Payload: map[string]interface{}{"user": userInfo},
+		ContextMutator: func(base context.Context) context.Context {
+			return BindHistoricalScore(base, historicalScore)
+		},
+	}, nil
 }
 
 type UpdateUserRecentTagsHandler struct{}

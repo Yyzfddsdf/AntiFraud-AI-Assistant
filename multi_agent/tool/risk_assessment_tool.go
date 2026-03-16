@@ -40,7 +40,7 @@ var RiskAssessmentTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        RiskAssessmentToolName,
-		Description: "提交当前案件的结构化风险因子，由系统计算本次案件风险分数与结构化摘要。",
+		Description: "提交当前案件的结构化风险因子（客观聚焦于本次案件，和历史以及数据库案件完全无关），由系统计算本次案件风险分数与结构化摘要。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
