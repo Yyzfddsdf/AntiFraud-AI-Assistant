@@ -247,7 +247,7 @@ func (a *MainAgent) generateReport(ctx context.Context, finalInput string, userI
 				Model:       a.modelID,
 				Messages:    messages,
 				Tools:       tool.MainAgentTools(),
-				ToolChoice:  "required",
+				ToolChoice:  "auto",
 				Stream:      false,
 				MaxTokens:   a.MaxTokens,
 				Temperature: float32(a.Temperature),

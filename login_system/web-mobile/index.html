@@ -897,7 +897,7 @@
                         <button type="button" @click="openProfilePrivacyPage" class="w-full p-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 text-left">
                             <div>
                                 <div class="text-sm font-medium text-slate-800">隐私资料</div>
-                                <div class="text-xs text-slate-400 mt-1">查看手机号、邮箱和年龄</div>
+                                <div class="text-xs text-slate-400 mt-1">查看手机号、邮箱、年龄、职业和近期标签</div>
                             </div>
                             <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                         </button>
@@ -924,17 +924,58 @@
                         <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">年龄</div>
-                                    <div class="mt-1 text-sm font-semibold text-slate-800">{{ user.age || ageForm.age || '未设置' }}</div>
+                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">画像资料</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">年龄 {{ user.age || ageForm.age || '未设置' }}</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">职业 {{ user.occupation || '未设置' }}</div>
+                                    <div class="mt-2 flex flex-wrap gap-2" v-if="user.recent_tags && user.recent_tags.length">
+                                        <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600">{{ tag }}</span>
+                                    </div>
+                                    <div v-else class="mt-1 text-xs text-slate-400">近期标签未设置</div>
                                 </div>
                                 <button type="button" @click="toggleAgeEditor" class="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
-                                    {{ ageEditorVisible ? '收起' : '修改' }}
+                                    {{ ageEditorVisible ? '收起' : '编辑' }}
                                 </button>
                             </div>
-                            <div v-if="ageEditorVisible" class="mt-3 flex items-center gap-2">
+                            <div v-if="ageEditorVisible" class="mt-3 space-y-3">
                                 <input v-model.number="ageForm.age" type="number" min="1" max="150" class="m-input !py-2 !text-sm" placeholder="输入年龄">
-                                <button type="button" @click="updateAge" class="text-sm font-bold text-white bg-emerald-600 px-4 py-2 rounded-lg whitespace-nowrap">保存</button>
-                                <button type="button" @click="cancelAgeEditor" class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-lg whitespace-nowrap">取消</button>
+                                <div class="space-y-2">
+                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">职业</div>
+                                    <div class="m-dropdown" data-custom-dropdown>
+                                        <button
+                                            type="button"
+                                            @click="toggleDropdown('profile_occupation')"
+                                            :class="['m-dropdown-trigger', openDropdownKey === 'profile_occupation' ? 'is-open' : '']">
+                                            <div class="min-w-0">
+                                                <div class="text-sm font-semibold text-slate-800">{{ profileForm.occupation || '选择职业' }}</div>
+                                                <div class="text-[11px] text-slate-400 mt-1">从配置枚举中选择当前职业</div>
+                                            </div>
+                                            <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openDropdownKey === 'profile_occupation' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                        <div v-if="openDropdownKey === 'profile_occupation'" class="m-dropdown-menu hide-scrollbar">
+                                            <button type="button" class="m-dropdown-option" :class="{ 'is-selected': !profileForm.occupation }" @click="selectDropdownValue('profile_occupation', profileForm, 'occupation', '')">
+                                                <div>
+                                                    <div class="text-sm font-semibold text-slate-800">未设置</div>
+                                                    <div class="text-[11px] text-slate-400 mt-1">清空职业信息</div>
+                                                </div>
+                                            </button>
+                                            <button v-for="item in occupationOptions" :key="`occupation-${item}`" type="button" class="m-dropdown-option" :class="{ 'is-selected': profileForm.occupation === item }" @click="selectDropdownValue('profile_occupation', profileForm, 'occupation', item)">
+                                                <div class="text-sm font-semibold text-slate-800">{{ item }}</div>
+                                                <svg v-if="profileForm.occupation === item" class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">近期标签</div>
+                                    <div v-if="user.recent_tags && user.recent_tags.length" class="mt-2 flex flex-wrap gap-2">
+                                        <span v-for="tag in user.recent_tags" :key="`recent-tag-readonly-${tag}`" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600">{{ tag }}</span>
+                                    </div>
+                                    <div v-else class="mt-1 text-xs text-slate-400">近期标签未设置</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="updateUserProfile" :disabled="profileSaving" class="text-sm font-bold text-white bg-emerald-600 px-4 py-2 rounded-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">{{ profileSaving ? '保存中...' : '保存' }}</button>
+                                    <button type="button" @click="cancelAgeEditor" class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-lg whitespace-nowrap">取消</button>
+                                </div>
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-100">

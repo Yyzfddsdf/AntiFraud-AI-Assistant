@@ -322,7 +322,9 @@
         appendLog('更新年龄', '请输入 1-150 的整数年龄');
         return;
       }
-      await request('/api/scam/multimodal/user/age', 'PUT', { age }, token);
+      const current = await request('/api/user', 'GET', null, token);
+      const occupation = current.status === 200 && current.data ? (current.data.occupation || '') : '';
+      await request('/api/user/profile', 'PUT', { age, occupation }, token);
     }
 
     function parseMultiBase64Input(raw) {

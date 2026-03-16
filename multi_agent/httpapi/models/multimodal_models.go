@@ -87,18 +87,6 @@ type MultimodalTaskDetailResponse struct {
 	Task MultimodalTaskItem `json:"task"`
 }
 
-// UpdateUserAgeRequest 更新用户年龄请求。
-type UpdateUserAgeRequest struct {
-	Age int `json:"age"`
-}
-
-// UpdateUserAgeResponse 更新用户年龄响应。
-type UpdateUserAgeResponse struct {
-	UserID  string `json:"user_id"`
-	Age     int    `json:"age"`
-	Message string `json:"message"`
-}
-
 // MultimodalRiskLevelStats 风险等级统计（高/中/低）。
 type MultimodalRiskLevelStats struct {
 	High   int `json:"high"`

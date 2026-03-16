@@ -231,13 +231,106 @@
   "email": "test_user@example.com",
   "phone": "13800138000",
   "role": "user",
-  "age": 28
+  "age": 28,
+  "occupation": "企业职员",
+  "recent_tags": [
+    "近期频繁网购",
+    "正在找工作"
+  ]
 }
 ```
 
 ### 常见失败响应
 
 - `401` 未提供 Token / Token 无效或过期 / 用户不存在或已删除 / 用户信息不匹配
+
+---
+
+## 4.1) 获取职业枚举选项（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/user/profile/options/occupations`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 成功响应（200）
+
+```json
+{
+  "occupations": [
+    "学生",
+    "企业职员",
+    "个体经营",
+    "自由职业",
+    "教师",
+    "医护人员",
+    "公务员/事业单位",
+    "家庭主妇/主夫",
+    "退休人员",
+    "待业",
+    "其他"
+  ],
+  "count": 11
+}
+```
+
+### 说明
+
+- 枚举值来自 `config/occupations.json`。
+- 前端修改职业时应从该接口返回值中选择。
+
+---
+
+## 4.2) 更新当前用户画像（需鉴权）
+
+- **Method**: `PUT`
+- **Path**: `/api/user/profile`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "age": 28,
+  "occupation": "企业职员"
+}
+```
+
+### 说明
+
+- `age` 取值范围：`1 ~ 150`
+- `occupation` 允许为空；若非空，必须命中 `config/occupations.json`
+- `recent_tags` 为只读用户画像字段，不允许通过该接口修改
+
+### 成功响应（200）
+
+```json
+{
+  "message": "用户画像更新成功",
+  "user": {
+    "id": 1,
+    "username": "test_user",
+    "email": "test_user@example.com",
+    "phone": "13800138000",
+    "role": "user",
+    "age": 28,
+    "occupation": "企业职员",
+    "recent_tags": [
+      "近期频繁网购",
+      "正在找工作"
+    ]
+  }
+}
+```
+
+### 常见失败响应
+
+- `400` 请求参数错误 / 年龄越界 / 职业不在枚举内
+- `401` 未认证
 
 ---
 
@@ -508,46 +601,6 @@
 - `401` 未认证
 - `404` 历史案件不存在或不属于当前用户
 - `500` 删除失败
-
----
-
-## 9) 更新当前用户年龄（需鉴权）
-
-- **Method**: `PUT`
-- **Path**: `/api/scam/multimodal/user/age`
-- **Header**:
-  - `Authorization: Bearer <JWT_TOKEN>`
-  - `Content-Type: application/json`
-  - `Accept: application/json`
-
-### 请求体
-
-```json
-{
-  "age": 28
-}
-```
-
-### 说明
-
-- `age` 取值范围：`1 ~ 150`
-- 写入后会持久化到多模态状态 DB 的用户基础信息中。
-
-### 成功响应（200）
-
-```json
-{
-  "user_id": "1",
-  "age": 28,
-  "message": "年龄更新成功"
-}
-```
-
-### 常见失败响应
-
-- `400` 请求参数错误 / `age` 超出范围
-- `401` 未认证
-- `500` 年龄写入失败
 
 ---
 
@@ -919,7 +972,7 @@ data:{"type":"done","reason":"stop"}
     {
       "role": "tool",
       "tool_call_id": "chatcmpl-tool-9948fb773791ad7c",
-      "content": "{\"user\":{\"account_status\":\"active\",\"age\":28,\"completed_case_count\":1,\"historical_risk\":\"低\",\"pending_task_count\":0,\"risk_case_count\":{\"中\":0,\"低\":1,\"高\":0},\"user_id\":\"1\",\"user_name\":\"用户1\"}}"
+      "content": "{\"user\":{\"user_name\":\"用户1\",\"age\":28,\"occupation\":\"企业职员\",\"recent_tags\":[\"近期频繁网购\"],\"total_case_count\":1,\"historical_risk\":\"低\",\"high_risk_case_ratio\":0,\"mid_risk_case_ratio\":0,\"low_risk_case_ratio\":1,\"risk_trend_analysis\":{\"interval\":\"day\",\"current_bucket\":\"2026-03-10~2026-03-16\",\"previous_bucket\":\"2026-03-03~2026-03-09\",\"overall_trend\":\"持平\",\"high_risk_trend\":\"持平\",\"summary\":\"基于最近7天与上一窗口的对比，高风险案件持平（0→0），整体风险持平（1→1）。\"}}}"
     },
     {
       "role": "assistant",
@@ -1436,15 +1489,17 @@ GET /api/users?query=admin
 4. `POST /api/auth/login`
 5. `GET /api/alert/ws`（WebSocket，建议登录后立即建立）
 6. `GET /api/user`
-7. `POST /api/scam/multimodal/analyze`
-8. `GET /api/scam/multimodal/tasks`
-9. `GET /api/scam/multimodal/history`
-10. `GET /api/scam/multimodal/history/overview`
-11. `GET /api/scam/multimodal/tasks/:taskId`
-12. `POST /api/chat`
-13. `GET /api/chat/context`
-14. `POST /api/chat/refresh`
-15. `DELETE /api/user`
+7. `GET /api/user/profile/options/occupations`
+8. `PUT /api/user/profile`
+9. `POST /api/scam/multimodal/analyze`
+10. `GET /api/scam/multimodal/tasks`
+11. `GET /api/scam/multimodal/history`
+12. `GET /api/scam/multimodal/history/overview`
+13. `GET /api/scam/multimodal/tasks/:taskId`
+14. `POST /api/chat`
+15. `GET /api/chat/context`
+16. `POST /api/chat/refresh`
+16. `DELETE /api/user`
 
 ---
 

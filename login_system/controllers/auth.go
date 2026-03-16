@@ -7,6 +7,7 @@ import (
 	"antifraud/login_system/session"
 	"antifraud/login_system/settings"
 	"antifraud/login_system/smscode"
+	"antifraud/user_profile_system"
 	"context"
 	"errors"
 	"log"
@@ -220,11 +221,7 @@ func GetCurrentUserHandle(c *gin.Context) {
 }
 
 func queryCurrentUserResponse(userID interface{}) (models.UserResponse, error) {
-	var user models.User
-	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		return models.UserResponse{}, err
-	}
-	return models.ToUserResponse(user), nil
+	return user_profile_system.GetCurrentUserResponse(userID)
 }
 
 // DeleteCurrentUserHandle 删除当前登录用户。

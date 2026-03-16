@@ -72,6 +72,12 @@ createApp({
         });
 
         const ageForm = reactive({ age: 28 });
+        const profileForm = reactive({
+            occupation: '',
+            recentTagsText: ''
+        });
+        const occupationOptions = ref([]);
+        const profileSaving = ref(false);
         const demoSMSCode = '000000';
         const smsCodeCooldown = ref(0);
         const smsCodeSending = ref(false);
@@ -113,6 +119,29 @@ createApp({
             const id = Date.now();
             toasts.value.push({ id, message, type });
             setTimeout(() => toasts.value = toasts.value.filter(t => t.id !== id), 3000);
+        };
+
+        const parseRecentTagsInput = (raw) => {
+            return String(raw || '')
+                .split(/\r?\n|,|，|;|；/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        };
+
+        const syncProfileForm = (profile) => {
+            const normalizedAge = Number(profile && profile.age);
+            ageForm.age = Number.isFinite(normalizedAge) && normalizedAge > 0 ? normalizedAge : 28;
+            profileForm.occupation = String(profile && profile.occupation ? profile.occupation : '').trim();
+            profileForm.recentTagsText = Array.isArray(profile && profile.recent_tags)
+                ? profile.recent_tags.filter(item => typeof item === 'string' && item.trim()).join('\n')
+                : '';
+        };
+
+        const fetchOccupationOptions = async () => {
+            const res = await request('/user/profile/options/occupations', 'GET', null, { silent: true });
+            if (res && Array.isArray(res.occupations)) {
+                occupationOptions.value = res.occupations.filter(item => typeof item === 'string' && item.trim());
+            }
         };
 
         const alertConnectionLabel = computed(() => {
@@ -675,7 +704,7 @@ createApp({
         };
         const cancelAgeEditor = () => {
             ageEditorVisible.value = false;
-            ageForm.age = Number(user.value.age) || ageForm.age || 28;
+            syncProfileForm(user.value || {});
         };
         const openProfilePrivacyPage = () => {
             ageEditorVisible.value = false;
@@ -814,8 +843,8 @@ createApp({
                     localStorage.setItem('token', res.token);
                     isAuthenticated.value = true;
                     user.value = res.user;
-                    if (res.user.age) ageForm.age = res.user.age;
-                    else ageForm.age = 28;
+                    syncProfileForm(res.user);
+                    fetchOccupationOptions();
                     showToast('登录成功');
                     startPolling();
                 }
@@ -828,7 +857,8 @@ createApp({
             const res = await request('/user');
             if (res) {
                 user.value = res;
-                if (res.age) ageForm.age = res.age;
+                syncProfileForm(res);
+                fetchOccupationOptions();
                 isAuthenticated.value = true;
                 startPolling();
             } else {
@@ -841,6 +871,7 @@ createApp({
             localStorage.removeItem('token');
             isAuthenticated.value = false;
             user.value = {};
+            syncProfileForm({});
             stopPolling();
             alertDrawerVisible.value = false;
             alertEvents.value = [];
@@ -867,20 +898,27 @@ createApp({
             chatHistoryLoaded.value = false;
         };
 
-        const updateAge = async () => {
+        const updateUserProfile = async () => {
             const normalizedAge = Number(ageForm.age);
             if (!Number.isFinite(normalizedAge) || normalizedAge < 1 || normalizedAge > 150) {
                 showToast('年龄请输入 1 到 150 之间的数字', 'error');
                 return;
             }
-            const res = await request('/scam/multimodal/user/age', 'PUT', { age: ageForm.age });
-            if (res) {
-                user.value.age = normalizedAge;
-                ageForm.age = normalizedAge;
+
+            profileSaving.value = true;
+            const res = await request('/user/profile', 'PUT', {
+                age: normalizedAge,
+                occupation: profileForm.occupation
+            });
+            profileSaving.value = false;
+            if (res && res.user) {
+                user.value = res.user;
+                syncProfileForm(res.user);
                 ageEditorVisible.value = false;
-                showToast('年龄更新成功');
+                showToast(res.message || '用户画像更新成功');
             }
         };
+        const updateAge = updateUserProfile;
 
         watch([authMode, loginMethod], () => {
             if (requiresGraphCaptcha.value) {
@@ -2227,13 +2265,13 @@ createApp({
         };
 
         return {
-            isAuthenticated, user, authMode, loginMethod, form, ageForm, analyzeForm, 
+            isAuthenticated, user, authMode, loginMethod, form, ageForm, profileForm, occupationOptions, profileSaving, analyzeForm, 
             captchaImage, requiresGraphCaptcha, shouldShowSMSCodeSection, authSubmitLabel, smsCodeButtonText, canSendSMSCode, demoSMSCode,
             fetchCaptcha, sendSMSCode, handleAuth, logout, loading,
             activeTab, tasks, history, selectedTask, toasts, analyzing,
             deletingHistory, handleFileSelect, submitAnalysis, viewTaskDetail, viewHistoryDetail, deleteHistoryCase,
             formatTime, getStatusLabel, getStatusClass, normalizeRiskLevelText, getRiskClass, getAlertSeverityTheme, renderMarkdown,
-            updateAge, deleteAccount, openImage, exportData, printReport,
+            updateAge, updateUserProfile, deleteAccount, openImage, exportData, printReport,
             getUserDisplayName, getUserEmailText, getUserPhoneText, getUserAvatarText,
             ageEditorVisible, toggleAgeEditor, cancelAgeEditor, openProfilePrivacyPage, closeProfilePrivacyPage,
             familyOverview, familyMembers, familyInvitations, familyReceivedInvitations, familyGuardianLinks, familyNotifications,

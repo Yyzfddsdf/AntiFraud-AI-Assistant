@@ -17,6 +17,7 @@ import (
 	"antifraud/login_system/smscode"
 	"antifraud/multi_agent/httpapi"
 	"antifraud/multi_agent/state"
+	"antifraud/user_profile_system"
 
 	"github.com/gin-gonic/gin"
 )
@@ -99,6 +100,7 @@ func main() {
 	{
 		api.GET("/user", controllers.GetCurrentUserHandle)
 		api.DELETE("/user", controllers.DeleteCurrentUserHandle)
+		user_profile_system.RegisterRoutes(api)
 		api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAllUsersHandle)
 		api.POST("/upgrade", controllers.UpgradeUserHandle)
 		api.POST("/chat", chatapi.ChatHandle)
@@ -106,7 +108,6 @@ func main() {
 		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)
 		api.GET("/alert/ws", httpapi.AlertWebSocketHandle)
 		family_system.RegisterRoutes(api, familyService)
-		api.PUT("/scam/multimodal/user/age", httpapi.UpdateUserAgeHandle)
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)
 		api.GET("/scam/multimodal/history", httpapi.GetMultimodalHistoryHandle)

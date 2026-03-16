@@ -94,6 +94,7 @@ go run .
 - `database/`：数据库连接、统一 schema 初始化入口（`InitPersistence`）
 - `login_system/auth/`：JWT 能力边界（claims、签发、验签、鉴权错误语义）
 - `login_system/`：注册登录、用户管理、JWT 中间件、限流
+- `user_profile_system/`：用户画像扩展字段（职业、近期标签）、职业配置与资料更新接口
 - `family_system/`：家庭组、成员关系、邀请、守护关系、家庭通知
 - `chat_system/`：聊天 SSE、工具调用、Redis 上下文
 - `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
@@ -447,7 +448,8 @@ python scripts/backfill_user_history_vectors.py
   - **防诈知识库**：通过 `search_similar_cases` 访问全局历史案件库，支持向量召回，并可按 `target_group` / `scam_type` 过滤。
   - **个性化记忆系统**：通过 `search_user_history` 基于语义召回该用户过往遇到的相似骗局，实现跨时空关联。
 - 用户信息深度交互：
-  - `chat_query_user_info`：查询当前登录用户画像、账号状态、历史风险概览
+  - `chat_query_user_info`：查询当前登录用户画像、职业、近期标签、账号状态、历史风险概览
+  - `update_user_recent_tags`：更新当前用户近期标签，沉淀近期状态画像
   - `chat_query_user_case_history`：查询当前用户历史案件记录与数量
 - 系统内信息深度交互：
   - 聊天系统会结合 Redis 会话上下文、知识库和记忆系统、工具返回结果做多轮推理。

@@ -35,8 +35,15 @@
 | `email` | `string` / `text` | `unique`, `not null` | 邮箱 |
 | `phone` | `*string` / `text` | `unique`, 可空 | 手机号 |
 | `age` | `*int` / `integer` | 可空 | 年龄 |
+| `occupation` | `string` / `text` | 可空 | 职业，枚举值来自 `config/occupations.json` |
+| `recent_tags` | `string` / `text` | 可空 | 近期标签数组（JSON 字符串） |
 | `password` | `string` / `text` | `not null` | 密码哈希 |
 | `role` | `string` / `text` | 默认值 `'user'` | 角色（`user`/`admin`） |
+
+说明：
+
+- `occupation` 允许为空；若非空，必须命中 `config/occupations.json` 中的枚举值。
+- `recent_tags` 由服务端编码为 JSON 字符串数组，例如 `["近期频繁网购","正在找工作"]`。
 
 ### 2.1.1 `family_groups`（家庭组表）
 

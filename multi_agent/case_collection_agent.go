@@ -116,7 +116,7 @@ func (a *CaseCollectionAgent) CollectCases(ctx context.Context, userID string, q
 				Model:       a.modelID,
 				Messages:    messages,
 				Tools:       caseCollectionToolsProvider(),
-				ToolChoice:  "required",
+				ToolChoice:  "auto",
 				Stream:      false,
 				MaxTokens:   a.MaxTokens,
 				Temperature: float32(a.Temperature),

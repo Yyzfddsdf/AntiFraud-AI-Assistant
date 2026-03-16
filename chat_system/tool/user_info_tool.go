@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"antifraud/database"
-	"antifraud/login_system/models"
-	"antifraud/multi_agent/overview"
-	"antifraud/multi_agent/state"
+	"antifraud/user_profile_system"
 
 	openai "antifraud/llm"
 )
@@ -49,73 +45,23 @@ func ParseChatQueryUserInfoInput(arguments string) (ChatQueryUserInfoInput, erro
 }
 
 func QueryUserInfo(userID string, interval string) (map[string]interface{}, error) {
-	uid := strings.TrimSpace(userID)
-	if uid == "" {
-		uid = "demo-user"
+	info, err := user_profile_system.BuildUserRiskInfo(userID, interval)
+	if err != nil {
+		return nil, err
 	}
-
-	view := state.GetUserStateView(uid)
-	var age *int
-	if numericID, err := strconv.ParseUint(uid, 10, 64); err == nil {
-		var user models.User
-		if queryErr := database.DB.Where("id = ?", uint(numericID)).First(&user).Error; queryErr == nil {
-			age = user.Age
-		}
-	}
-
-	risk := "\u4f4e"
-	riskCaseCount := map[string]int{
-		"\u4f4e": 0,
-		"\u4e2d": 0,
-		"\u9ad8": 0,
-	}
-
-	for _, item := range view.History {
-		itemRisk := normalizeRiskLevel(strings.TrimSpace(item.RiskLevel))
-
-		if _, ok := riskCaseCount[itemRisk]; ok {
-			riskCaseCount[itemRisk]++
-		}
-
-		if itemRisk == "\u9ad8" {
-			risk = "\u9ad8"
-		}
-		if risk != "\u9ad8" && itemRisk == "\u4e2d" {
-			risk = "\u4e2d"
-		}
-	}
-
-	riskOverview := overview.BuildUserRiskOverview(uid, strings.TrimSpace(interval))
 
 	return map[string]interface{}{
-		"user_id":              view.UserID,
-		"user_name":            fmt.Sprintf("user-%s", view.UserID),
-		"age":                  age,
-		"account_status":       "active",
-		"pending_task_count":   len(view.Pending),
-		"completed_case_count": len(view.History),
-		"historical_risk":      risk,
-		"risk_case_count":      riskCaseCount,
-		"risk_trend_analysis": map[string]interface{}{
-			"interval":        riskOverview.Interval,
-			"current_bucket":  riskOverview.Analysis.CurrentBucket,
-			"previous_bucket": riskOverview.Analysis.PreviousBucket,
-			"overall_trend":   riskOverview.Analysis.OverallTrend,
-			"high_risk_trend": riskOverview.Analysis.HighRiskTrend,
-			"summary":         riskOverview.Analysis.Summary,
-		},
+		"user_name":            info.UserName,
+		"age":                  info.Age,
+		"occupation":           info.Occupation,
+		"recent_tags":          info.RecentTags,
+		"total_case_count":     info.TotalCaseCount,
+		"historical_risk":      info.HistoricalRisk,
+		"high_risk_case_ratio": info.HighRiskCaseRatio,
+		"mid_risk_case_ratio":  info.MidRiskCaseRatio,
+		"low_risk_case_ratio":  info.LowRiskCaseRatio,
+		"risk_trend_analysis":  info.RiskTrendAnalysis,
 	}, nil
-}
-
-func normalizeRiskLevel(raw string) string {
-	switch strings.TrimSpace(raw) {
-	case "\u9ad8":
-		return "\u9ad8"
-	case "\u4f4e":
-		return "\u4f4e"
-	default:
-		return "\u4e2d"
-	}
 }
 
 type ChatQueryUserInfoHandler struct{}

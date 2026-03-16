@@ -3,30 +3,29 @@ package tool
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"antifraud/database"
-	"antifraud/login_system/models"
-	"antifraud/multi_agent/overview"
 	"antifraud/multi_agent/state"
 	"antifraud/multi_agent/user_history_index"
+	"antifraud/user_profile_system"
 
 	openai "antifraud/llm"
 )
 
-const QueryUserHistoryCasesToolName = "query_user_history_cases"
 const QueryUserInfoToolName = "query_user_info"
+const UpdateUserRecentTagsToolName = "update_user_recent_tags"
 const WriteUserHistoryCaseToolName = "write_user_history_case"
 const SearchUserHistoryToolName = "search_user_history"
 
 const defaultUserHistorySearchTopK = 5
 
-type QueryUserHistoryCasesInput struct{}
-
 type QueryUserInfoInput struct {
 	Interval string `json:"interval,omitempty"`
+}
+
+type UpdateUserRecentTagsInput struct {
+	RecentTags []string `json:"recent_tags"`
 }
 
 type WriteUserHistoryCaseInput struct {
@@ -41,23 +40,11 @@ type SearchUserHistoryInput struct {
 	TopK  int    `json:"top_k,omitempty"`
 }
 
-var QueryUserHistoryCasesTool = openai.Tool{
-	Type: openai.ToolTypeFunction,
-	Function: &openai.FunctionDefinition{
-		Name:        QueryUserHistoryCasesToolName,
-		Description: "查询当前绑定用户的历史案件记录。",
-		Parameters: map[string]interface{}{
-			"type":       "object",
-			"properties": map[string]interface{}{},
-		},
-	},
-}
-
 var QueryUserInfoTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        QueryUserInfoToolName,
-		Description: "查询当前绑定用户的画像信息与风险摘要。",
+		Description: "查询当前绑定用户的画像信息、近期标签与风险摘要。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -67,6 +54,25 @@ var QueryUserInfoTool = openai.Tool{
 					"description": "可选，风险趋势分析的时间粒度。允许：day/week/month，默认 day。",
 				},
 			},
+		},
+	},
+}
+
+var UpdateUserRecentTagsTool = openai.Tool{
+	Type: openai.ToolTypeFunction,
+	Function: &openai.FunctionDefinition{
+		Name:        UpdateUserRecentTagsToolName,
+		Description: "更新当前绑定用户的近期标签。标签可为简短词语或句子，用于描述用户近期状态。",
+		Parameters: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"recent_tags": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]string{"type": "string"},
+					"description": "近期标签数组。支持词语或句子；会整体覆盖当前标签。",
+				},
+			},
+			"required": []string{"recent_tags"},
 		},
 	},
 }
@@ -121,12 +127,12 @@ var SearchUserHistoryTool = openai.Tool{
 	},
 }
 
-func ParseQueryUserHistoryCasesInput(arguments string) (QueryUserHistoryCasesInput, error) {
-	return ParseArgs[QueryUserHistoryCasesInput](arguments)
-}
-
 func ParseQueryUserInfoInput(arguments string) (QueryUserInfoInput, error) {
 	return ParseArgs[QueryUserInfoInput](arguments)
+}
+
+func ParseUpdateUserRecentTagsInput(arguments string) (UpdateUserRecentTagsInput, error) {
+	return ParseArgs[UpdateUserRecentTagsInput](arguments)
 }
 
 func ParseWriteUserHistoryCaseInput(arguments string) (WriteUserHistoryCaseInput, error) {
@@ -135,32 +141,6 @@ func ParseWriteUserHistoryCaseInput(arguments string) (WriteUserHistoryCaseInput
 
 func ParseSearchUserHistoryInput(arguments string) (SearchUserHistoryInput, error) {
 	return ParseArgs[SearchUserHistoryInput](arguments)
-}
-
-func QueryUserHistoryCases(ctx context.Context) ([]string, error) {
-	history := state.GetCaseHistory(CurrentUserID(ctx))
-	if len(history) == 0 {
-		return []string{"No historical case record"}, nil
-	}
-
-	results := make([]string, 0, len(history))
-	for _, record := range history {
-		report := strings.TrimSpace(record.Report)
-		if report == "" {
-			report = "none"
-		}
-
-		results = append(results, fmt.Sprintf(
-			"%s | title: %s | summary: %s | scam_type: %s | risk: %s | report: %s",
-			record.CreatedAt.Format("2006-01-02 15:04:05"),
-			record.Title,
-			record.CaseSummary,
-			noneIfEmpty(record.ScamType),
-			record.RiskLevel,
-			report,
-		))
-	}
-	return results, nil
 }
 
 func noneIfEmpty(raw string) string {
@@ -172,73 +152,22 @@ func noneIfEmpty(raw string) string {
 }
 
 func QueryUserInfo(ctx context.Context, interval string) (map[string]interface{}, error) {
-	uid := CurrentUserID(ctx)
-	view := state.GetUserStateView(uid)
-	var age *int
-	if userID, err := strconv.ParseUint(strings.TrimSpace(uid), 10, 64); err == nil {
-		var user models.User
-		if queryErr := database.DB.Where("id = ?", uint(userID)).First(&user).Error; queryErr == nil {
-			age = user.Age
-		}
+	info, err := user_profile_system.BuildUserRiskInfo(CurrentUserID(ctx), interval)
+	if err != nil {
+		return nil, err
 	}
-
-	risk := "\u4f4e"
-	riskCaseCount := map[string]int{
-		"\u4f4e": 0,
-		"\u4e2d": 0,
-		"\u9ad8": 0,
-	}
-
-	for _, item := range view.History {
-		itemRisk := normalizeRiskLevelFromHistory(item.RiskLevel)
-
-		if _, ok := riskCaseCount[itemRisk]; ok {
-			riskCaseCount[itemRisk]++
-		}
-
-		if itemRisk == "\u9ad8" {
-			risk = "\u9ad8"
-		}
-		if risk != "\u9ad8" && itemRisk == "\u4e2d" {
-			risk = "\u4e2d"
-		}
-	}
-
-	riskOverview := overview.BuildUserRiskOverview(uid, strings.TrimSpace(interval))
-
 	return map[string]interface{}{
-		"user_id":              view.UserID,
-		"user_name":            fmt.Sprintf("user-%s", view.UserID),
-		"age":                  age,
-		"account_status":       "active",
-		"pending_task_count":   len(view.Pending),
-		"completed_task_count": len(view.History),
-		"recent_case_count":    len(view.History),
-		"historical_risk":      risk,
-		"risk_case_count":      riskCaseCount,
-		"high_risk_case_count": riskCaseCount["\u9ad8"],
-		"mid_risk_case_count":  riskCaseCount["\u4e2d"],
-		"low_risk_case_count":  riskCaseCount["\u4f4e"],
-		"risk_trend_analysis": map[string]interface{}{
-			"interval":        riskOverview.Interval,
-			"current_bucket":  riskOverview.Analysis.CurrentBucket,
-			"previous_bucket": riskOverview.Analysis.PreviousBucket,
-			"overall_trend":   riskOverview.Analysis.OverallTrend,
-			"high_risk_trend": riskOverview.Analysis.HighRiskTrend,
-			"summary":         riskOverview.Analysis.Summary,
-		},
+		"user_name":            info.UserName,
+		"age":                  info.Age,
+		"occupation":           info.Occupation,
+		"recent_tags":          info.RecentTags,
+		"total_case_count":     info.TotalCaseCount,
+		"historical_risk":      info.HistoricalRisk,
+		"high_risk_case_ratio": info.HighRiskCaseRatio,
+		"mid_risk_case_ratio":  info.MidRiskCaseRatio,
+		"low_risk_case_ratio":  info.LowRiskCaseRatio,
+		"risk_trend_analysis":  info.RiskTrendAnalysis,
 	}, nil
-}
-
-func normalizeRiskLevelFromHistory(raw string) string {
-	switch strings.TrimSpace(raw) {
-	case "\u9ad8":
-		return "\u9ad8"
-	case "\u4f4e":
-		return "\u4f4e"
-	default:
-		return "\u4e2d"
-	}
 }
 
 // WriteUserHistoryCase 把当前任务归档到 history_cases。
@@ -353,36 +282,45 @@ func SearchUserHistory(ctx context.Context, input SearchUserHistoryInput) ([]str
 	return formatted, appliedTopK, nil
 }
 
-type QueryUserHistoryCasesHandler struct{}
-
-func (h *QueryUserHistoryCasesHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
-	_, err := ParseQueryUserHistoryCasesInput(args)
-	if err != nil {
-		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user history args: %v", err), "cases": []string{"none"}}}, nil
-	}
-	cases, queryErr := QueryUserHistoryCases(ctx)
-	if queryErr != nil {
-		boundUserID := CurrentUserID(ctx)
-		return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "error": queryErr.Error(), "cases": []string{"query failed"}}}, nil
-	}
-	boundUserID := CurrentUserID(ctx)
-	return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "cases": cases}}, nil
-}
-
 type QueryUserInfoHandler struct{}
 
 func (h *QueryUserInfoHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
 	input, err := ParseQueryUserInfoInput(args)
 	if err != nil {
-		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user info args: %v", err), "user": map[string]interface{}{"user_id": "demo-user", "user_name": "demo-user"}}}, nil
+		return ToolResponse{Payload: map[string]interface{}{"error": fmt.Sprintf("invalid query user info args: %v", err), "user": map[string]interface{}{"user_name": "demo-user"}}}, nil
 	}
 	userInfo, queryErr := QueryUserInfo(ctx, input.Interval)
 	if queryErr != nil {
-		boundUserID := CurrentUserID(ctx)
-		return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "error": queryErr.Error(), "user": map[string]interface{}{"user_id": boundUserID, "user_name": "user-" + boundUserID}}}, nil
+		return ToolResponse{Payload: map[string]interface{}{"error": queryErr.Error(), "user": map[string]interface{}{"user_name": "user"}}}, nil
 	}
-	boundUserID := CurrentUserID(ctx)
-	return ToolResponse{Payload: map[string]interface{}{"user_id": boundUserID, "user": userInfo}}, nil
+	return ToolResponse{Payload: map[string]interface{}{"user": userInfo}}, nil
+}
+
+type UpdateUserRecentTagsHandler struct{}
+
+func (h *UpdateUserRecentTagsHandler) Handle(ctx context.Context, args string) (ToolResponse, error) {
+	input, err := ParseUpdateUserRecentTagsInput(args)
+	if err != nil {
+		return ToolResponse{Payload: map[string]interface{}{
+			"status": "failed",
+			"error":  fmt.Sprintf("invalid update user recent tags args: %v", err),
+		}}, nil
+	}
+
+	recentTags, updateErr := user_profile_system.UpdateRecentTagsByStringUserID(CurrentUserID(ctx), input.RecentTags)
+	if updateErr != nil {
+		return ToolResponse{Payload: map[string]interface{}{
+			"status": "failed",
+			"error":  updateErr.Error(),
+		}}, nil
+	}
+
+	return ToolResponse{Payload: map[string]interface{}{
+		"status":      "success",
+		"user_id":     CurrentUserID(ctx),
+		"recent_tags": recentTags,
+		"message":     "user recent tags updated",
+	}}, nil
 }
 
 type WriteUserHistoryCaseHandler struct{}

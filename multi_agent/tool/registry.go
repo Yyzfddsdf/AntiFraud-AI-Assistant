@@ -30,8 +30,8 @@ type ToolResponse struct {
 
 var mainAgentToolRegistry = []openai.Tool{
 	CaseSearchTool,
-	QueryUserHistoryCasesTool,
 	QueryUserInfoTool,
+	UpdateUserRecentTagsTool,
 	SearchUserHistoryTool,
 	UploadHistoricalCaseToVectorDBTool,
 	WriteUserHistoryCaseTool,
@@ -45,8 +45,8 @@ var mainAgentToolBlacklist = map[string]struct{}{
 
 var mainAgentToolHandlers = map[string]ToolHandler{
 	CaseSearchToolName:                     &CaseSearchHandler{},
-	QueryUserHistoryCasesToolName:          &QueryUserHistoryCasesHandler{},
 	QueryUserInfoToolName:                  &QueryUserInfoHandler{},
+	UpdateUserRecentTagsToolName:           &UpdateUserRecentTagsHandler{},
 	SearchUserHistoryToolName:              &SearchUserHistoryHandler{},
 	WriteUserHistoryCaseToolName:           &WriteUserHistoryCaseHandler{},
 	FinalReportToolName:                    &FinalReportHandler{},

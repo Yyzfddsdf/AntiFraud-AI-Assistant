@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"antifraud/database"
-	loginmodel "antifraud/login_system/models"
 	apimodel "antifraud/multi_agent/httpapi/models"
 	"antifraud/multi_agent/queue"
 	"antifraud/multi_agent/state"
@@ -137,32 +135,6 @@ func GetMultimodalTaskDetailHandle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, apimodel.MultimodalTaskDetailResponse{Task: toTaskItem(task)})
-}
-
-// UpdateUserAgeHandle 更新当前登录用户年龄（写入 user 基础数据 DB）。
-func UpdateUserAgeHandle(c *gin.Context) {
-	var payload apimodel.UpdateUserAgeRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
-		return
-	}
-
-	if payload.Age < 1 || payload.Age > 150 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "age 取值范围应为 1-150"})
-		return
-	}
-
-	userID := getCurrentUserID(c)
-	if err := database.DB.Model(&loginmodel.User{}).Where("id = ?", userID).Update("age", payload.Age).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "年龄写入失败"})
-		return
-	}
-
-	c.JSON(http.StatusOK, apimodel.UpdateUserAgeResponse{
-		UserID:  userID,
-		Age:     payload.Age,
-		Message: "年龄更新成功",
-	})
 }
 
 // toTaskItem 将内部任务结构转换为 API 任务详情结构。

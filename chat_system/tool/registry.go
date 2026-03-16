@@ -16,6 +16,7 @@ type ChatToolResponse struct {
 
 var chatToolRegistry = []openai.Tool{
 	ChatQueryUserInfoTool,
+	ChatUpdateUserRecentTagsTool,
 	ChatQueryUserCaseHistoryTool,
 	ChatSearchUserHistoryTool,
 	ChatSearchSimilarCasesTool,
@@ -25,6 +26,7 @@ var chatToolBlacklist = map[string]struct{}{}
 
 var chatToolHandlers = map[string]ChatToolHandler{
 	ChatQueryUserInfoToolName:        &ChatQueryUserInfoHandler{},
+	ChatUpdateUserRecentTagsToolName: &ChatUpdateUserRecentTagsHandler{},
 	ChatQueryUserCaseHistoryToolName: &ChatQueryUserCaseHistoryHandler{},
 	ChatSearchUserHistoryToolName:    &ChatSearchUserHistoryHandler{},
 	ChatSearchSimilarCasesToolName:   &ChatSearchSimilarCasesHandler{},
