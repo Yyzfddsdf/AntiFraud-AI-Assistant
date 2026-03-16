@@ -9,9 +9,9 @@
                                 "temperature":  0.3
                             },
                    "image":  {
-                                 "model":  "qwen3.5-plus",
-                                 "api_key":  "sk-c838f47ea0d44378ad736365ead9e8f5",
-                                 "base_url":  "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                 "model":  "gpt-5.4",
+                                 "api_key":  "sk-28b1d19d210ce836717a2ee225cb0daa9bce75215ee33cfe710c9b4a4dc6bbd6",
+                                 "base_url":  "https://gmn.chuangzuoli.com/v1",
                                  "max_tokens":  4096,
                                  "top_p":  1,
                                  "temperature":  0.5
