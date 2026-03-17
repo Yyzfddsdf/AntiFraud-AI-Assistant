@@ -44,3 +44,9 @@ type ApproveReviewResponse struct {
 	Message string `json:"message"`
 	CaseID  string `json:"case_id"`
 }
+
+// RejectReviewResponse 审核拒绝响应体。
+type RejectReviewResponse struct {
+	Message  string `json:"message"`
+	RecordID string `json:"record_id"`
+}

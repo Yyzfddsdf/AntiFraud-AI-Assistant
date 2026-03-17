@@ -113,6 +113,28 @@ func GetPendingReviewByID(recordID string) (PendingReviewRecord, bool, error) {
 
 // APPEND_MARKER_2
 
+// RejectPendingReview 审核拒绝：删除待审核记录，不写入历史案件库。
+func RejectPendingReview(ctx context.Context, recordID string) error {
+	trimmed := strings.TrimSpace(recordID)
+	if trimmed == "" {
+		return fmt.Errorf("recordID is required")
+	}
+
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		return err
+	}
+
+	result := db.WithContext(ctx).Where("record_id = ?", trimmed).Delete(&pendingReviewEntity{})
+	if result.Error != nil {
+		return fmt.Errorf("delete pending review failed: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("pending review case not found or already processed")
+	}
+	return nil
+}
+
 // ApprovePendingReview 审核通过：读取待审核记录 → 直接写入历史案件库 → 删除待审核记录。
 func ApprovePendingReview(ctx context.Context, recordID string) (HistoricalCaseRecord, error) {
 	trimmed := strings.TrimSpace(recordID)

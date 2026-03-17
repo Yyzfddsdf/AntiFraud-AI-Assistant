@@ -1253,6 +1253,24 @@ createApp({
             }
         };
 
+        const rejectReview = async (recordId) => {
+            const trimmedRecordId = String(recordId || '').trim();
+            if (!trimmedRecordId) {
+                showToast('recordId 不能为空', 'error');
+                return;
+            }
+            if (!confirm('确认拒绝该案件并从待审核库中删除？')) return;
+            const res = await request(`/scam/review/cases/${trimmedRecordId}/reject`, 'POST');
+            if (res && (res.record_id || res.message)) {
+                showReviewDetailModal.value = false;
+                selectedReview.value = null;
+                showToast(res.message || '审核拒绝成功');
+                await fetchPendingReviews();
+                return;
+            }
+            showToast('审核拒绝失败', 'error');
+        };
+
         const submitCaseCollection = async () => {
             const query = String(caseCollectionForm.query || '').trim();
             const caseCount = Number(caseCollectionForm.case_count);
@@ -2857,7 +2875,7 @@ createApp({
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseRiskSummary, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
-            pendingReviews, selectedReview, showReviewDetailModal, fetchPendingReviews, viewReviewDetail, approveReview,
+            pendingReviews, selectedReview, showReviewDetailModal, fetchPendingReviews, viewReviewDetail, approveReview, rejectReview,
             caseCollectionForm, startingCaseCollection, submitCaseCollection,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,
             adminStatsInterval, fetchAdminStats, adminStatsData, adminGraphData, formatGraphScore,

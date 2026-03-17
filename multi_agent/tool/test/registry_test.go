@@ -17,3 +17,21 @@ func TestMainAgentToolsExcludeLegacyHistoryQuery(t *testing.T) {
 		t.Fatalf("expected legacy history query handler to stay unregistered, got %#v", handler)
 	}
 }
+
+func TestCaseCollectionToolsIncludeWebSearch(t *testing.T) {
+	found := false
+	for _, tool := range agenttool.CaseCollectionTools() {
+		if tool.Function != nil && tool.Function.Name == agenttool.WebSearchToolName {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Fatalf("expected %s to be registered for case collection tools", agenttool.WebSearchToolName)
+	}
+
+	if handler := agenttool.GetCaseCollectionToolHandler(agenttool.WebSearchToolName); handler == nil {
+		t.Fatalf("expected %s handler to be registered for case collection tools", agenttool.WebSearchToolName)
+	}
+}

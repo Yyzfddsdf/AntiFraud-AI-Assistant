@@ -1478,6 +1478,7 @@
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button @click="viewReviewDetail(r.record_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-lg">查看</button>
+                                                <button @click="rejectReview(r.record_id)" class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-3 py-1.5 rounded-lg">拒绝入库</button>
                                                 <button @click="approveReview(r.record_id)" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs bg-emerald-50 px-3 py-1.5 rounded-lg">通过入库</button>
                                             </div>
                                         </td>
@@ -1513,6 +1514,7 @@
                                 </div>
                                 <div class="mt-8 flex justify-end gap-3">
                                     <button @click="showReviewDetailModal = false" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">关闭</button>
+                                    <button @click="rejectReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20">拒绝入库</button>
                                     <button @click="approveReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">通过入库</button>
                                 </div>
                             </div>
@@ -2057,6 +2059,6 @@
 
     </div>
 
-    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/app.js?v=20260316-1"></script>
 </body>
 </html>

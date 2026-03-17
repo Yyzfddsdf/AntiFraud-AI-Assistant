@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var rejectPendingReview = case_library.RejectPendingReview
+
 // GetPendingReviewCasesHandle 返回所有待审核案件预览列表。
 func GetPendingReviewCasesHandle(c *gin.Context) {
 	previews, err := case_library.ListPendingReviewPreviews()
@@ -94,5 +96,28 @@ func ApprovePendingReviewCaseHandle(c *gin.Context) {
 	c.JSON(http.StatusOK, apimodel.ApproveReviewResponse{
 		Message: "审核通过，案件已入库知识库",
 		CaseID:  record.CaseID,
+	})
+}
+
+// RejectPendingReviewCaseHandle 审核拒绝待审核案件，从待审核列表移除。
+func RejectPendingReviewCaseHandle(c *gin.Context) {
+	recordID := strings.TrimSpace(c.Param("recordId"))
+	if recordID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "recordId 不能为空"})
+		return
+	}
+
+	if err := rejectPendingReview(c.Request.Context(), recordID); err != nil {
+		if strings.Contains(err.Error(), "not found or already processed") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "待审核案件不存在或已处理"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "审核拒绝失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, apimodel.RejectReviewResponse{
+		Message:  "审核拒绝，案件已从待审核列表移除",
+		RecordID: recordID,
 	})
 }

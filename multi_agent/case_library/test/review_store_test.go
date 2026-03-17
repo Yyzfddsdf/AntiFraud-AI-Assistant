@@ -82,13 +82,6 @@ func TestCreatePendingReview_StoresEmbeddingFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get historical case db failed: %v", err)
 	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Fatalf("get sql db failed: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = sqlDB.Close()
-	})
 
 	var row struct {
 		EmbeddingVector    string
@@ -110,5 +103,44 @@ func TestCreatePendingReview_StoresEmbeddingFields(t *testing.T) {
 	}
 	if !strings.Contains(row.EmbeddingVector, "0.4") {
 		t.Fatalf("unexpected embedding vector payload: %q", row.EmbeddingVector)
+	}
+}
+
+func TestRejectPendingReview_DeletesRecord(t *testing.T) {
+	originalGenerateCaseEmbedding := generateCaseEmbedding
+	originalSearchHistoricalCases := searchHistoricalCasesByVector
+	t.Cleanup(func() {
+		generateCaseEmbedding = originalGenerateCaseEmbedding
+		searchHistoricalCasesByVector = originalSearchHistoricalCases
+	})
+
+	generateCaseEmbedding = func(ctx context.Context, input string) ([]float64, string, error) {
+		return []float64{0.7, 0.8, 0.9}, "mock-embedding", nil
+	}
+	searchHistoricalCasesByVector = func(queryVector []float64, topK int) ([]case_library.SimilarCaseResult, int, error) {
+		return []case_library.SimilarCaseResult{}, 1, nil
+	}
+
+	record, err := case_library.CreatePendingReview(context.Background(), "u2", case_library.CreateHistoricalCaseInput{
+		Title:           "虚假投资诈骗",
+		TargetGroup:     "青年",
+		RiskLevel:       "中",
+		ScamType:        "虚假投资理财类",
+		CaseDescription: "以高收益理财为诱饵引导受害人多次充值。",
+	})
+	if err != nil {
+		t.Fatalf("create pending review failed: %v", err)
+	}
+
+	if err := case_library.RejectPendingReview(context.Background(), record.RecordID); err != nil {
+		t.Fatalf("reject pending review failed: %v", err)
+	}
+
+	_, exists, err := case_library.GetPendingReviewByID(record.RecordID)
+	if err != nil {
+		t.Fatalf("query pending review failed: %v", err)
+	}
+	if exists {
+		t.Fatalf("pending review should be deleted after reject, record_id=%s", record.RecordID)
 	}
 }

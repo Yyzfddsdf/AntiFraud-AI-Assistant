@@ -13,6 +13,7 @@ import (
 
 const (
 	ToolTypeFunction = "function"
+	ToolTypeWebSearch = "web_search"
 
 	ChatMessageRoleSystem    = "system"
 	ChatMessageRoleUser      = "user"

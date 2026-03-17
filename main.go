@@ -136,6 +136,7 @@ func main() {
 			adminReview.GET("/cases", httpapi.GetPendingReviewCasesHandle)
 			adminReview.GET("/cases/:recordId", httpapi.GetPendingReviewCaseDetailHandle)
 			adminReview.POST("/cases/:recordId/approve", httpapi.ApprovePendingReviewCaseHandle)
+			adminReview.POST("/cases/:recordId/reject", httpapi.RejectPendingReviewCaseHandle)
 		}
 
 		adminCaseCollection := api.Group("/scam/case-collection")
