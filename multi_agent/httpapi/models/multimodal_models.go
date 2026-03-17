@@ -8,6 +8,17 @@ type MultimodalScamAnalyzeRequest struct {
 	Images []string `json:"images"`
 }
 
+// ImageQuickAnalyzeRequest 单图快速风险识别请求体。
+type ImageQuickAnalyzeRequest struct {
+	Image string `json:"image"`
+}
+
+// ImageQuickAnalyzeResponse 单图快速风险识别响应体。
+type ImageQuickAnalyzeResponse struct {
+	RiskLevel string `json:"risk_level"`
+	Reason    string `json:"reason"`
+}
+
 // MultimodalScamEnqueueResponse 多模态分析任务入队响应。
 type MultimodalScamEnqueueResponse struct {
 	TaskID  string `json:"task_id"`

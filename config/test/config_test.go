@@ -23,6 +23,7 @@ func validConfig() appcfg.Config {
 		Agents: appcfg.AgentModelConfig{
 			Main:           model,
 			Image:          model,
+			ImageQuick:     model,
 			Video:          model,
 			Audio:          model,
 			CaseCollection: model,
@@ -41,6 +42,7 @@ func validConfig() appcfg.Config {
 		Prompts: appcfg.PromptConfig{
 			Main:           "m",
 			Image:          "i",
+			ImageQuick:     "iq",
 			Video:          "v",
 			Audio:          "a",
 			CaseCollection: "c",
@@ -149,6 +151,13 @@ func TestConfigValidate(t *testing.T) {
 			wantInErr: "agents.image.api_key",
 		},
 		{
+			name: "missing image quick api key",
+			modify: func(c *appcfg.Config) {
+				c.Agents.ImageQuick.APIKey = ""
+			},
+			wantInErr: "agents.image_quick.api_key",
+		},
+		{
 			name: "missing embedding base url",
 			modify: func(c *appcfg.Config) {
 				c.Embedding.BaseURL = ""
@@ -161,6 +170,13 @@ func TestConfigValidate(t *testing.T) {
 				c.Agents.CaseCollection.APIKey = ""
 			},
 			wantInErr: "agents.case_collection.api_key",
+		},
+		{
+			name: "empty image quick prompt",
+			modify: func(c *appcfg.Config) {
+				c.Prompts.ImageQuick = "   "
+			},
+			wantInErr: "prompts.image_quick",
 		},
 		{
 			name: "empty prompt",
