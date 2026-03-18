@@ -2,7 +2,7 @@ package case_library_test
 
 import (
 	"context"
-	"path/filepath"
+	"os"
 	"strings"
 	"testing"
 
@@ -50,11 +50,20 @@ func TestCreatePendingReview_DuplicateHistoricalCaseRejected(t *testing.T) {
 }
 
 func TestCreatePendingReview_StoresEmbeddingFields(t *testing.T) {
+	resetHistoricalCaseDB()
+	dbPath, err := prepareHistoricalCaseDBPath()
+	if err != nil {
+		t.Fatalf("prepare historical case db path failed: %v", err)
+	}
+	t.Setenv("HISTORICAL_CASE_DB_PATH", dbPath)
+
 	originalGenerateCaseEmbedding := generateCaseEmbedding
 	originalSearchHistoricalCases := searchHistoricalCasesByVector
 	t.Cleanup(func() {
 		generateCaseEmbedding = originalGenerateCaseEmbedding
 		searchHistoricalCasesByVector = originalSearchHistoricalCases
+		resetHistoricalCaseDB()
+		_ = os.Remove(dbPath)
 	})
 
 	generateCaseEmbedding = func(ctx context.Context, input string) ([]float64, string, error) {
@@ -63,9 +72,6 @@ func TestCreatePendingReview_StoresEmbeddingFields(t *testing.T) {
 	searchHistoricalCasesByVector = func(queryVector []float64, topK int) ([]case_library.SimilarCaseResult, int, error) {
 		return []case_library.SimilarCaseResult{}, 1, nil
 	}
-
-	dbPath := filepath.Join(t.TempDir(), "historical_case_library.db")
-	t.Setenv("HISTORICAL_CASE_DB_PATH", dbPath)
 
 	record, err := case_library.CreatePendingReview(context.Background(), "u1", case_library.CreateHistoricalCaseInput{
 		Title:           "冒充客服诈骗",
@@ -107,11 +113,20 @@ func TestCreatePendingReview_StoresEmbeddingFields(t *testing.T) {
 }
 
 func TestRejectPendingReview_DeletesRecord(t *testing.T) {
+	resetHistoricalCaseDB()
+	dbPath, err := prepareHistoricalCaseDBPath()
+	if err != nil {
+		t.Fatalf("prepare historical case db path failed: %v", err)
+	}
+	t.Setenv("HISTORICAL_CASE_DB_PATH", dbPath)
+
 	originalGenerateCaseEmbedding := generateCaseEmbedding
 	originalSearchHistoricalCases := searchHistoricalCasesByVector
 	t.Cleanup(func() {
 		generateCaseEmbedding = originalGenerateCaseEmbedding
 		searchHistoricalCasesByVector = originalSearchHistoricalCases
+		resetHistoricalCaseDB()
+		_ = os.Remove(dbPath)
 	})
 
 	generateCaseEmbedding = func(ctx context.Context, input string) ([]float64, string, error) {

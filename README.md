@@ -372,6 +372,7 @@ python scripts/backfill_user_history_vectors.py
 
 向量库缓存已由进程内内存迁移到 Redis，当前策略：
 
+- 服务启动时尝试预热 `cache:case_library:vector_records`，详情读取与向量检索共用同一份 Redis 快照
 - 首次检索时若缓存未就绪，回源 DB 并回填 Redis Hash
 - 后续检索直接读取 Redis 快照
 - 新增案件后增量 `HSET` 同步缓存

@@ -302,6 +302,42 @@ func HashGetAll(hashKey string) (map[string]string, error) {
 	return HashGetAllWithContext(context.Background(), hashKey)
 }
 
+func HashGetJSON(hashKey string, field string, out interface{}) (bool, error) {
+	return HashGetJSONWithContext(context.Background(), hashKey, field, out)
+}
+
+func HashGetJSONWithContext(ctx context.Context, hashKey string, field string, out interface{}) (bool, error) {
+	normalizedHashKey, err := normalizeKey(hashKey)
+	if err != nil {
+		return false, err
+	}
+	normalizedField, err := normalizeKey(field)
+	if err != nil {
+		return false, fmt.Errorf("cache hash field is invalid: %w", err)
+	}
+	if out == nil {
+		return false, fmt.Errorf("cache output receiver is nil")
+	}
+
+	rdb, err := getRedisClient()
+	if err != nil {
+		return false, err
+	}
+
+	raw, err := rdb.HGet(redisCtx(ctx), normalizedHashKey, normalizedField).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+		return false, fmt.Errorf("get hash cache value failed: %w", err)
+	}
+
+	if err := json.Unmarshal([]byte(raw), out); err != nil {
+		return false, fmt.Errorf("unmarshal hash cache value failed: %w", err)
+	}
+	return true, nil
+}
+
 func HashGetAllWithContext(ctx context.Context, hashKey string) (map[string]string, error) {
 	normalizedHashKey, err := normalizeKey(hashKey)
 	if err != nil {

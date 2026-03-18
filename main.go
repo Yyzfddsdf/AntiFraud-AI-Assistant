@@ -15,6 +15,7 @@ import (
 	"antifraud/login_system/middleware"
 	"antifraud/login_system/session"
 	"antifraud/login_system/smscode"
+	"antifraud/multi_agent/case_library"
 	"antifraud/multi_agent/httpapi"
 	"antifraud/multi_agent/state"
 	"antifraud/user_profile_system"
@@ -31,6 +32,9 @@ func main() {
 
 	if err := database.InitPersistence(); err != nil {
 		log.Fatalf("init persistence failed: %v", err)
+	}
+	if err := case_library.WarmupHistoricalCaseVectorCache(); err != nil {
+		log.Printf("warmup historical case vector cache failed: %v", err)
 	}
 	authUserReader := middleware.NewGormAuthUserReader(database.DB)
 	activeTokenManager := session.NewDefaultRedisActiveTokenManager()

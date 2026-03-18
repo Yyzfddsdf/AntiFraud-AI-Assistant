@@ -146,6 +146,13 @@ func GetHistoricalCaseByID(caseID string) (HistoricalCaseRecord, bool, error) {
 		return HistoricalCaseRecord{}, false, nil
 	}
 
+	cachedRecord, found, err := loadHistoricalCaseVectorRecordFromRedis(trimmedCaseID)
+	if err != nil {
+		log.Printf("[case_library] load historical case from vector cache failed: case_id=%s err=%v", trimmedCaseID, err)
+	} else if found {
+		return cachedRecord, true, nil
+	}
+
 	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
 		return HistoricalCaseRecord{}, false, err
@@ -159,7 +166,10 @@ func GetHistoricalCaseByID(caseID string) (HistoricalCaseRecord, bool, error) {
 	if query.RowsAffected == 0 {
 		return HistoricalCaseRecord{}, false, nil
 	}
-	return recordFromEntity(entity), true, nil
+
+	record := recordFromEntity(entity)
+	upsertHistoricalCaseVectorCache(record)
+	return record, true, nil
 }
 
 // DeleteHistoricalCaseByID 根据 case_id 删除历史案件。

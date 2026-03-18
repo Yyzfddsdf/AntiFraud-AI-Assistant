@@ -23,6 +23,16 @@ const (
 	historicalCaseVectorCacheReadyKey = "cache:case_library:vector_records_ready"
 )
 
+var (
+	historicalCaseVectorCacheReadyGet    = cache.GetJSON
+	historicalCaseVectorCacheReadySet    = cache.SetJSON
+	historicalCaseVectorCacheDelete      = cache.Delete
+	historicalCaseVectorCacheHashGet     = cache.HashGetJSON
+	historicalCaseVectorCacheHashGetAll  = cache.HashGetAll
+	historicalCaseVectorCacheHashSetJSON = cache.HashSetJSON
+	historicalCaseVectorCacheHashDelete  = cache.HashDelete
+)
+
 // SimilarCaseResult represents one ranked case from vector search.
 type SimilarCaseResult struct {
 	CaseID          string
@@ -93,8 +103,9 @@ func queryAllHistoricalCasesFromDB() ([]HistoricalCaseRecord, error) {
 
 // SearchTopKSimilarCasesByVector executes cosine similarity search from distributed Redis cache.
 // Cache behavior:
-// 1) first search lazily loads all records from DB once;
-// 2) after cache is loaded, writes are incrementally synced by create/delete paths.
+// 1) service startup attempts to warm the Redis snapshot;
+// 2) if cache is still not ready, the first search lazily loads all records from DB once;
+// 3) after cache is loaded, writes are incrementally synced by create/delete paths.
 func SearchTopKSimilarCasesByVector(queryVector []float64, topK int) ([]SimilarCaseResult, int, error) {
 	return SearchTopKSimilarCasesByVectorWithFilter(queryVector, topK, SimilarCaseRecallFilter{})
 }
@@ -221,6 +232,35 @@ func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {
 	return cloneHistoricalCaseRecords(recordsFromDB), nil
 }
 
+func loadHistoricalCaseVectorRecordFromRedis(caseID string) (HistoricalCaseRecord, bool, error) {
+	trimmedCaseID := strings.TrimSpace(caseID)
+	if trimmedCaseID == "" {
+		return HistoricalCaseRecord{}, false, nil
+	}
+
+	var ready bool
+	found, err := historicalCaseVectorCacheReadyGet(historicalCaseVectorCacheReadyKey, &ready)
+	if err != nil {
+		return HistoricalCaseRecord{}, false, err
+	}
+	if !found || !ready {
+		return HistoricalCaseRecord{}, false, nil
+	}
+
+	var record HistoricalCaseRecord
+	found, err = historicalCaseVectorCacheHashGet(historicalCaseVectorCacheHashKey, trimmedCaseID, &record)
+	if err != nil {
+		return HistoricalCaseRecord{}, false, err
+	}
+	if !found {
+		return HistoricalCaseRecord{}, false, nil
+	}
+	if strings.TrimSpace(record.CaseID) == "" {
+		record.CaseID = trimmedCaseID
+	}
+	return cloneHistoricalCaseRecord(record), true, nil
+}
+
 func countHistoricalCasesFromDB() (int64, error) {
 	db, err := database.GetHistoricalCaseDB()
 	if err != nil {
@@ -236,12 +276,12 @@ func countHistoricalCasesFromDB() (int64, error) {
 
 func loadHistoricalCaseVectorCacheFromRedis() ([]HistoricalCaseRecord, bool, error) {
 	var ready bool
-	readyFound, err := cache.GetJSON(historicalCaseVectorCacheReadyKey, &ready)
+	readyFound, err := historicalCaseVectorCacheReadyGet(historicalCaseVectorCacheReadyKey, &ready)
 	if err != nil {
 		return nil, false, err
 	}
 
-	values, err := cache.HashGetAll(historicalCaseVectorCacheHashKey)
+	values, err := historicalCaseVectorCacheHashGetAll(historicalCaseVectorCacheHashKey)
 	if err != nil {
 		return nil, false, err
 	}
@@ -261,7 +301,7 @@ func loadHistoricalCaseVectorCacheFromRedis() ([]HistoricalCaseRecord, bool, err
 }
 
 func replaceHistoricalCaseVectorCache(records []HistoricalCaseRecord) error {
-	if err := cache.Delete(historicalCaseVectorCacheHashKey); err != nil {
+	if err := historicalCaseVectorCacheDelete(historicalCaseVectorCacheHashKey); err != nil {
 		return err
 	}
 
@@ -272,12 +312,12 @@ func replaceHistoricalCaseVectorCache(records []HistoricalCaseRecord) error {
 		}
 		normalized := cloneHistoricalCaseRecord(item)
 		normalized.CaseID = trimmedCaseID
-		if err := cache.HashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
+		if err := historicalCaseVectorCacheHashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
 			return err
 		}
 	}
 
-	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+	if err := historicalCaseVectorCacheReadySet(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
 		return err
 	}
 	return nil
@@ -290,15 +330,18 @@ func upsertHistoricalCaseVectorCache(record HistoricalCaseRecord) {
 		return
 	}
 
-	ensureHistoricalCaseVectorCacheReady()
+	if _, err := ensureHistoricalCaseVectorCacheReady(); err != nil {
+		log.Printf("[case_library] ensure vector cache ready before upsert failed: case_id=%s err=%v", trimmedCaseID, err)
+		return
+	}
 
 	normalized := cloneHistoricalCaseRecord(record)
 	normalized.CaseID = trimmedCaseID
-	if err := cache.HashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
+	if err := historicalCaseVectorCacheHashSetJSON(historicalCaseVectorCacheHashKey, trimmedCaseID, normalized); err != nil {
 		log.Printf("[case_library] upsert vector cache failed: case_id=%s err=%v", trimmedCaseID, err)
 		return
 	}
-	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+	if err := historicalCaseVectorCacheReadySet(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
 		log.Printf("[case_library] mark vector cache ready failed: case_id=%s err=%v", trimmedCaseID, err)
 	}
 }
@@ -310,36 +353,43 @@ func removeHistoricalCaseVectorCache(caseID string) {
 		return
 	}
 
-	ensureHistoricalCaseVectorCacheReady()
+	if _, err := ensureHistoricalCaseVectorCacheReady(); err != nil {
+		log.Printf("[case_library] ensure vector cache ready before remove failed: case_id=%s err=%v", trimmedCaseID, err)
+		return
+	}
 
-	if err := cache.HashDelete(historicalCaseVectorCacheHashKey, trimmedCaseID); err != nil {
+	if err := historicalCaseVectorCacheHashDelete(historicalCaseVectorCacheHashKey, trimmedCaseID); err != nil {
 		log.Printf("[case_library] remove vector cache failed: case_id=%s err=%v", trimmedCaseID, err)
 		return
 	}
-	if err := cache.SetJSON(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
+	if err := historicalCaseVectorCacheReadySet(historicalCaseVectorCacheReadyKey, true, 0); err != nil {
 		log.Printf("[case_library] mark vector cache ready failed: case_id=%s err=%v", trimmedCaseID, err)
 	}
 }
 
-func ensureHistoricalCaseVectorCacheReady() {
+func ensureHistoricalCaseVectorCacheReady() (bool, error) {
 	var ready bool
-	found, err := cache.GetJSON(historicalCaseVectorCacheReadyKey, &ready)
+	found, err := historicalCaseVectorCacheReadyGet(historicalCaseVectorCacheReadyKey, &ready)
 	if err != nil {
-		log.Printf("[case_library] read vector cache ready flag failed: %v", err)
-		return
+		return false, fmt.Errorf("read vector cache ready flag failed: %w", err)
 	}
 	if found && ready {
-		return
+		return true, nil
 	}
 
 	records, err := queryAllHistoricalCasesFromDB()
 	if err != nil {
-		log.Printf("[case_library] query all cases for cache warmup failed: %v", err)
-		return
+		return false, fmt.Errorf("query all cases for cache warmup failed: %w", err)
 	}
 	if err := replaceHistoricalCaseVectorCache(records); err != nil {
-		log.Printf("[case_library] warmup vector cache failed: %v", err)
+		return false, fmt.Errorf("warmup vector cache failed: %w", err)
 	}
+	return true, nil
+}
+
+func WarmupHistoricalCaseVectorCache() error {
+	_, err := ensureHistoricalCaseVectorCacheReady()
+	return err
 }
 
 func cloneHistoricalCaseRecords(records []HistoricalCaseRecord) []HistoricalCaseRecord {
