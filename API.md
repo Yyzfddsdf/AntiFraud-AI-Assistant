@@ -399,6 +399,61 @@
 
 ---
 
+## 6.1) 单图快速风险识别（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/image/quick-analyze`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+### 请求体
+
+```json
+{
+  "image": "<image_base64_or_data_url>"
+}
+```
+
+### 说明
+
+- 该接口面向“单张图片快速判别”场景，直接同步返回结果，不会创建异步任务。
+- 使用配置文件中的 `agents.image_quick` 模型与 `prompts.image_quick` 提示词。
+- `image` 支持纯 Base64 字符串，也支持 `data:image/...;base64,...` 形式的 Data URL。
+- 模型会被约束通过标准化工具输出，只返回两项：
+  - `risk_level`：`高 / 中 / 低`
+  - `reason`：简洁、客观、可追踪的判断理由
+- 该接口不会写入任务队列、历史记录或案件库，适合作为前置快速筛查。
+
+### 成功响应（200）
+
+```json
+{
+  "risk_level": "高",
+  "reason": "图片中出现仿冒客服页面、收款信息和明显转账引导，存在较强诈骗风险。"
+}
+```
+
+### 常见失败响应
+
+- `400` 请求参数错误 / `image` 为空
+- `401` 未认证
+- `502` 上游模型调用失败 / 模型未按约定返回标准化结果
+
+### cURL 示例
+
+```bash
+curl -X POST "http://localhost:8081/api/scam/image/quick-analyze" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image": "<image_base64_or_data_url>"
+  }'
+```
+
+---
+
 ## 7) 查询当前用户进行中任务（需鉴权）
 
 - **Method**: `GET`

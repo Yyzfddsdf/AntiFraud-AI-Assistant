@@ -108,6 +108,7 @@ func main() {
 		api.POST("/chat/refresh", chatapi.RefreshChatContextHandle)
 		api.GET("/alert/ws", httpapi.AlertWebSocketHandle)
 		family_system.RegisterRoutes(api, familyService)
+		api.POST("/scam/image/quick-analyze", httpapi.AnalyzeImageQuickHandle)
 		api.POST("/scam/multimodal/analyze", httpapi.AnalyzeMultimodalScamHandle)
 		api.GET("/scam/multimodal/tasks", httpapi.GetMultimodalTaskStateHandle)
 		api.GET("/scam/multimodal/history", httpapi.GetMultimodalHistoryHandle)

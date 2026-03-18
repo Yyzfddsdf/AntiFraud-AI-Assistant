@@ -4,6 +4,7 @@
 
 - 登录鉴权与账号体系（验证码、注册、登录、JWT、管理员权限、限流）
 - 多智能体多模态分析（文本/图像/视频/音频、异步任务、历史归档）
+- 单图快速风险识别（同步返回风险等级与理由）
 - **双重防护网：防诈知识库 + 个性化记忆系统**（全局相似案件检索、用户历史案件语义召回）
 - 主分析流程按需自动提交案件审核（典型案例先进入待审核队列，管理员审核通过后入库知识库）
 - 管理员可发起后台案件采集任务，智能体联网检索后会逐条写入待审核案件库
@@ -62,13 +63,13 @@ go run .
 配置职责：
 
 - `config/config.json`：
-  - `agents.main / image / video / audio`：多智能体模型参数
+  - `agents.main / image / image_quick / video / audio`：多智能体模型参数
   - `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `redis`：统一缓存配置（`addr`、`password`、`db`）
   - `alert_ws`：实时告警轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `family_alert_ws`：家庭通知 WebSocket 轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
-  - `prompts.main / image / video / audio`：提示词
+  - `prompts.main / image / image_quick / video / audio`：提示词
   - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
 说明：聊天模块配置已并入主配置文件（`chat_system/config/config.go` 已移除），聊天上下文存取统一走 `cache/` 模块，实际 Redis 连接由 `config/config.json` 的 `redis` 节点决定。
@@ -420,6 +421,7 @@ python scripts/backfill_user_history_vectors.py
 - 通用基类 `SubAgentBase`：统一请求构造、重试、工具结果解析
 - 并发处理：`AnalyzeBatchInParallel` 按输入并行，减少总时延
 - 统一结构化输出：子智能体强制通过 `submit_analysis_result` 工具返回，输出格式稳定
+- 独立快速识别链路：`ImageQuickAgent` 读取 `agents.image_quick` / `prompts.image_quick`，同步返回 `risk_level` 与 `reason`，不进入任务队列、不写历史归档
 - 模态兼容：
   - 图像 `image_url`
   - 视频 `video_url`
@@ -590,6 +592,7 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 
 多模态任务：
 
+- `POST /api/scam/image/quick-analyze`
 - `POST /api/scam/multimodal/analyze`
 - `GET /api/scam/multimodal/tasks`
 - `GET /api/scam/multimodal/tasks/:taskId`
@@ -649,12 +652,13 @@ go test ./...
 本地联调建议：
 
 1. 先注册/登录拿 JWT
-2. 建立 `/api/alert/ws` WebSocket 连接并观察连接状态
-3. 提交多模态任务并轮询详情
-4. 检查历史归档、风险等级、report 与实时告警一致性
-5. 使用管理员账号上传历史案件并验证相似检索结果
-6. 提交多模态分析后，检查 `pending_review_cases` 表有新记录；管理员审核通过后检查 `historical_case_library` 表有新增
-7. 使用管理员账号调用 `/api/scam/case-collection/search`，确认后台采集任务会逐条把案件写入 `pending_review_cases`
+2. 调用 `/api/scam/image/quick-analyze` 验证单图快速风险识别同步返回
+3. 建立 `/api/alert/ws` WebSocket 连接并观察连接状态
+4. 提交多模态任务并轮询详情
+5. 检查历史归档、风险等级、report 与实时告警一致性
+6. 使用管理员账号上传历史案件并验证相似检索结果
+7. 提交多模态分析后，检查 `pending_review_cases` 表有新记录；管理员审核通过后检查 `historical_case_library` 表有新增
+8. 使用管理员账号调用 `/api/scam/case-collection/search`，确认后台采集任务会逐条把案件写入 `pending_review_cases`
 
 ---
 

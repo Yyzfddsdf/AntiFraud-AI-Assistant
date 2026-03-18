@@ -65,6 +65,7 @@ type AlertWSConfig struct {
 type AgentModelConfig struct {
 	Main           ModelConfig `json:"main"`
 	Image          ModelConfig `json:"image"`
+	ImageQuick     ModelConfig `json:"image_quick"`
 	Video          ModelConfig `json:"video"`
 	Audio          ModelConfig `json:"audio"`
 	CaseCollection ModelConfig `json:"case_collection"`
@@ -74,6 +75,7 @@ type AgentModelConfig struct {
 type PromptConfig struct {
 	Main           string `json:"main"`
 	Image          string `json:"image"`
+	ImageQuick     string `json:"image_quick"`
 	Video          string `json:"video"`
 	Audio          string `json:"audio"`
 	CaseCollection string `json:"case_collection"`
@@ -152,6 +154,7 @@ func cloneConfig(cfg *Config) *Config {
 func (c *Config) normalize() {
 	c.Agents.Main = normalizeModel(c.Agents.Main)
 	c.Agents.Image = normalizeModel(c.Agents.Image)
+	c.Agents.ImageQuick = normalizeModel(c.Agents.ImageQuick)
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
 	c.Agents.CaseCollection = normalizeModel(c.Agents.CaseCollection)
@@ -161,6 +164,7 @@ func (c *Config) normalize() {
 	c.Redis = normalizeRedis(c.Redis)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
+	c.Prompts.ImageQuick = strings.TrimSpace(c.Prompts.ImageQuick)
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
 	c.Prompts.Audio = strings.TrimSpace(c.Prompts.Audio)
 	c.Prompts.CaseCollection = strings.TrimSpace(c.Prompts.CaseCollection)
@@ -258,6 +262,9 @@ func (c Config) validate() error {
 	if err := validateModel("agents.image", c.Agents.Image); err != nil {
 		return err
 	}
+	if err := validateModel("agents.image_quick", c.Agents.ImageQuick); err != nil {
+		return err
+	}
 	if err := validateModel("agents.video", c.Agents.Video); err != nil {
 		return err
 	}
@@ -280,6 +287,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validatePrompt("prompts.image", c.Prompts.Image); err != nil {
+		return err
+	}
+	if err := validatePrompt("prompts.image_quick", c.Prompts.ImageQuick); err != nil {
 		return err
 	}
 	if err := validatePrompt("prompts.video", c.Prompts.Video); err != nil {
