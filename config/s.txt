@@ -1,5 +1,0 @@
-"embedding":  {
-                      "model":  "baai/bge-m3",
-                      "api_key":  "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",
-                      "base_url":  "https://integrate.api.nvidia.com/v1"
-                  }
