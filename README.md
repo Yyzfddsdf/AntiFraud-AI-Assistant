@@ -108,48 +108,52 @@ go run .
 ## 6. 系统架构图
 
 ```mermaid
-flowchart LR
-    U[Web 前端<br/>login_system/web] -->|JWT + API 调用| G[Gin API 层<br/>main.go + httpapi]
-    G --> A[鉴权与账号模块<br/>login_system]
-    G --> F[家庭系统<br/>family_system]
-    G --> C[聊天系统<br/>chat_system]
-    G --> M[多智能体编排<br/>multi_agent]
-    G --> L[案件库管理 API<br/>multi_agent/httpapi/historical_case_handler]
-    G --> RV[案件审核 API<br/>multi_agent/httpapi/review_handler]
+flowchart TB
+    USER[Web / Mobile / API 调用方]
+    API[统一接入层<br/>main.go + Gin]
 
-    C --> R[(Redis<br/>统一缓存层)]
-    A --> R
-    C --> O[LLM 客户端<br/>llm]
+    subgraph Modules["业务模块"]
+        LOGIN[登录鉴权模块<br/>login_system]
+        PROFILE[用户画像模块<br/>user_profile_system]
+        FAMILY[家庭守护模块<br/>family_system]
+        CHAT[聊天模块<br/>chat_system]
+        AGENTSYS[智能体分析与案件管理模块<br/>multi_agent]
+    end
 
-    M --> Q[任务队列<br/>multi_agent/queue]
-    Q --> S[任务状态存储<br/>multi_agent/state]
-    M --> T[工具层<br/>multi_agent/tool]
-    T --> CL[案件库检索<br/>multi_agent/case_library]
-    M --> O
-    T --> O
-    CL --> O
-    CL --> R
+    subgraph Infra["基础设施"]
+        MAINDB[(主业务库<br/>DB/auth_system.db)]
+        HISTDB[(案件库<br/>DB/historical_case_library.db)]
+        REDIS[(Redis)]
+        EXT[外部模型 / 搜索服务]
+    end
 
-    A --> DB1[(SQLite: auth_system.db)]
-    F --> DB1
-    S --> DB1
-    CL --> DB2[(SQLite: historical_case_library.db)]
-    L --> CL
-    RV --> CL
+    USER --> API
+    API --> LOGIN
+    API --> PROFILE
+    API --> FAMILY
+    API --> CHAT
+    API --> AGENTSYS
 
-    O --> X[OpenAI 兼容模型服务]
+    LOGIN --> MAINDB
+    PROFILE --> MAINDB
+    FAMILY --> MAINDB
+    CHAT --> REDIS
+    CHAT --> EXT
+    AGENTSYS --> MAINDB
+    AGENTSYS --> HISTDB
+    AGENTSYS --> REDIS
+    AGENTSYS --> EXT
+
+    AGENTSYS -. 高风险事件通知 .-> FAMILY
 ```
 
 架构说明（摘要）：
 
-- API 层统一接入鉴权、聊天、多模态分析、案件库管理、案件审核。
-- 启动阶段通过 `database.InitPersistence()` 一次性完成主业务库连接、历史案件库连接以及主业务 schema 初始化，减少分散建表点。
-- 家庭系统通过独立路由管理“家庭组 / 家庭成员 / 邀请 / 守护关系 / 家庭通知”，与鉴权和多模态主流程解耦。
-- 多模态任务走“入队 -> 子智能体并发分析 -> 主智能体工具闭环 -> 归档”流程。
-- 家庭通知不直接侵入分析主链路，而是通过“历史归档事件 -> 家庭通知服务”方式接收高风险事件。
-- 数据层双库隔离：业务库（用户/任务）与案件知识库（结构化字段 + 向量）分离。
-- Redis 统一缓存层承载验证码、限流桶、向量库管理侧缓存与聊天上下文。
-- 模型调用统一走 `llm` 客户端，支持 Chat / Embedding / SSE。
+- 第 6 节只保留系统模块边界，不展开智能体内部分析过程；完整分析链路见下一节“智能体交互图”。
+- `main.go` 统一挂载公开认证接口、受保护业务接口和静态页面入口，再把请求分发到登录、画像、家庭、聊天和智能体分析模块。
+- 数据层保持双库隔离：主业务库承载用户、家庭、任务和历史归档；案件库承载历史案件知识库与待审核案件。
+- Redis 统一承担验证码、限流、聊天上下文和案件向量缓存；聊天模块与智能体模块都会访问外部模型或搜索服务。
+- 家庭系统与智能体主链路保持解耦，只在“高风险历史事件”产生后接收通知回调。
 
 ---
 
@@ -157,29 +161,70 @@ flowchart LR
 
 字符串式简流程：
 
-`用户输入(text/images/videos/audios) -> 子智能体并发分析(ImageAgent/VideoAgent/AudioAgent) -> 产出各模态 insights -> 主智能体(MainAgent)聚合全部 insights + 原始文本 -> 按规则调用工具(相似案件/用户信息)补充证据 -> 提交风险因子 submit_current_risk_assessment -> 系统计算 risk_score/结构化摘要 -> 主智能体给出最终结论 submit_final_report -> (可选) 典型案例提交审核 upload_historical_case_to_vector_db -> 写入历史 write_user_history_case -> 任务结束`
+`POST /api/scam/multimodal/analyze -> state.CreateTask(pending) -> queue.processTask -> MarkTaskProcessing -> ImageAgent/VideoAgent/AudioAgent 并发产出 insights -> MainAgent 聚合文本与多模态证据 -> 工具循环(query_user_info / search_similar_cases / search_user_history / update_user_recent_tags[可选] / submit_current_risk_assessment / resolve_dynamic_risk_level / submit_final_report / upload_historical_case_to_vector_db[可选] / write_user_history_case) -> history_cases -> user_history_vectors -> 高风险事件回调 family_system -> state.MarkTaskCompleted`
 
 ```mermaid
-flowchart LR
-    U[用户输入 text/images/videos/audios]
-    SA[子智能体并发分析<br/>ImageAgent / VideoAgent / AudioAgent]
-    I[多模态 insights]
-    MA[主智能体聚合分析<br/>MainAgent]
-    T[工具补充证据<br/>相似案件/用户信息]
-    S[submit_current_risk_assessment<br/>本次案件评分]
-    R[submit_final_report 最终结论]
-    H[write_user_history_case 历史归档]
-    E[任务结束]
+flowchart TB
+    REQ[POST /api/scam/multimodal/analyze]
+    CREATE[state.CreateTask<br/>写入 pending_tasks]
+    PROC[queue.processTask<br/>MarkTaskProcessing]
 
-    U --> SA --> I --> MA --> T --> MA --> S --> MA --> R --> H --> E
+    subgraph SA["子智能体并发分析"]
+        IMG[ImageAgent]
+        VID[VideoAgent]
+        AUD[AudioAgent]
+    end
+
+    MERGE[MainAgent 聚合输入<br/>原始文本 + image/video/audio insights]
+
+    subgraph TOOLS["MainAgent 工具闭环"]
+        UINFO[query_user_info<br/>读取画像 + historical_score]
+        KB[search_similar_cases<br/>检索历史案件知识库]
+        UH[search_user_history<br/>检索当前用户历史案件]
+        TAGS[update_user_recent_tags<br/>可选，更新近期标签]
+        SCORE[submit_current_risk_assessment<br/>计算当前案件 risk_score]
+        LEVEL[resolve_dynamic_risk_level<br/>结合 historical_score 和命中结果得出 risk_level]
+        FINAL[submit_final_report<br/>生成最终结构化报告]
+        REVIEW[upload_historical_case_to_vector_db<br/>可选，写入 pending_review_cases]
+        ARCHIVE[write_user_history_case<br/>必选，写入 history_cases]
+    end
+
+    HISTORY[history_cases]
+    VECTOR[user_history_vectors]
+    FAMILY[family_system.HandleRiskEvent<br/>仅高风险触发]
+    DONE[state.MarkTaskCompleted]
+    FAILED[state.MarkTaskFailed]
+    ADMIN[管理员审核 approve/reject]
+    CASEDB[historical_case_library]
+
+    REQ --> CREATE --> PROC
+    PROC --> IMG
+    PROC --> VID
+    PROC --> AUD
+    IMG --> MERGE
+    VID --> MERGE
+    AUD --> MERGE
+
+    MERGE --> UINFO --> KB --> UH --> SCORE --> LEVEL --> FINAL --> ARCHIVE
+    UH -. 可选更新近期标签 .-> TAGS
+    TAGS -. 可选，不阻塞主链路 .-> SCORE
+    FINAL -. 典型案例可选提交 .-> REVIEW --> ADMIN --> CASEDB
+    KB -. 检索结果参与判断 .-> LEVEL
+    UH -. 检索结果参与判断 .-> LEVEL
+
+    ARCHIVE --> HISTORY --> VECTOR --> DONE
+    HISTORY -. 高风险事件 .-> FAMILY
+    PROC -. 任意阶段异常 .-> FAILED
 ```
 
 交互规则（关键约束）：
 
-- 子智能体只负责各自模态的结构化提取，不直接写历史归档。
-- 主智能体必须先调用 `submit_current_risk_assessment` 计算本次案件 `risk_score`，再调用 `submit_final_report`；若判定为典型案例（高/中/低风险均可）可调用 `upload_historical_case_to_vector_db`（案件进入待审核队列，管理员审核通过后才真正入库知识库）；最终必须 `write_user_history_case` 并结束。
-- 任务状态由 `state` 统一维护：`pending -> processing -> completed/failed`。
-- 工具层负责“查询/归档动作”，模型层负责“推理与决策”。
+- 子智能体只做模态级结构化提取，不直接落库、不直接写最终报告。
+- 主智能体先聚合原始文本和多模态 `insights`，再进入工具循环；知识库检索和用户历史检索负责补充证据，不负责直接给最终结论。
+- `submit_current_risk_assessment` 是当前案件评分入口；`resolve_dynamic_risk_level` 依赖 `query_user_info` 提供的 `historical_score`，并结合知识库/用户历史命中结果推导最终风险等级。
+- `submit_final_report` 用于生成最终结构化报告；若案件具备典型性，可额外调用 `upload_historical_case_to_vector_db` 把案件送入 `pending_review_cases`，等待管理员审核后再进入正式知识库。
+- `write_user_history_case` 是任务终态必选步骤：它会把案件写入 `history_cases`，并进一步写入 `user_history_vectors` 语义索引；高风险历史记录随后会触发家庭系统通知回调。
+- 任务状态由 `state` 统一维护，状态流转为 `pending -> processing -> completed/failed`。
 
 ---
 
