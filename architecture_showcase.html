@@ -89,7 +89,7 @@
             justify-content: space-between;
             gap: 18px;
             margin-bottom: 22px;
-            padding: 14px 18px;
+            padding: 12px 16px;
             border-radius: 999px;
             background: rgba(255, 255, 255, 0.84);
             border: 1px solid rgba(226, 232, 240, 0.88);
@@ -104,15 +104,15 @@
         }
 
         .brand-mark {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
             display: grid;
             place-items: center;
             background: linear-gradient(145deg, #ecf5ff 0%, #e7f3ff 48%, #f5fbff 100%);
             color: #346ea7;
             box-shadow: 0 10px 24px rgba(102, 183, 255, 0.14);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 800;
             letter-spacing: 0.18em;
         }
@@ -131,7 +131,7 @@
         .brand-copy strong {
             display: block;
             margin-top: 4px;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
             letter-spacing: -0.04em;
         }
@@ -146,9 +146,9 @@
         .nav-links a {
             text-decoration: none;
             color: #13263c;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 999px;
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(203, 213, 225, 0.68);
@@ -165,7 +165,7 @@
             position: relative;
             overflow: hidden;
             border-radius: 36px;
-            padding: 42px;
+            padding: 34px;
             background:
                 radial-gradient(circle at top right, rgba(102, 183, 255, 0.10), transparent 24%),
                 linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(249, 251, 255, 0.94) 100%);
@@ -179,13 +179,7 @@
         }
 
         .hero::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.20) 32%, transparent 58%);
-            transform: translateX(-100%);
-            animation: sheen 6.2s ease-in-out infinite;
-            pointer-events: none;
+            content: none;
         }
 
         @keyframes sheen {
@@ -196,8 +190,8 @@
 
         .hero-title {
             margin: 12px 0 14px;
-            font-size: clamp(42px, 5vw, 74px);
-            line-height: 0.95;
+            font-size: clamp(34px, 4.4vw, 58px);
+            line-height: 0.98;
             letter-spacing: -0.06em;
             font-weight: 800;
         }
@@ -205,8 +199,8 @@
         .hero-lead {
             max-width: 720px;
             margin: 0 0 22px;
-            font-size: 17px;
-            line-height: 1.75;
+            font-size: 15px;
+            line-height: 1.68;
             color: var(--muted);
         }
 
@@ -221,10 +215,10 @@
             align-items: center;
             gap: 8px;
             border-radius: 999px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             background: #ffffff;
             border: 1px solid rgba(203, 213, 225, 0.7);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: #11253b;
         }
@@ -246,12 +240,12 @@
 
         .metric-card {
             border-radius: 26px;
-            padding: 22px 20px;
+            padding: 18px 18px;
             color: var(--ink);
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 28px rgba(148, 163, 184, 0.12);
-            min-height: 132px;
+            min-height: 118px;
             border: 1px solid rgba(203, 213, 225, 0.58);
         }
 
@@ -267,26 +261,26 @@
 
         .metric-card strong {
             display: block;
-            font-size: 32px;
+            font-size: 26px;
             line-height: 1;
             letter-spacing: -0.05em;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .metric-card span {
             display: block;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             opacity: 0.82;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .metric-card p {
             margin: 0;
-            font-size: 13px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.55;
             color: var(--muted);
         }
 
@@ -314,7 +308,7 @@
         .section-card {
             position: relative;
             border-radius: var(--radius-xl);
-            padding: 28px;
+            padding: 24px;
             background: var(--panel);
             border: 1px solid rgba(226, 232, 240, 0.84);
             backdrop-filter: blur(18px);
@@ -331,8 +325,8 @@
 
         .section-head h2 {
             margin: 10px 0 8px;
-            font-size: clamp(30px, 4vw, 48px);
-            line-height: 0.96;
+            font-size: clamp(24px, 3vw, 38px);
+            line-height: 1;
             letter-spacing: -0.05em;
             font-weight: 800;
         }
@@ -341,8 +335,8 @@
             max-width: 720px;
             margin: 0;
             color: var(--muted);
-            line-height: 1.75;
-            font-size: 15px;
+            line-height: 1.68;
+            font-size: 14px;
         }
 
         .legend {
@@ -356,9 +350,9 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -394,7 +388,7 @@
         .board {
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 251, 255, 0.96) 100%);
             border-radius: 30px;
-            padding: 26px;
+            padding: 22px;
             border: 1px solid rgba(226, 232, 240, 0.92);
             color: var(--ink);
             position: relative;
@@ -421,9 +415,9 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            margin: 18px 0;
+            margin: 16px 0;
             color: #7a8799;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.18em;
             text-transform: uppercase;
@@ -434,7 +428,7 @@
             content: "";
             height: 1px;
             flex: 1;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.38), transparent);
         }
 
         .entry-grid,
@@ -460,15 +454,15 @@
         }
 
         .node {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid rgba(203, 213, 225, 0.66);
             border-radius: 22px;
-            padding: 18px;
-            min-height: 158px;
+            padding: 16px;
+            min-height: 144px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            box-shadow: 0 10px 24px rgba(148, 163, 184, 0.08);
         }
 
         .node--hub {
@@ -476,9 +470,9 @@
             margin: 0 auto;
             min-height: auto;
             text-align: center;
-            padding: 24px 28px;
-            background: linear-gradient(180deg, rgba(87, 208, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%);
-            border-color: rgba(87, 208, 255, 0.24);
+            padding: 20px 24px;
+            background: linear-gradient(180deg, #f1f8ff 0%, #ffffff 100%);
+            border-color: rgba(102, 183, 255, 0.28);
         }
 
         .node-kicker {
@@ -486,14 +480,14 @@
             align-items: center;
             gap: 8px;
             align-self: flex-start;
-            padding: 8px 12px;
+            padding: 7px 10px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
-            font-size: 11px;
+            background: #eff6ff;
+            font-size: 10px;
             font-weight: 800;
             letter-spacing: 0.10em;
             text-transform: uppercase;
-            color: rgba(248, 251, 255, 0.80);
+            color: #43617d;
         }
 
         .node-kicker::before {
@@ -506,40 +500,41 @@
 
         .node h3 {
             margin: 0;
-            font-size: 23px;
-            line-height: 1.05;
+            font-size: 19px;
+            line-height: 1.08;
             letter-spacing: -0.04em;
         }
 
         .node p {
             margin: 0;
-            font-size: 14px;
-            line-height: 1.7;
-            color: rgba(248, 251, 255, 0.72);
+            font-size: 13px;
+            line-height: 1.62;
+            color: var(--muted);
         }
 
         .node-path {
             display: inline-flex;
             align-items: center;
             align-self: flex-start;
-            padding: 8px 11px;
+            padding: 7px 10px;
             border-radius: 12px;
-            background: rgba(0, 0, 0, 0.18);
-            color: rgba(248, 251, 255, 0.84);
-            font-size: 12px;
+            background: #f8fafc;
+            color: #4b5f79;
+            font-size: 11px;
             font-weight: 700;
+            border: 1px solid rgba(203, 213, 225, 0.56);
         }
 
         .callout-ribbon {
             margin: 18px auto 0;
             max-width: 860px;
-            padding: 16px 20px;
+            padding: 14px 18px;
             border-radius: 20px;
-            background: linear-gradient(90deg, rgba(51, 212, 181, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%);
-            border: 1px solid rgba(51, 212, 181, 0.20);
-            color: rgba(248, 251, 255, 0.82);
-            font-size: 14px;
-            line-height: 1.75;
+            background: linear-gradient(90deg, rgba(103, 203, 184, 0.14) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border: 1px solid rgba(103, 203, 184, 0.22);
+            color: #28535c;
+            font-size: 13px;
+            line-height: 1.68;
             text-align: center;
         }
 
@@ -556,7 +551,7 @@
             top: 18px;
             bottom: 18px;
             width: 2px;
-            background: linear-gradient(180deg, rgba(87, 208, 255, 0.72) 0%, rgba(51, 212, 181, 0.38) 50%, rgba(255, 127, 127, 0.40) 100%);
+            background: linear-gradient(180deg, rgba(102, 183, 255, 0.42) 0%, rgba(103, 203, 184, 0.24) 50%, rgba(227, 140, 151, 0.24) 100%);
         }
 
         .phase {
@@ -569,20 +564,20 @@
         .phase-index {
             position: sticky;
             top: 18px;
-            width: 70px;
-            height: 70px;
+            width: 62px;
+            height: 62px;
             border-radius: 22px;
-            background: linear-gradient(180deg, rgba(87, 208, 255, 0.18) 0%, rgba(255, 255, 255, 0.12) 100%);
-            border: 1px solid rgba(87, 208, 255, 0.26);
+            background: linear-gradient(180deg, #edf6ff 0%, #ffffff 100%);
+            border: 1px solid rgba(102, 183, 255, 0.28);
             display: grid;
             place-items: center;
-            color: var(--white);
-            box-shadow: 0 16px 28px rgba(8, 22, 38, 0.24);
+            color: #2e5f91;
+            box-shadow: 0 10px 24px rgba(148, 163, 184, 0.10);
         }
 
         .phase-index strong {
             display: block;
-            font-size: 24px;
+            font-size: 21px;
             line-height: 1;
             letter-spacing: -0.05em;
         }
@@ -590,7 +585,7 @@
         .phase-index span {
             display: block;
             margin-top: 4px;
-            font-size: 10px;
+            font-size: 9px;
             letter-spacing: 0.14em;
             text-transform: uppercase;
             opacity: 0.74;
@@ -598,10 +593,10 @@
 
         .phase-card {
             border-radius: 24px;
-            padding: 22px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.10);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border: 1px solid rgba(203, 213, 225, 0.70);
+            box-shadow: 0 10px 24px rgba(148, 163, 184, 0.08);
         }
 
         .phase-top {
@@ -614,29 +609,29 @@
 
         .phase-top h3 {
             margin: 0 0 6px;
-            font-size: 28px;
+            font-size: 23px;
             letter-spacing: -0.05em;
             line-height: 1;
         }
 
         .phase-top p {
             margin: 0;
-            color: rgba(248, 251, 255, 0.72);
-            font-size: 14px;
-            line-height: 1.7;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.62;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--white);
+            color: var(--ink);
             flex-shrink: 0;
         }
 
@@ -681,17 +676,56 @@
             align-items: center;
         }
 
+        .mini-flow > .mini-node,
+        .tool-stack > .tool-chip,
+        .tool-stack > .track-chip {
+            position: relative;
+        }
+
+        .mini-flow > .mini-node:not(:last-child),
+        .tool-stack > .tool-chip:not(:last-child),
+        .tool-stack > .track-chip:not(:last-child) {
+            margin-right: 18px;
+        }
+
+        .mini-flow > .mini-node:not(:last-child)::after,
+        .tool-stack > .tool-chip:not(:last-child)::after,
+        .tool-stack > .track-chip:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: -15px;
+            width: 12px;
+            border-top: 1.5px solid rgba(148, 163, 184, 0.78);
+            transform: translateY(-50%);
+        }
+
+        .mini-flow > .mini-node:not(:last-child)::before,
+        .tool-stack > .tool-chip:not(:last-child)::before,
+        .tool-stack > .track-chip:not(:last-child)::before {
+            content: "";
+            position: absolute;
+            top: calc(50% - 3px);
+            right: -15px;
+            width: 6px;
+            height: 6px;
+            border-top: 1.5px solid rgba(148, 163, 184, 0.78);
+            border-right: 1.5px solid rgba(148, 163, 184, 0.78);
+            transform: rotate(45deg);
+            background: transparent;
+        }
+
         .mini-node,
         .tool-chip,
         .track-chip {
-            padding: 12px 14px;
+            padding: 10px 12px;
             border-radius: 16px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.10);
-            color: rgba(248, 251, 255, 0.86);
-            font-size: 13px;
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 225, 0.72);
+            color: #21344a;
+            font-size: 12px;
             font-weight: 700;
-            line-height: 1.55;
+            line-height: 1.45;
         }
 
         .parallel-grid {
@@ -703,9 +737,9 @@
         .branch-card,
         .decision-strip {
             border-radius: 20px;
-            padding: 18px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 225, 0.68);
         }
 
         .parallel-card h4,
@@ -713,7 +747,7 @@
         .branch-card h4,
         .decision-strip h4 {
             margin: 0 0 8px;
-            font-size: 18px;
+            font-size: 16px;
             letter-spacing: -0.04em;
         }
 
@@ -722,9 +756,9 @@
         .branch-card p,
         .decision-strip p {
             margin: 0;
-            color: rgba(248, 251, 255, 0.72);
-            font-size: 13px;
-            line-height: 1.65;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.58;
         }
 
         .tool-grid {
@@ -737,30 +771,30 @@
 
         .tool-chip--optional {
             border-style: dashed;
-            border-color: rgba(255, 188, 88, 0.30);
-            color: #ffd79d;
-            background: rgba(255, 188, 88, 0.08);
+            border-color: rgba(231, 183, 101, 0.42);
+            color: #8a6420;
+            background: #fff7e8;
         }
 
         .tool-chip--required {
-            border-color: rgba(87, 208, 255, 0.24);
+            border-color: rgba(102, 183, 255, 0.36);
         }
 
         .decision-strip {
             margin-top: 16px;
-            background: linear-gradient(90deg, rgba(87, 208, 255, 0.10) 0%, rgba(157, 145, 255, 0.10) 52%, rgba(255, 188, 88, 0.08) 100%);
-            border-color: rgba(87, 208, 255, 0.18);
+            background: linear-gradient(90deg, rgba(102, 183, 255, 0.10) 0%, rgba(158, 157, 232, 0.08) 52%, rgba(231, 183, 101, 0.08) 100%);
+            border-color: rgba(102, 183, 255, 0.24);
         }
 
         .decision-strip strong {
             display: inline-block;
             margin-top: 10px;
-            font-size: 13px;
-            color: #dff8ff;
+            font-size: 12px;
+            color: #254c73;
             padding: 10px 12px;
             border-radius: 14px;
-            background: rgba(0, 0, 0, 0.18);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #ffffff;
+            border: 1px solid rgba(191, 219, 254, 0.82);
         }
 
         .branch-grid {
@@ -770,29 +804,29 @@
 
         .branch-card--optional {
             border-style: dashed;
-            border-color: rgba(255, 188, 88, 0.22);
-            background: rgba(255, 188, 88, 0.06);
+            border-color: rgba(231, 183, 101, 0.36);
+            background: #fffaf0;
         }
 
         .branch-card--auto {
-            border-color: rgba(51, 212, 181, 0.20);
-            background: rgba(51, 212, 181, 0.06);
+            border-color: rgba(103, 203, 184, 0.30);
+            background: #f4fcfa;
         }
 
         .branch-card--error {
-            border-color: rgba(255, 127, 127, 0.20);
-            background: rgba(255, 127, 127, 0.05);
+            border-color: rgba(227, 140, 151, 0.28);
+            background: #fff7f8;
         }
 
         .footer-note {
             margin-top: 20px;
             padding: 18px 20px;
             border-radius: 22px;
-            background: rgba(255, 255, 255, 0.74);
-            border: 1px solid rgba(19, 38, 60, 0.10);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 225, 0.72);
             color: #203349;
-            font-size: 14px;
-            line-height: 1.75;
+            font-size: 13px;
+            line-height: 1.68;
         }
 
         .footer-note strong {
@@ -803,7 +837,7 @@
             margin-top: 22px;
             text-align: center;
             color: #5c6c7f;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.8;
         }
 
@@ -867,6 +901,21 @@
 
             .phase-index strong {
                 font-size: 19px;
+            }
+
+            .mini-flow > .mini-node:not(:last-child),
+            .tool-stack > .tool-chip:not(:last-child),
+            .tool-stack > .track-chip:not(:last-child) {
+                margin-right: 0;
+            }
+
+            .mini-flow > .mini-node:not(:last-child)::after,
+            .tool-stack > .tool-chip:not(:last-child)::after,
+            .tool-stack > .track-chip:not(:last-child)::after,
+            .mini-flow > .mini-node:not(:last-child)::before,
+            .tool-stack > .tool-chip:not(:last-child)::before,
+            .tool-stack > .track-chip:not(:last-child)::before {
+                content: none;
             }
         }
     </style>
