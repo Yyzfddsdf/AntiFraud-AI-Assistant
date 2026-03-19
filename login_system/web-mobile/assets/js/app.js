@@ -9,6 +9,8 @@ createApp({
         const authMode = ref('login'); // login | register
         const loginMethod = ref('password'); // password | sms
         const activeTab = ref('tasks');
+        const tabRouter = window.SentinelTabConfig?.createMobileTabRouter?.() || null;
+        let stopTabRouter = null;
         const loading = ref(false);
         const analyzing = ref(false);
         const ageEditorVisible = ref(false);
@@ -60,6 +62,31 @@ createApp({
         // Sidebar State
         const isSidebarCollapsed = ref(false);
         const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
+
+        const getRouteContext = () => ({
+            isAuthenticated: isAuthenticated.value,
+            userRole: user.value?.role || ''
+        });
+
+        const applyResolvedRoute = (resolved) => {
+            if (!resolved || !resolved.isAuthenticated) return;
+            if (resolved.activeTab !== activeTab.value) {
+                activeTab.value = resolved.activeTab;
+            }
+        };
+
+        const reconcileRouteState = ({ replace = false } = {}) => {
+            if (!tabRouter) return;
+            applyResolvedRoute(tabRouter.reconcile(getRouteContext(), { replace }));
+        };
+
+        const syncRouteFromActiveTab = ({ replace = false } = {}) => {
+            if (!tabRouter) return;
+            const resolvedTab = tabRouter.sync(getRouteContext(), activeTab.value, { replace });
+            if (isAuthenticated.value && resolvedTab !== activeTab.value) {
+                activeTab.value = resolvedTab;
+            }
+        };
 
         const form = reactive({
             account: '',
@@ -638,6 +665,22 @@ createApp({
             label: String(item.username || '').trim() || '未命名成员',
             hint: String(item.relation || item.role || '').trim() || '被守护成员候选'
         })));
+        const todayRiskStatsSummary = computed(() => {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const tomorrowStart = todayStart + (24 * 60 * 60 * 1000);
+            const todayHistory = (Array.isArray(history.value) ? history.value : []).filter((item) => {
+                const createdAt = new Date(item && item.created_at ? item.created_at : '').getTime();
+                return Number.isFinite(createdAt) && createdAt >= todayStart && createdAt < tomorrowStart;
+            });
+            const countByRiskLevel = (level) => todayHistory.filter((item) => String(item && item.risk_level ? item.risk_level : '').trim() === level).length;
+            return {
+                total: todayHistory.length,
+                high: countByRiskLevel('高'),
+                medium: countByRiskLevel('中'),
+                low: countByRiskLevel('低')
+            };
+        });
         const riskStatsSummary = computed(() => {
             const stats = riskData.value && riskData.value.stats ? riskData.value.stats : {};
             return {
@@ -792,93 +835,16 @@ createApp({
             }
         };
 
-        const buildAuthPayload = () => {
-            if (authMode.value === 'register') {
-                return {
-                    username: form.username.trim(),
-                    email: form.email.trim(),
-                    phone: form.phone.trim(),
-                    password: form.password,
-                    captchaId: captchaId.value,
-                    captchaCode: form.captchaCode.trim(),
-                    smsCode: form.smsCode.trim()
-                };
-            }
-
-            if (loginMethod.value === 'sms') {
-                return {
-                    phone: form.phone.trim(),
-                    smsCode: form.smsCode.trim()
-                };
-            }
-
-            return {
-                account: form.account.trim(),
-                password: form.password,
-                captchaId: captchaId.value,
-                captchaCode: form.captchaCode.trim()
-            };
-        };
-
-        const handleAuth = async () => {
-            loading.value = true;
-            const endpoint = authMode.value === 'login' ? '/auth/login' : '/auth/register';
-            const payload = buildAuthPayload();
-            
-            const res = await request(endpoint, 'POST', payload);
-            loading.value = false;
-            
-            if (res) {
-                if (authMode.value === 'register') {
-                    showToast('注册成功，请登录');
-                    authMode.value = 'login';
-                    loginMethod.value = 'password';
-                    form.account = form.email.trim();
-                    form.password = '';
-                    form.captchaCode = '';
-                    form.smsCode = '';
-                    fetchCaptcha();
-                } else {
-                    token.value = res.token;
-                    localStorage.setItem('token', res.token);
-                    isAuthenticated.value = true;
-                    user.value = res.user;
-                    syncProfileForm(res.user);
-                    fetchOccupationOptions();
-                    showToast('登录成功');
-                    startPolling();
-                }
-            } else if (requiresGraphCaptcha.value) {
-                fetchCaptcha(); // Refresh captcha on fail
-            }
-        };
-
-        const getUserInfo = async () => {
-            const res = await request('/user');
-            if (res) {
-                user.value = res;
-                syncProfileForm(res);
-                fetchOccupationOptions();
-                isAuthenticated.value = true;
-                startPolling();
-            } else {
-                isAuthenticated.value = false;
-            }
-        };
-
-        const logout = () => {
-            token.value = '';
-            localStorage.removeItem('token');
-            isAuthenticated.value = false;
-            user.value = {};
-            syncProfileForm({});
-            stopPolling();
+        const resetAlertState = () => {
             alertDrawerVisible.value = false;
             alertEvents.value = [];
             alertUnreadCount.value = 0;
             alertModalVisible.value = false;
             activeAlertEvent.value = null;
             alertSeenRecordIDs.clear();
+        };
+
+        const resetFamilyState = () => {
             familyNotifications.value = [];
             familyNotificationSeenIDs.clear();
             familyOverview.value = null;
@@ -890,6 +856,9 @@ createApp({
             Object.keys(familyAcceptingInvitations).forEach((key) => delete familyAcceptingInvitations[key]);
             familyAlertModalVisible.value = false;
             activeFamilyNotification.value = null;
+        };
+
+        const resetChatState = () => {
             chatMessages.value = [
                 buildChatMessage({ type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' })
             ];
@@ -897,6 +866,36 @@ createApp({
             chatImages.value = [];
             chatHistoryLoaded.value = false;
         };
+
+        const sessionHandlers = window.SentinelSession?.createMobileSessionHandlers?.({
+            form,
+            request,
+            showToast,
+            fetchCaptcha,
+            fetchOccupationOptions,
+            syncProfileForm,
+            startPolling: () => startPolling(),
+            stopPolling: () => stopPolling(),
+            reconcileRouteState,
+            resetAlerts: resetAlertState,
+            resetFamily: resetFamilyState,
+            resetChat: resetChatState,
+            authMode: () => authMode.value,
+            setAuthMode: (value) => { authMode.value = value; },
+            loginMethod: () => loginMethod.value,
+            setLoginMethod: (value) => { loginMethod.value = value; },
+            captchaId: () => captchaId.value,
+            requiresGraphCaptcha: () => requiresGraphCaptcha.value,
+            setLoading: (value) => { loading.value = value; },
+            setToken: (value) => { token.value = value; },
+            setAuthenticated: (value) => { isAuthenticated.value = value; },
+            setUser: (value) => { user.value = value; }
+        }) || {};
+
+        const buildAuthPayload = sessionHandlers.buildAuthPayload || (() => ({}));
+        const handleAuth = sessionHandlers.handleAuth || (async () => {});
+        const getUserInfo = sessionHandlers.getUserInfo || (async () => {});
+        const logout = sessionHandlers.logout || (() => {});
 
         const updateUserProfile = async () => {
             const normalizedAge = Number(ageForm.age);
@@ -1552,31 +1551,22 @@ createApp({
             return 'AI 研判：风险走势仍需持续观察';
         };
 
-        watch(activeTab, (newTab) => {
-            closeDropdown();
-            if (newTab === 'family') {
-                fetchFamilyOverview().then(() => {
-                    if (familyHasGroup.value) {
-                        connectFamilyNotificationWebSocket();
-                    } else {
-                        fetchReceivedFamilyInvitations();
-                    }
-                });
-            }
-            if (newTab === 'chat') {
-                if (!chatHistoryLoaded.value) {
-                    fetchChatHistory();
-                } else {
-                    scrollToBottom();
-                }
-            }
-            if (newTab === 'history') fetchHistory();
-            if (newTab === 'tasks') {
-                fetchTasks();
-                fetchRiskTrend();
-            }
-            if (newTab === 'risk_trend') fetchRiskTrend();
-        });
+        const handleActiveTabChange = window.SentinelTabEffects?.createMobileTabChangeHandler?.({
+            syncRouteFromActiveTab,
+            closeDropdown,
+            fetchFamilyOverview: () => fetchFamilyOverview(),
+            familyHasGroup: () => familyHasGroup.value,
+            connectFamilyNotificationWebSocket: () => connectFamilyNotificationWebSocket(),
+            fetchReceivedFamilyInvitations: () => fetchReceivedFamilyInvitations(),
+            chatHistoryLoaded: () => chatHistoryLoaded.value,
+            fetchChatHistory: () => fetchChatHistory(),
+            scrollToBottom: () => scrollToBottom(),
+            fetchHistory: () => fetchHistory(),
+            fetchTasks: () => fetchTasks(),
+            fetchRiskTrend: () => fetchRiskTrend()
+        }) || (() => {});
+
+        watch(activeTab, handleActiveTabChange);
 
         // Polling
         let pollInterval;
@@ -1677,9 +1667,17 @@ createApp({
 
         // Init
         onMounted(() => {
+            if (tabRouter) {
+                stopTabRouter = tabRouter.mount({
+                    getContext: getRouteContext,
+                    onResolve: applyResolvedRoute
+                });
+            }
             fetchCaptcha();
             if (token.value) {
                 getUserInfo();
+            } else {
+                reconcileRouteState({ replace: true });
             }
             initChatPosition();
             window.addEventListener('resize', handleWindowResize);
@@ -1691,6 +1689,7 @@ createApp({
             stopPolling();
             disposeUserRiskCharts();
             clearSMSCodeCooldownTimer();
+            if (stopTabRouter) stopTabRouter();
             window.removeEventListener('resize', handleWindowResize);
             document.removeEventListener('click', handleDocumentClick);
             stopBannerCarousel();
@@ -2296,7 +2295,7 @@ createApp({
             chatPosition, startDrag, // Export drag handler and state
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseRiskSummary, parseInsight,
-            riskInterval, fetchRiskTrend, riskData, riskStatsSummary, getRiskTrendAnalysisClass, formatRiskTrendDescriptor, getRiskTrendHeadline, getRecentRiskTrendRows, formatChartLabel,
+            riskInterval, fetchRiskTrend, riskData, todayRiskStatsSummary, riskStatsSummary, getRiskTrendAnalysisClass, formatRiskTrendDescriptor, getRiskTrendHeadline, getRecentRiskTrendRows, formatChartLabel,
             alertEvents, alertUnreadCount, alertModalVisible, activeAlertEvent, alertConnectionStatus, alertConnectionLabel,
             alertDrawerVisible, recentRiskAlerts, toggleAlertDrawer, closeAlertDrawer, openAlertCaseDetail,
             acknowledgeActiveAlert, openAlertHistory,

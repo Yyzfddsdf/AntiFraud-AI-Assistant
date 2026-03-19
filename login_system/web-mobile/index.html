@@ -11,7 +11,6 @@
     <script src="/mobile/assets/vendor/chart.js"></script>
     <script src="/mobile/assets/vendor/echarts.min.js"></script>
     <script src="/mobile/assets/vendor/vis-network.min.js"></script>
-    <script src="/mobile/assets/vendor/marked.min.js"></script>
     <script src="/mobile/assets/js/tailwind-config.js"></script>
     <link href="/mobile/assets/fonts/plus-jakarta-sans/plus-jakarta-sans.css" rel="stylesheet">
     <link rel="stylesheet" href="/mobile/assets/css/style.css">
@@ -415,7 +414,7 @@
                             </div>
                             <div class="flex flex-col justify-center h-full relative z-10">
                                 <div class="text-emerald-700 text-xs font-bold">今日检测</div>
-                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ riskStatsSummary.total }}</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ todayRiskStatsSummary.total }}</div>
                             </div>
                         </div>
                         <div class="m-card p-3 h-24 bg-gradient-to-br from-orange-50 to-white border border-orange-100 shadow-sm relative overflow-hidden">
@@ -425,7 +424,7 @@
                             </div>
                             <div class="flex flex-col justify-center h-full relative z-10">
                                 <div class="text-orange-600 text-xs font-bold">高风险</div>
-                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ riskStatsSummary.high }}</div>
+                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ todayRiskStatsSummary.high }}</div>
                             </div>
                         </div>
                     </div>
@@ -912,7 +911,7 @@
                         <h2 class="text-xl font-bold">隐私资料</h2>
                     </div>
 
-                    <div class="space-y-3 bg-white rounded-2xl overflow-hidden border border-gray-100 p-4">
+                    <div class="space-y-3 bg-white rounded-2xl overflow-visible border border-gray-100 p-4">
                         <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
                             <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">手机号</div>
                             <div class="mt-1 text-sm font-semibold text-slate-800">{{ getUserPhoneText(user) || '未设置' }}</div>
@@ -1382,7 +1381,11 @@
         </div>
     </div>
 
-    <script src="/mobile/assets/js/app.js"></script>
+    <script src="/mobile/assets/js/router.js?v=20260319-1"></script>
+    <script src="/mobile/assets/js/tab-config.js?v=20260319-1"></script>
+    <script src="/mobile/assets/js/tab-effects.js?v=20260319-1"></script>
+    <script src="/mobile/assets/js/session.js?v=20260319-1"></script>
+    <script src="/mobile/assets/js/app.js?v=20260319-1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Mobile optimizations

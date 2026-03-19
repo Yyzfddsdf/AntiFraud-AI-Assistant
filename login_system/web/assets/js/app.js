@@ -9,6 +9,8 @@ createApp({
         const authMode = ref('login'); // login | register
         const loginMethod = ref('password'); // password | sms
         const activeTab = ref('tasks');
+        const tabRouter = window.SentinelTabConfig?.createDesktopTabRouter?.() || null;
+        let stopTabRouter = null;
         const loading = ref(false);
         const analyzing = ref(false);
         const inviteCode = ref('');
@@ -102,6 +104,31 @@ createApp({
         // Sidebar State
         const isSidebarCollapsed = ref(false);
         const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
+
+        const getRouteContext = () => ({
+            isAuthenticated: isAuthenticated.value,
+            userRole: user.value?.role || ''
+        });
+
+        const applyResolvedRoute = (resolved) => {
+            if (!resolved || !resolved.isAuthenticated) return;
+            if (resolved.activeTab !== activeTab.value) {
+                activeTab.value = resolved.activeTab;
+            }
+        };
+
+        const reconcileRouteState = ({ replace = false } = {}) => {
+            if (!tabRouter) return;
+            applyResolvedRoute(tabRouter.reconcile(getRouteContext(), { replace }));
+        };
+
+        const syncRouteFromActiveTab = ({ replace = false } = {}) => {
+            if (!tabRouter) return;
+            const resolvedTab = tabRouter.sync(getRouteContext(), activeTab.value, { replace });
+            if (isAuthenticated.value && resolvedTab !== activeTab.value) {
+                activeTab.value = resolvedTab;
+            }
+        };
 
         const form = reactive({
             account: '',
@@ -761,93 +788,16 @@ createApp({
             }
         };
 
-        const buildAuthPayload = () => {
-            if (authMode.value === 'register') {
-                return {
-                    username: form.username.trim(),
-                    email: form.email.trim(),
-                    phone: form.phone.trim(),
-                    password: form.password,
-                    captchaId: captchaId.value,
-                    captchaCode: form.captchaCode.trim(),
-                    smsCode: form.smsCode.trim()
-                };
-            }
-
-            if (loginMethod.value === 'sms') {
-                return {
-                    phone: form.phone.trim(),
-                    smsCode: form.smsCode.trim()
-                };
-            }
-
-            return {
-                account: form.account.trim(),
-                password: form.password,
-                captchaId: captchaId.value,
-                captchaCode: form.captchaCode.trim()
-            };
-        };
-
-        const handleAuth = async () => {
-            loading.value = true;
-            const endpoint = authMode.value === 'login' ? '/auth/login' : '/auth/register';
-            const payload = buildAuthPayload();
-            
-            const res = await request(endpoint, 'POST', payload);
-            loading.value = false;
-            
-            if (res) {
-                if (authMode.value === 'register') {
-                    showToast('注册成功，请登录');
-                    authMode.value = 'login';
-                    loginMethod.value = 'password';
-                    form.account = form.email.trim();
-                    form.password = '';
-                    form.captchaCode = '';
-                    form.smsCode = '';
-                    fetchCaptcha();
-                } else {
-                    token.value = res.token;
-                    localStorage.setItem('token', res.token);
-                    isAuthenticated.value = true;
-                    user.value = res.user;
-                    syncProfileForm(res.user);
-                    fetchOccupationOptions();
-                    showToast('登录成功');
-                    startPolling();
-                }
-            } else if (requiresGraphCaptcha.value) {
-                fetchCaptcha(); // Refresh captcha on fail
-            }
-        };
-
-        const getUserInfo = async () => {
-            const res = await request('/user');
-            if (res) {
-                user.value = res;
-                syncProfileForm(res);
-                fetchOccupationOptions();
-                isAuthenticated.value = true;
-                startPolling();
-            } else {
-                isAuthenticated.value = false;
-            }
-        };
-
-        const logout = () => {
-            token.value = '';
-            localStorage.removeItem('token');
-            isAuthenticated.value = false;
-            user.value = {};
-            syncProfileForm({});
-            stopPolling();
+        const resetAlertState = () => {
             alertDrawerVisible.value = false;
             alertEvents.value = [];
             alertUnreadCount.value = 0;
             alertModalVisible.value = false;
             activeAlertEvent.value = null;
             alertSeenRecordIDs.clear();
+        };
+
+        const resetFamilyState = () => {
             familyNotifications.value = [];
             familyNotificationSeenIDs.clear();
             familyOverview.value = null;
@@ -860,6 +810,35 @@ createApp({
             familyAlertModalVisible.value = false;
             activeFamilyNotification.value = null;
         };
+
+        const sessionHandlers = window.SentinelSession?.createDesktopSessionHandlers?.({
+            form,
+            request,
+            showToast,
+            fetchCaptcha,
+            fetchOccupationOptions,
+            syncProfileForm,
+            startPolling: () => startPolling(),
+            stopPolling: () => stopPolling(),
+            reconcileRouteState,
+            resetAlerts: resetAlertState,
+            resetFamily: resetFamilyState,
+            authMode: () => authMode.value,
+            setAuthMode: (value) => { authMode.value = value; },
+            loginMethod: () => loginMethod.value,
+            setLoginMethod: (value) => { loginMethod.value = value; },
+            captchaId: () => captchaId.value,
+            requiresGraphCaptcha: () => requiresGraphCaptcha.value,
+            setLoading: (value) => { loading.value = value; },
+            setToken: (value) => { token.value = value; },
+            setAuthenticated: (value) => { isAuthenticated.value = value; },
+            setUser: (value) => { user.value = value; }
+        }) || {};
+
+        const buildAuthPayload = sessionHandlers.buildAuthPayload || (() => ({}));
+        const handleAuth = sessionHandlers.handleAuth || (async () => {});
+        const getUserInfo = sessionHandlers.getUserInfo || (async () => {});
+        const logout = sessionHandlers.logout || (() => {});
 
         const updateUserProfile = async () => {
             const normalizedAge = Number(ageForm.age);
@@ -2236,29 +2215,23 @@ createApp({
             }
         };
 
-        watch(activeTab, (newTab) => {
-            if (newTab === 'case_review') {
-                fetchPendingReviews();
-            }
-            if (newTab === 'case_library') {
-                fetchCaseLibrary();
-                fetchCaseOptionLists();
-            }
-            if (newTab === 'family') {
-                fetchFamilyOverview().then(() => {
-                    if (familyHasGroup.value) {
-                        connectFamilyNotificationWebSocket();
-                    } else {
-                        fetchReceivedFamilyInvitations();
-                    }
-                });
-            }
-            if (newTab === 'users') fetchUsers();
-            if (newTab === 'history') fetchHistory();
-            if (newTab === 'tasks') fetchTasks();
-            if (newTab === 'risk_trend') fetchRiskTrend();
-            if (newTab === 'admin_stats') fetchAdminStats();
-        });
+        const handleActiveTabChange = window.SentinelTabEffects?.createDesktopTabChangeHandler?.({
+            syncRouteFromActiveTab,
+            fetchPendingReviews: () => fetchPendingReviews(),
+            fetchCaseLibrary: () => fetchCaseLibrary(),
+            fetchCaseOptionLists: () => fetchCaseOptionLists(),
+            fetchFamilyOverview: () => fetchFamilyOverview(),
+            familyHasGroup: () => familyHasGroup.value,
+            connectFamilyNotificationWebSocket: () => connectFamilyNotificationWebSocket(),
+            fetchReceivedFamilyInvitations: () => fetchReceivedFamilyInvitations(),
+            fetchUsers: () => fetchUsers(),
+            fetchHistory: () => fetchHistory(),
+            fetchTasks: () => fetchTasks(),
+            fetchRiskTrend: () => fetchRiskTrend(),
+            fetchAdminStats: () => fetchAdminStats()
+        }) || (() => {});
+
+        watch(activeTab, handleActiveTabChange);
 
         // Polling
         let pollInterval;
@@ -2348,9 +2321,17 @@ createApp({
 
         // Init
         onMounted(() => {
+            if (tabRouter) {
+                stopTabRouter = tabRouter.mount({
+                    getContext: getRouteContext,
+                    onResolve: applyResolvedRoute
+                });
+            }
             fetchCaptcha();
             if (token.value) {
                 getUserInfo();
+            } else {
+                reconcileRouteState({ replace: true });
             }
             initChatPosition();
             window.addEventListener('resize', handleResize);
@@ -2367,6 +2348,7 @@ createApp({
         onUnmounted(() => {
             stopPolling();
             clearSMSCodeCooldownTimer();
+            if (stopTabRouter) stopTabRouter();
             window.removeEventListener('resize', handleResize);
         });
 
