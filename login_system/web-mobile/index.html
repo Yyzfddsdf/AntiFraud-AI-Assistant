@@ -254,6 +254,17 @@
 </head>
 <body class="h-full overflow-hidden text-slate-900 font-sans">
     <div id="app" class="h-full flex flex-col relative">
+        <div v-if="!authReady" class="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950 text-white">
+            <div class="flex flex-col items-center gap-4 px-6 text-center">
+                <div class="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
+                    <div class="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
+                </div>
+                <div>
+                    <div class="text-sm font-bold tracking-[0.24em] uppercase text-white/70">Sentinel AI</div>
+                    <div class="mt-2 text-sm text-white/60">正在校验登录状态</div>
+                </div>
+            </div>
+        </div>
         
         <!-- Toast -->
         <div class="fixed top-4 left-4 right-4 z-[999] pointer-events-none flex flex-col gap-2">
@@ -268,7 +279,7 @@
         </div>
 
         <!-- 1. 登录/注册页 -->
-        <div v-if="!isAuthenticated" class="absolute inset-0 z-50 bg-white flex flex-col px-8 pt-safe overflow-y-auto">
+        <div v-if="authReady && !isAuthenticated" class="absolute inset-0 z-50 bg-white flex flex-col px-8 pt-safe overflow-y-auto">
             <div class="flex-1 flex flex-col justify-center min-h-[600px]">
                 <div class="mb-12 text-center">
                     <div class="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">

@@ -4,6 +4,7 @@ createApp({
     setup() {
         // State
         const isAuthenticated = ref(false);
+        const authReady = ref(false);
         const token = ref(localStorage.getItem('token') || '');
         const user = ref({});
         const authMode = ref('login'); // login | register
@@ -2320,7 +2321,7 @@ createApp({
         };
 
         // Init
-        onMounted(() => {
+        onMounted(async () => {
             if (tabRouter) {
                 stopTabRouter = tabRouter.mount({
                     getContext: getRouteContext,
@@ -2329,10 +2330,11 @@ createApp({
             }
             fetchCaptcha();
             if (token.value) {
-                getUserInfo();
+                await getUserInfo();
             } else {
                 reconcileRouteState({ replace: true });
             }
+            authReady.value = true;
             initChatPosition();
             window.addEventListener('resize', handleResize);
             window.addEventListener('resize', () => {
@@ -2838,7 +2840,7 @@ createApp({
         };
 
         return {
-            isAuthenticated, user, authMode, loginMethod, form, ageForm, profileForm, occupationOptions, profileSaving, analyzeForm, 
+            isAuthenticated, authReady, user, authMode, loginMethod, form, ageForm, profileForm, occupationOptions, profileSaving, analyzeForm, 
             captchaImage, requiresGraphCaptcha, shouldShowSMSCodeSection, authSubmitLabel, smsCodeButtonText, canSendSMSCode, demoSMSCode,
             fetchCaptcha, sendSMSCode, handleAuth, logout, loading,
             activeTab, tasks, history, users, selectedTask, userSearch, toasts, analyzing,

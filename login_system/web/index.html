@@ -18,6 +18,17 @@
 </head>
 <body class="text-slate-800 antialiased h-full overflow-hidden">
     <div id="app" class="h-full flex flex-col transition-colors duration-300">
+        <div v-if="!authReady" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950 text-white">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center shadow-2xl">
+                    <div class="w-6 h-6 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm font-bold tracking-[0.24em] uppercase text-white/70">Sentinel AI</div>
+                    <div class="mt-2 text-sm text-white/60">正在校验登录状态</div>
+                </div>
+            </div>
+        </div>
         
         <!-- Toast Notification -->
         <div class="fixed top-6 right-6 z-[60] space-y-3 pointer-events-none">
@@ -185,7 +196,7 @@
         </div>
 
         <!-- Auth View -->
-        <div v-if="!isAuthenticated" class="h-full flex relative overflow-y-auto bg-slate-50">
+        <div v-if="authReady && !isAuthenticated" class="h-full flex relative overflow-y-auto bg-slate-50">
             <!-- Background Elements -->
             <div class="absolute inset-0 z-0">
                 <div class="absolute inset-0 tech-bg opacity-60"></div>
