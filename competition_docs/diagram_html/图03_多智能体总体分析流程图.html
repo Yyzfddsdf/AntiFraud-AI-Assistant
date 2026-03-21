@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图3 多智能体总体分析流程图</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#eef8ff",
+        primaryTextColor: "#1e3446",
+        primaryBorderColor: "#417191",
+        lineColor: "#698093",
+        secondaryColor: "#eef8f1",
+        tertiaryColor: "#fff6e8",
+        fontFamily: "Microsoft YaHei, PingFang SC, sans-serif",
+        fontSize: "17px"
+      },
+      themeCSS: `
+        .node rect, .node polygon, .node path {
+          rx: 18px !important;
+          ry: 18px !important;
+        }
+        .cluster rect {
+          rx: 22px !important;
+          ry: 22px !important;
+        }
+      `,
+      flowchart: { curve: "basis", htmlLabels: true, nodeSpacing: 30, rankSpacing: 44 }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: linear-gradient(135deg, #fffaf4, #eff8ff); color: #213547; }
+    .wrap { max-width: 1480px; margin: 0 auto; padding: 32px; }
+    .card { background: rgba(255,255,255,0.92); border: 1px solid #ebe2d6; border-radius: 24px; box-shadow: 0 16px 44px rgba(98, 78, 39, 0.1); padding: 24px; }
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    p { margin: 0 0 20px; color: #6f6c67; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>图3 多智能体总体分析流程图</h1>
+      <p>展示多模态输入到子智能体、主智能体、工具链、归档与联动的完整流程。</p>
+      <div class="mermaid">
+flowchart TB
+    IN["用户多模态输入"]
+    TXT["文本输入"]
+    IMG["图像输入"]
+    AUD["音频输入"]
+    VID["视频输入"]
+    IAG["图像子智能体"]
+    AAG["音频子智能体"]
+    VAG["视频子智能体"]
+    MAG["主智能体"]
+    TOOLS["工具链<br/>用户信息/知识库/历史记忆/风险评估"]
+    REPORT["结构化风险报告"]
+    ARCH["历史归档"]
+    EVENT["事件联动"]
+
+    IN --> TXT --> MAG
+    IN --> IMG --> IAG --> MAG
+    IN --> AUD --> AAG --> MAG
+    IN --> VID --> VAG --> MAG
+    MAG --> TOOLS --> REPORT --> ARCH --> EVENT
+    classDef io fill:#eef8ff,stroke:#417191,color:#1e3446,stroke-width:1.8px;
+    classDef agent fill:#eef8f1,stroke:#2f7d57,color:#173042,stroke-width:2px;
+    classDef result fill:#fff6e8,stroke:#d28b26,color:#173042,stroke-width:1.8px;
+    class IN,TXT,IMG,AUD,VID io;
+    class IAG,AAG,VAG,MAG,TOOLS agent;
+    class REPORT,ARCH,EVENT result;
+      </div>
+    </div>
+  </div>
+</body>
+</html>

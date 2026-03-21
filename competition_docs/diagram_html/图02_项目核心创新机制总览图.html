@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图2 项目核心创新机制总览图</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#edf8ff",
+        primaryTextColor: "#183247",
+        primaryBorderColor: "#356f91",
+        lineColor: "#668095",
+        secondaryColor: "#eef8f1",
+        tertiaryColor: "#fff6e8",
+        fontFamily: "Microsoft YaHei, PingFang SC, sans-serif",
+        fontSize: "18px"
+      },
+      themeCSS: `
+        .node rect, .node polygon, .node path {
+          rx: 20px !important;
+          ry: 20px !important;
+        }
+        .cluster rect {
+          rx: 24px !important;
+          ry: 24px !important;
+        }
+      `,
+      flowchart: { curve: "basis", htmlLabels: true, nodeSpacing: 38, rankSpacing: 56 }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: radial-gradient(circle at top, #f7fff9, #f2f6ff); color: #173047; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 32px; }
+    .card { background: rgba(255,255,255,0.9); border: 1px solid #dbe6f1; border-radius: 24px; box-shadow: 0 18px 48px rgba(41, 68, 103, 0.12); padding: 24px; }
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    p { margin: 0 0 20px; color: #5e7385; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>图2 项目核心创新机制总览图</h1>
+      <p>展示多智能体分析、双重防护网、主动守护、家庭联防与知识进化之间的核心关系。</p>
+      <div class="mermaid">
+flowchart LR
+    CORE["大众反诈智能系统核心引擎"]
+    M1["多智能体多模态分析<br/>文本/图像/音频/视频联合识别"]
+    M2["双重防护网<br/>知识库 + 个性化记忆"]
+    M3["主动守护<br/>预警推送 + 悬浮球 + 自动守护"]
+    M4["家庭联防<br/>守护关系 + 高风险通知"]
+    M5["知识持续进化<br/>送审入库 + 后台采集 + 图谱治理"]
+
+    CORE --- M1
+    CORE --- M2
+    CORE --- M3
+    CORE --- M4
+    CORE --- M5
+
+    M1 --> M2 --> M3 --> M4 --> M5 --> M1
+    classDef center fill:#183247,stroke:#183247,color:#ffffff,stroke-width:2px;
+    classDef ring fill:#eef8f1,stroke:#2f7d57,color:#173042,stroke-width:1.8px;
+    class CORE center;
+    class M1,M2,M3,M4,M5 ring;
+      </div>
+    </div>
+  </div>
+</body>
+</html>

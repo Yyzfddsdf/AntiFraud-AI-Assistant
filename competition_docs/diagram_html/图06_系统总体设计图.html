@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图6 系统总体设计图</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#eef8ff",
+        primaryTextColor: "#20364b",
+        primaryBorderColor: "#417191",
+        lineColor: "#698093",
+        secondaryColor: "#eef8f1",
+        tertiaryColor: "#fff6e8",
+        clusterBkg: "#f9fbff",
+        clusterBorder: "#bfd0dc",
+        fontFamily: "Microsoft YaHei, PingFang SC, sans-serif",
+        fontSize: "17px"
+      },
+      themeCSS: `
+        .node rect, .node polygon, .node path {
+          rx: 18px !important;
+          ry: 18px !important;
+        }
+        .cluster rect {
+          rx: 24px !important;
+          ry: 24px !important;
+        }
+      `,
+      flowchart: { curve: "basis", htmlLabels: true, nodeSpacing: 34, rankSpacing: 50 }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: linear-gradient(145deg, #f6fff8, #f4f7ff); color: #1d3348; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 32px; }
+    .card { background: rgba(255,255,255,0.9); border: 1px solid #dbe8df; border-radius: 24px; box-shadow: 0 18px 44px rgba(35, 76, 59, 0.12); padding: 24px; }
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    p { margin: 0 0 20px; color: #607486; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>图6 系统总体设计图</h1>
+      <p>展示网页端、手机端、电脑端管理员系统与后端业务服务层、数据层之间的整体关系。</p>
+      <div class="mermaid">
+flowchart TB
+    subgraph L1["普通客户端"]
+      CLIENT["网页端 / 手机端 App"]
+    end
+    subgraph L1B["管理员端"]
+      ADMINC["电脑端管理员系统<br/>搜索案件 / 案件审核 / 治理分析"]
+    end
+    subgraph L2["后端业务服务层"]
+      AUTH["登录鉴权"]
+      CHAT["聊天系统"]
+      AGENT["多智能体分析"]
+      FAMILY["家庭系统"]
+      OVER["风险总览"]
+      CASE["知识库管理"]
+    end
+    subgraph L3["数据与缓存层"]
+      DB1["主业务数据库"]
+      DB2["历史案件数据库"]
+      CACHE["Redis缓存"]
+      VEC["向量索引"]
+    end
+
+    CLIENT --> AUTH
+    CLIENT --> CHAT
+    CLIENT --> AGENT
+    CLIENT --> FAMILY
+    CLIENT --> OVER
+
+    AGENT --> CASE
+    AUTH --> DB1
+    FAMILY --> DB1
+    OVER --> DB1
+    CASE --> DB2
+    AGENT --> VEC
+    CHAT --> CACHE
+    AGENT --> CACHE
+    classDef client fill:#eef4ff,stroke:#417191,color:#173042,stroke-width:1.8px;
+    classDef admin fill:#fff6e8,stroke:#d28b26,color:#173042,stroke-width:1.8px;
+    classDef service fill:#eef8f1,stroke:#2f7d57,color:#173042,stroke-width:1.8px;
+    classDef data fill:#173042,stroke:#173042,color:#ffffff,stroke-width:2px;
+    class CLIENT client;
+    class ADMINC admin;
+    class AUTH,CHAT,AGENT,FAMILY,OVER,CASE service;
+    class DB1,DB2,CACHE,VEC data;
+      </div>
+    </div>
+  </div>
+</body>
+</html>
