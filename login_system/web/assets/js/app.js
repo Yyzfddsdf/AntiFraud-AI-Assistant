@@ -48,6 +48,7 @@ createApp({
         const selectedCase = ref(null); // For admin view details
         const showCaseModal = ref(false);
         const submittingCase = ref(false);
+        const duplicateCaseConflict = ref(null);
         const caseForm = reactive({
             title: '',
             target_group: '',
@@ -733,7 +734,7 @@ createApp({
         };
 
         const request = async (path, method = 'GET', body = null, options = {}) => {
-            const { silent = false } = options || {};
+            const { silent = false, throwOnError = false } = options || {};
             const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
             if (token.value) headers['Authorization'] = `Bearer ${token.value}`;
             
@@ -750,11 +751,19 @@ createApp({
                 }
                 
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Request failed');
+                if (!res.ok) {
+                    const error = new Error(data.error || data.message || 'Request failed');
+                    error.status = res.status;
+                    error.data = data;
+                    throw error;
+                }
                 return data;
             } catch (e) {
                 if (!silent) {
                     showToast(e.message, 'error');
+                }
+                if (throwOnError) {
+                    throw e;
                 }
                 return null;
             }
@@ -1294,6 +1303,7 @@ createApp({
         };
 
         const openCaseModal = () => {
+            duplicateCaseConflict.value = null;
             Object.assign(caseForm, {
                 title: '',
                 target_group: '',
@@ -1306,6 +1316,14 @@ createApp({
                 suggestion: ''
             });
             showCaseModal.value = true;
+        };
+
+        const viewDuplicateCaseConflict = async () => {
+            const caseId = String(duplicateCaseConflict.value?.case_id || '').trim();
+            if (!caseId) return;
+            duplicateCaseConflict.value = null;
+            showCaseModal.value = false;
+            await viewCaseDetail(caseId);
         };
 
         const minCaseDescriptionRunes = 12;
@@ -1371,6 +1389,7 @@ createApp({
         };
 
         const submitCase = async () => {
+            duplicateCaseConflict.value = null;
             if (!String(caseForm.title || '').trim()) {
                 showToast('案件标题不能为空', 'error');
                 return;
@@ -1408,8 +1427,9 @@ createApp({
                     suggestion: String(caseForm.suggestion || '').trim()
                 };
 
-                const res = await request('/scam/case-library/cases', 'POST', payload);
+                const res = await request('/scam/case-library/cases', 'POST', payload, { silent: true, throwOnError: true });
                 if (res) {
+                    duplicateCaseConflict.value = null;
                     showToast('案件录入成功');
                     showCaseModal.value = false;
                     fetchCaseLibrary();
@@ -1417,6 +1437,11 @@ createApp({
                     fetchAdminStats(true);
                 }
             } catch (e) {
+                if (e?.status === 409 && e?.data?.duplicate_case) {
+                    duplicateCaseConflict.value = e.data.duplicate_case;
+                    showToast(e.data.message || '检测到高度相似案件，请先核对已有记录', 'warning');
+                    return;
+                }
                 showToast('录入失败: ' + e.message, 'error');
             } finally {
                 submittingCase.value = false;
@@ -1448,6 +1473,12 @@ createApp({
                  showToast('删除失败: ' + e.message, 'error');
              }
         };
+
+        watch(showCaseModal, (visible) => {
+            if (!visible) {
+                duplicateCaseConflict.value = null;
+            }
+        });
 
         // Risk Trend Logic
         const fetchRiskTrend = async (forceRefresh = false) => {
@@ -2859,6 +2890,7 @@ createApp({
             isSidebarCollapsed, toggleSidebar,
             parseReport, extractAttackSteps, extractScamKeywordSentences, parseRiskSummary, parseInsight,
             caseLibrary, scamTypeOptions, targetGroupOptions, selectedCase, showCaseModal, submittingCase, caseForm, submitCase, openCaseModal, fetchCaseLibrary, viewCaseDetail, deleteCase,
+            duplicateCaseConflict, viewDuplicateCaseConflict,
             pendingReviews, selectedReview, showReviewDetailModal, fetchPendingReviews, viewReviewDetail, approveReview, rejectReview,
             caseCollectionForm, startingCaseCollection, submitCaseCollection,
             riskInterval, fetchRiskTrend, riskData, getRiskTrendAnalysisClass,

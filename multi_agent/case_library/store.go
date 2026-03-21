@@ -61,6 +61,9 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 	if err != nil {
 		return HistoricalCaseRecord{}, err
 	}
+	if duplicateErr := detectDuplicateHistoricalCase(prepared.vector); duplicateErr != nil {
+		return HistoricalCaseRecord{}, duplicateErr
+	}
 	return insertHistoricalCasePrepared(userID, prepared)
 }
 

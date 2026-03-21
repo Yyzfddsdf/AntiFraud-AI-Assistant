@@ -41,6 +41,21 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 			})
 			return
 		}
+		if duplicateErr, ok := case_library.AsDuplicateHistoricalCaseError(err); ok && duplicateErr != nil {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   err.Error(),
+				"message": "历史案件重复，已存在高度相似案件",
+				"duplicate_case": gin.H{
+					"case_id":      strings.TrimSpace(duplicateErr.TopMatch.CaseID),
+					"title":        strings.TrimSpace(duplicateErr.TopMatch.Title),
+					"target_group": strings.TrimSpace(duplicateErr.TopMatch.TargetGroup),
+					"risk_level":   strings.TrimSpace(duplicateErr.TopMatch.RiskLevel),
+					"scam_type":    strings.TrimSpace(duplicateErr.TopMatch.ScamType),
+					"similarity":   duplicateErr.TopMatch.Similarity,
+				},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件入库失败: " + err.Error()})
 		return
 	}

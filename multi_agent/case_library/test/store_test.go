@@ -1,9 +1,12 @@
 package case_library_test
 
 import (
+	"context"
+	"os"
 	"strings"
 	"testing"
 
+	"antifraud/database"
 	case_library "antifraud/multi_agent/case_library"
 )
 
@@ -56,5 +59,66 @@ func TestBuildEmbeddingInput_DropsLowQualityKeywords(t *testing.T) {
 	}
 	if strings.Contains(got, "目标人群:") || strings.Contains(got, "风险等级:") || strings.Contains(got, "建议:") {
 		t.Fatalf("non-focused fields should not appear in embedding text, got: %s", got)
+	}
+}
+
+func TestCreateHistoricalCase_DuplicateHistoricalCaseRejected(t *testing.T) {
+	resetHistoricalCaseDB()
+	dbPath, err := prepareHistoricalCaseDBPath()
+	if err != nil {
+		t.Fatalf("prepare historical case db path failed: %v", err)
+	}
+	t.Setenv("HISTORICAL_CASE_DB_PATH", dbPath)
+
+	originalGenerateCaseEmbedding := generateCaseEmbedding
+	originalSearchHistoricalCases := searchHistoricalCasesByVector
+	t.Cleanup(func() {
+		generateCaseEmbedding = originalGenerateCaseEmbedding
+		searchHistoricalCasesByVector = originalSearchHistoricalCases
+		resetHistoricalCaseDB()
+		_ = os.Remove(dbPath)
+	})
+
+	generateCaseEmbedding = func(ctx context.Context, input string) ([]float64, string, error) {
+		return []float64{0.1, 0.2, 0.3}, "mock-embedding", nil
+	}
+	searchHistoricalCasesByVector = func(queryVector []float64, topK int) ([]case_library.SimilarCaseResult, int, error) {
+		return []case_library.SimilarCaseResult{
+			{
+				CaseID:      "HCASE-EXISTING",
+				Title:       "已存在诈骗案件",
+				TargetGroup: "老人",
+				RiskLevel:   "高",
+				ScamType:    "冒充客服类",
+				Similarity:  0.95,
+			},
+		}, 1, nil
+	}
+
+	_, err = case_library.CreateHistoricalCase(context.Background(), "admin-u1", case_library.CreateHistoricalCaseInput{
+		Title:           "冒充客服诈骗",
+		TargetGroup:     "老人",
+		RiskLevel:       "高",
+		ScamType:        "冒充客服类",
+		CaseDescription: "受害人收到自称客服电话，被诱导下载远程控制软件并转账。",
+	})
+	if err == nil {
+		t.Fatal("expected duplicate error")
+	}
+	if !case_library.IsDuplicateHistoricalCaseError(err) {
+		t.Fatalf("expected duplicate error type, got: %v", err)
+	}
+
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		t.Fatalf("get historical case db failed: %v", err)
+	}
+
+	var count int64
+	if err := db.Table("historical_case_library").Count(&count).Error; err != nil {
+		t.Fatalf("count historical case rows failed: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("duplicate create should not insert rows, got count=%d", count)
 	}
 }

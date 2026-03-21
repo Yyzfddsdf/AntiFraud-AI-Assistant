@@ -2000,6 +2000,44 @@
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/50">
+                    <div v-if="duplicateCaseConflict" class="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 text-amber-900">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z"></path></svg>
+                                    <span class="text-sm font-extrabold tracking-wide">检测到高度相似案件</span>
+                                </div>
+                                <p class="text-sm leading-relaxed text-amber-900/90">当前录入内容与已有案件过于相似，系统已阻止重复入库。建议先查看已有案件，再决定是否调整内容后重新提交。</p>
+                            </div>
+                            <button @click="duplicateCaseConflict = null" class="shrink-0 rounded-full p-2 text-amber-500 hover:bg-amber-100 hover:text-amber-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">案件标题</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.title || '-' }}</div>
+                            </div>
+                            <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">案件ID</div>
+                                <div class="mt-1 font-mono text-xs text-slate-700 break-all">{{ duplicateCaseConflict.case_id || '-' }}</div>
+                            </div>
+                            <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">目标人群</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.target_group || '-' }}</div>
+                            </div>
+                            <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">诈骗类型</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.scam_type || '-' }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            <div class="text-xs font-medium text-amber-700">如确认不是重复案件，请修改标题、描述或关键事实后再提交。</div>
+                            <button @click="viewDuplicateCaseConflict" class="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20">
+                                查看已有案件
+                            </button>
+                        </div>
+                    </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">案件标题 <span class="text-red-500">*</span></label>
                         <input v-model="caseForm.title" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="例如：冒充客服退款诈骗">
