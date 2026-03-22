@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -97,6 +98,7 @@ type Config struct {
 var (
 	configCacheMu sync.RWMutex
 	configCache   = map[string]*Config{}
+	utf8BOM       = []byte{0xEF, 0xBB, 0xBF}
 )
 
 // LoadConfig 负责读取、标准化并校验配置文件。
@@ -114,15 +116,17 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	configCacheMu.RUnlock()
 
-	file, err := os.Open(resolvedPath)
+	data, err := os.ReadFile(resolvedPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file (%s): %w", resolvedPath, err)
+		return nil, fmt.Errorf("failed to read config file (%s): %w", resolvedPath, err)
 	}
-	defer file.Close()
+	data = bytes.TrimPrefix(data, utf8BOM)
+	if len(bytes.TrimSpace(data)) == 0 {
+		return nil, fmt.Errorf("config file is empty: %s", resolvedPath)
+	}
 
 	var cfg Config
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 

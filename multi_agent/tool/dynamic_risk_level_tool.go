@@ -22,6 +22,12 @@ type DynamicRiskLevelResult struct {
 	RiskLevel        string `json:"risk_level"`
 }
 
+const (
+	dynamicRiskHighPromotionGap  = 10
+	dynamicRiskSingleHitBuffer   = 10
+	dynamicRiskDoubleHitBuffer   = 15
+)
+
 var DynamicRiskLevelTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
@@ -87,14 +93,16 @@ func ResolveDynamicRiskLevel(currentScore int, historicalScore int, knowledgeBas
 	}
 
 	adjustedScore := normalizeScore(currentScore + kbAdjustment + userAdjustment)
+	highHitCount := countHighRiskHits(kbLabel, userLabel)
+	nearThresholdFloor := normalizeScore(threshold - dynamicRiskHitBuffer(highHitCount))
 	riskLevel := "低"
 	if adjustedScore > threshold {
-		if adjustedScore >= threshold+10 && (kbLabel == "high" || userLabel == "high") {
+		if adjustedScore >= threshold+dynamicRiskHighPromotionGap && highHitCount > 0 {
 			riskLevel = "高"
 		} else {
 			riskLevel = "中"
 		}
-	} else if kbLabel == "high" || userLabel == "high" {
+	} else if highHitCount > 0 && adjustedScore >= nearThresholdFloor {
 		riskLevel = "中"
 	}
 
@@ -142,5 +150,26 @@ func normalizeRiskMatch(raw string) (int, string, error) {
 		return -8, "low", nil
 	default:
 		return 0, "", fmt.Errorf("risk match must be one of high/low/none")
+	}
+}
+
+func countHighRiskHits(labels ...string) int {
+	count := 0
+	for _, label := range labels {
+		if strings.TrimSpace(label) == "high" {
+			count++
+		}
+	}
+	return count
+}
+
+func dynamicRiskHitBuffer(highHitCount int) int {
+	switch {
+	case highHitCount >= 2:
+		return dynamicRiskDoubleHitBuffer
+	case highHitCount == 1:
+		return dynamicRiskSingleHitBuffer
+	default:
+		return 0
 	}
 }

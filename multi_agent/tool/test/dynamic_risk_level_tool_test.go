@@ -48,12 +48,28 @@ func TestResolveDynamicRiskLevel(t *testing.T) {
 		t.Fatalf("unexpected medium-by-above decision: %+v", mediumByAbove)
 	}
 
-	mediumByHit, err := agenttool.ResolveDynamicRiskLevel(40, 65, "high", "none")
+	mediumByHit, err := agenttool.ResolveDynamicRiskLevel(32, 65, "high", "none")
 	if err != nil {
 		t.Fatalf("resolve dynamic risk level failed: %v", err)
 	}
 	if mediumByHit.RiskLevel != "中" {
 		t.Fatalf("unexpected medium-by-hit decision: %+v", mediumByHit)
+	}
+
+	lowBelowBufferedFloor, err := agenttool.ResolveDynamicRiskLevel(20, 65, "high", "none")
+	if err != nil {
+		t.Fatalf("resolve dynamic risk level failed: %v", err)
+	}
+	if lowBelowBufferedFloor.RiskLevel != "低" {
+		t.Fatalf("expected far-below-threshold high hit to remain low, got %+v", lowBelowBufferedFloor)
+	}
+
+	mediumByDoubleHit, err := agenttool.ResolveDynamicRiskLevel(22, 65, "high", "high")
+	if err != nil {
+		t.Fatalf("resolve dynamic risk level failed: %v", err)
+	}
+	if mediumByDoubleHit.RiskLevel != "中" {
+		t.Fatalf("expected double high hit near buffered floor to become medium, got %+v", mediumByDoubleHit)
 	}
 
 	low, err := agenttool.ResolveDynamicRiskLevel(40, 10, "none", "none")

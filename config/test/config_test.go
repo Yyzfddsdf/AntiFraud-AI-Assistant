@@ -95,6 +95,30 @@ func TestConfigNormalize(t *testing.T) {
 	}
 }
 
+func TestLoadConfigSupportsUTF8BOM(t *testing.T) {
+	cfg := validConfig()
+	path := filepath.Join(t.TempDir(), "config-with-bom.json")
+
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("marshal config failed: %v", err)
+	}
+
+	withBOM := append([]byte{0xEF, 0xBB, 0xBF}, data...)
+	if err := os.WriteFile(path, withBOM, 0o600); err != nil {
+		t.Fatalf("write config with bom failed: %v", err)
+	}
+
+	loaded, err := appcfg.LoadConfig(path)
+	if err != nil {
+		t.Fatalf("load config with bom failed: %v", err)
+	}
+
+	if loaded.Agents.Main.Model != cfg.Agents.Main.Model {
+		t.Fatalf("expected main model %q, got %q", cfg.Agents.Main.Model, loaded.Agents.Main.Model)
+	}
+}
+
 func TestConfigChatFallbackToMainModel(t *testing.T) {
 	cfg := validConfig()
 	cfg.Chat = appcfg.ChatConfig{Prompt: "chat prompt"}
