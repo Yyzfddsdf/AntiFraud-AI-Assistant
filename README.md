@@ -333,29 +333,6 @@ flowchart TB
   - `query -> embedding -> user_history_vectors 召回 topK`
   - 工具层再按现有历史展示格式组装返回结果
 
-#### 用户历史向量回填脚本（存量数据初始化）
-
-- 脚本路径：`scripts/backfill_user_history_vectors.py`
-- 用途：把已有 `history_cases` 记录批量回填到 `user_history_vectors`
-- 运行环境：Python 标准库即可；可直接在 `conda` 的 `test` 环境中执行，无需额外第三方包
-- 默认行为：
-  - 只回填缺失的索引记录
-  - 向量化字段仍只使用 `title`、`case_summary`、`scam_type`
-  - 自动创建 `user_history_vectors` 表及索引（若尚未存在）
-- 示例命令：
-
-```bash
-conda activate test
-python scripts/backfill_user_history_vectors.py
-```
-
-- 常见可选参数：
-  - `--overwrite`：覆盖已存在的索引记录
-  - `--user-id 123`：只回填指定用户
-  - `--record-id TASK-001`：只回填指定历史记录
-  - `--batch-size 20`：控制单批 embedding 请求数量
-  - `--dry-run`：只查看待处理数量，不实际写入
-
 ### 8.3 历史案件库（`historical_case_library.db`）
 
 核心表：`historical_case_library`、`pending_review_cases`
