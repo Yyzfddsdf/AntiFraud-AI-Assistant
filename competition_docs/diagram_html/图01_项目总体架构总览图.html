@@ -49,7 +49,7 @@
   <div class="wrap">
     <div class="card">
       <h1>图1 项目总体架构总览图</h1>
-      <p>展示 Android 端、后端服务、多智能体分析、知识库、用户记忆、预警与家庭联防之间的整体关系。</p>
+      <p>展示 Android 端双线路设计、后端多智能体分析、个人提醒、知识沉淀与家庭联防之间的整体关系。</p>
       <div class="mermaid">
 flowchart TB
     U["普通用户"] --> APP["客户端入口"]
@@ -57,14 +57,18 @@ flowchart TB
 
     subgraph A["用户交互层"]
       APP
+      QUICK["快路径<br/>截图/当前页面快速筛查"]
+      DEEP["慢路径<br/>完整多模态深度分析"]
     end
 
     subgraph B["业务服务层"]
+      QUICKAPI["ImageQuickAgent<br/>同步低成本快判"]
       ENTRY["多模态分析入口"]
       CHAT["聊天式反诈助手"]
       AGENT["多智能体分析引擎"]
+      REPORT["结构化报告与历史归档"]
       MEMORY["用户历史记忆"]
-      ALERT["实时预警中心"]
+      ALERT["实时预警中心<br/>个人提醒"]
       FAMILY["家庭联防中心"]
     end
 
@@ -76,17 +80,24 @@ flowchart TB
       ADMIN["管理员治理后台"]
     end
 
-    APP --> ENTRY
+    APP --> QUICK
+    APP --> DEEP
     APP --> CHAT
+    QUICK --> QUICKAPI
+    DEEP --> ENTRY
+    QUICKAPI --> ALERT
+    QUICKAPI -. 高风险/需复核 .-> ENTRY
     ENTRY --> AGENT
     CHAT --> AGENT
+    AGENT --> REPORT
+    REPORT --> MEMORY
+    REPORT --> ALERT
+    REPORT --> CASEDB
+    REPORT --> MAINDB
     AGENT --> MEMORY
-    AGENT --> ALERT
-    AGENT --> CASEDB
-    AGENT --> MAINDB
     MEMORY --> VECTOR
     ALERT --> APP
-    ALERT --> FAMILY
+    REPORT -. 高风险事件 .-> FAMILY
     FAMILY --> G
     ADMIN --> CASEDB
     ADMIN --> MAINDB
@@ -96,7 +107,7 @@ flowchart TB
     classDef core fill:#e8f7ee,stroke:#2f7d57,color:#173042,stroke-width:2px;
     classDef side fill:#eef4ff,stroke:#5d7b8a,color:#173042,stroke-width:1.5px;
     classDef data fill:#fff6e8,stroke:#d28b26,color:#173042,stroke-width:1.5px;
-    class APP,ENTRY,CHAT,AGENT,MEMORY,ALERT,FAMILY core;
+    class APP,QUICK,DEEP,QUICKAPI,ENTRY,CHAT,AGENT,REPORT,MEMORY,ALERT,FAMILY core;
     class U,G side;
     class MAINDB,CASEDB,VECTOR,REDIS,ADMIN data;
       </div>
