@@ -36,7 +36,7 @@ go mod tidy
 ### 2.2 运行服务
 
 ```bash
-go run .
+go run ./cmd/api
 ```
 
 启动后可访问：
@@ -53,7 +53,7 @@ go run .
 - `INVITE_CODE_ADMIN`：管理员升级邀请码（默认值仅供开发）
 - `DB_PATH`：主业务库路径（默认 `DB/auth_system.db`）
 - `HISTORICAL_CASE_DB_PATH`：历史案件库路径（默认 `DB/historical_case_library.db`）
-- API Key 环境变量覆盖（高优先级，若设置则覆盖 `config/config.json`）：
+- API Key 环境变量覆盖（高优先级，若设置则覆盖 `internal/platform/config/config.json`）：
   - `AGENT_MAIN_API_KEY`
   - `AGENT_IMAGE_API_KEY`
   - `AGENT_IMAGE_QUICK_API_KEY`
@@ -68,11 +68,11 @@ go run .
 
 ## 4. 配置文件
 
-主配置文件：`config/config.json`
+主配置文件：`internal/platform/config/config.json`
 
 配置职责：
 
-- `config/config.json`：
+- `internal/platform/config/config.json`：
   - `agents.main / image / image_quick / video / audio`：多智能体模型参数
   - `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
@@ -82,13 +82,13 @@ go run .
   - `prompts.main / image / image_quick / video / audio`：提示词
   - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
-说明：聊天模块配置已并入主配置文件（`chat_system/config/config.go` 已移除），聊天上下文存取统一走 `cache/` 模块，实际 Redis 连接由 `config/config.json` 的 `redis` 节点决定。
+说明：聊天模块配置已并入主配置文件，聊天上下文存取统一走 `internal/platform/cache/`，实际 Redis 连接由 `internal/platform/config/config.json` 的 `redis` 节点决定。
 
 配置优先级说明：
 
 - 普通运行参数仍按现有逻辑读取（如 `PORT`、`DB_PATH`、`JWT_SECRET`）。
-- 上述 API Key 类字段默认读取 `config/config.json`。
-- 若对应环境变量存在且非空，则环境变量优先覆盖 `config/config.json` 中的 `api_key` 配置。
+- 上述 API Key 类字段默认读取 `internal/platform/config/config.json`。
+- 若对应环境变量存在且非空，则环境变量优先覆盖 `internal/platform/config/config.json` 中的 `api_key` 配置。
 
 ### 4.1 Redis 缓存键规范（当前实现）
 
@@ -104,20 +104,34 @@ go run .
 
 ---
 
-## 5. 项目结构（核心目录）
+## 5. 项目结构（标准六边形）
 
-- `main.go`：服务入口、路由挂载、中间件注册
-- `cache/`：统一 Redis 缓存函数（少参数读写、计数窗口、Hash 管理）
-- `database/`：数据库连接、统一 schema 初始化入口（`InitPersistence`）
-- `login_system/auth/`：JWT 能力边界（claims、签发、验签、鉴权错误语义）
-- `login_system/`：注册登录、用户管理、JWT 中间件、限流
-- `user_profile_system/`：用户画像扩展字段（职业、近期标签）、职业配置与资料更新接口
-- `family_system/`：家庭组、成员关系、邀请、守护关系、家庭通知
-- `chat_system/`：聊天 SSE、工具调用、Redis 上下文
-- `multi_agent/`：多智能体分析主流程、任务队列、工具编排、状态存储
-- `multi_agent/overview/`：用户风险总览聚合（基于历史案件生成趋势与统计）
-- `multi_agent/case_library/`：历史案件库、embedding 入库、向量检索与缓存
-- `llm/`：OpenAI 兼容客户端（聊天、流式、embedding）
+- `cmd/api/`：服务启动入口
+- `internal/bootstrap/`：组合根、路由装配、依赖注入
+- `internal/platform/`：平台级基础设施
+  - `config/`：统一配置与配置文件
+  - `database/`：SQLite 连接与 schema 初始化
+  - `cache/`：Redis 缓存访问
+  - `embedding/`：向量生成能力
+  - `llm/`：OpenAI 兼容客户端
+  - `websearch/`：联网搜索客户端
+- `internal/modules/chat/`
+  - `application/`：聊天用例
+  - `adapters/inbound/http/`：聊天 HTTP 入口
+  - `adapters/outbound/`：聊天服务、工具适配
+- `internal/modules/login/`
+  - `domain/`：JWT、用户模型、登录配置语义
+  - `adapters/inbound/http/`：注册登录控制器与鉴权中间件
+  - `adapters/outbound/`：短信、会话等外部适配
+- `internal/modules/user_profile/`：用户画像应用服务与 HTTP 适配
+- `internal/modules/family/`：家庭守护模块
+- `internal/modules/multi_agent/`
+  - `core/`：多智能体核心执行流程
+  - `application/`：任务编排
+  - `domain/overview/`：风险总览领域逻辑
+  - `adapters/inbound/http/`：智能体相关 API / WS
+  - `adapters/outbound/`：案件库、状态存储、工具、用户历史索引
+- `web/`：前端静态页面资源（桌面端和移动端）
 
 ---
 
@@ -126,7 +140,7 @@ go run .
 ```mermaid
 flowchart TB
     USER[Web / Mobile / API 调用方]
-    API[统一接入层<br/>main.go + Gin]
+    API[统一接入层<br/>cmd/api + internal/bootstrap + Gin]
 
     subgraph Modules["业务模块"]
         LOGIN[登录鉴权模块<br/>login_system]
@@ -166,7 +180,7 @@ flowchart TB
 架构说明（摘要）：
 
 - 第 6 节只保留系统模块边界，不展开智能体内部分析过程；完整分析链路见下一节“智能体交互图”。
-- `main.go` 统一挂载公开认证接口、受保护业务接口和静态页面入口，再把请求分发到登录、画像、家庭、聊天和智能体分析模块。
+- `cmd/api` 启动服务，`internal/bootstrap/server` 统一挂载公开认证接口、受保护业务接口和静态页面入口，再把请求分发到登录、画像、家庭、聊天和智能体分析模块。
 - 数据层保持双库隔离：主业务库承载用户、家庭、任务和历史归档；案件库承载历史案件知识库与待审核案件。
 - Redis 统一承担验证码、限流、聊天上下文和案件向量缓存；聊天模块与智能体模块都会访问外部模型或搜索服务。
 - 家庭系统与智能体主链路保持解耦，只在“高风险历史事件”产生后接收通知回调。
@@ -381,7 +395,7 @@ flowchart TB
 - `keywords` 不是无条件进入向量：
   - 会先做去空、去重与长度/字符质量过滤
   - 只有关键词整体质量足够时才会拼入 embedding 文本
-- 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `config/config.json` 读取
+- 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `internal/platform/config/config.json` 读取
 - 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
 
 ### 8.4 向量检索与缓存优化（当前实现）
@@ -495,12 +509,12 @@ flowchart TB
   - `chat_query_user_case_history`：查询当前用户历史案件记录与数量
 - 系统内信息深度交互：
   - 聊天系统会结合 Redis 会话上下文、知识库和记忆系统、工具返回结果做多轮推理。
-- Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `cache/` 统一函数读写）
+- Redis 会话上下文：`chat:context:<user_id>`，TTL `5` 分钟（通过 `internal/platform/cache/` 统一函数读写）
 - 会话可刷新：`POST /api/chat/refresh`
 
 ### 9.6 用户风险趋势总览（创新点）
 
-- 新增用户风险总览聚合层：`multi_agent/overview/`，直接复用历史案件数据（`GetCaseHistory`）生成轻量总览。
+- 新增用户风险总览聚合层：`internal/modules/multi_agent/domain/overview/`，直接复用历史案件数据（`GetCaseHistory`）生成轻量总览。
 - 面向“运营看盘 + 用户自查”场景，输出两类核心信息：
   - 风险变化趋势：按时间桶聚合（`day/week/month`）统计每个时间段的 `high/medium/low/total`。
   - 风险等级统计：返回用户历史总体 `high/medium/low/total` 数量，便于快速判断风险结构。
@@ -520,7 +534,7 @@ flowchart TB
 
 ### 9.7 历史案件库运营统计总览（创新点）
 
-- 在 `multi_agent/httpapi/historical_case_statistics_*` 中新增管理员统计聚合能力，直接使用历史案件预览接口数据（`ListHistoricalCasePreviews`）做轻量聚合。
+- 在 `internal/modules/multi_agent/adapters/inbound/http/` 中新增管理员统计聚合能力，直接使用历史案件预览接口数据（`ListHistoricalCasePreviews`）做轻量聚合。
 - 面向“案件库运营/知识库治理”场景，返回多维度统计：
   - 按诈骗类型统计：`by_scam_type`
   - 按目标人群统计：`by_target_group`
@@ -553,7 +567,7 @@ flowchart TB
 ### 9.8 实时风险预警推送（WebSocket）
 
 - 新增接口：`GET /api/alert/ws`
-- 触发规则：连接建立后按 `config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“中/高风险且在告警窗口内”记录时主动推送。
+- 触发规则：连接建立后按 `internal/platform/config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“中/高风险且在告警窗口内”记录时主动推送。
 - 推送消息类型：`risk_alert`，包含 `record_id/title/case_summary/scam_type/risk_level/created_at/sent_at`。
 - 连接中断后服务端轮询协程自动退出，前端负责重连策略（建议指数退避）。
 - 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
@@ -596,7 +610,7 @@ flowchart TB
   - 密码复杂度校验（大写+小写+符号）
   - 注册时年龄默认 `28`，不接受注册请求中直接传 `age`
 
-中间件注入示例（`main.go`）：
+中间件注入示例（`internal/bootstrap/server`）：
 
 ```go
 authUserReader := middleware.NewGormAuthUserReader(database.DB)
@@ -606,7 +620,7 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 
 ---
 
-## 11. LLM 客户端能力（`llm/`）
+## 11. LLM 客户端能力（`internal/platform/llm/`）
 
 自定义客户端并非简单 DTO，做了协议兼容扩展：
 
@@ -684,7 +698,7 @@ go test ./...
 
 启动前检查（建议）：
 
-1. 确认 Redis 可用，并与 `config/config.json -> redis` 一致。
+1. 确认 Redis 可用，并与 `internal/platform/config/config.json -> redis` 一致。
 2. 确认数据库文件目录可写（`DB_PATH`、`HISTORICAL_CASE_DB_PATH`）。
 3. 生产环境必须设置 `JWT_SECRET` 与 `INVITE_CODE_ADMIN`。
 
@@ -719,13 +733,13 @@ go test ./...
   - 避免将全量原始案件记录整体加载进大切片；内存模型从“全量原始记录 + 聚合态”收敛为“流式读取 + 必要聚合态”。
   - 在不改变当前画像统计与类型相似度能力的前提下，已属于较低内存占用方案，显著降低峰值内存与 OOM 风险；但这里不把当前实现表述为严格数学意义上的 `O(1)`。
   - 采用 **Streaming Aggregation（流式聚合）** 模式，数据边读取边计算；其中统计总览主要保留计数器状态，图谱分析额外保留类型聚合信息与相似度计算所需向量数据。
-- 新增统一缓存模块 `cache/`，减少业务侧重复缓存代码。
+- 新增统一缓存模块 `internal/platform/cache/`，减少业务侧重复缓存代码。
 - 验证码从进程内 `map` 迁移到 Redis，支持多实例一致校验与一次性消费。
 - 限流桶从进程内 `map` 迁移到 Redis 计数窗口，支持多实例共享限流配额。
 - 向量库管理侧缓存迁移到 Redis Hash，支持多实例共享检索快照。
-- 聊天上下文读写迁移到 `cache/` 通用函数，缓存访问路径统一。
-- 主配置新增 `redis` 节点，统一缓存连接参数收敛在 `config/config.json`。
-- Auth 边界解耦：JWT 逻辑收敛到 `login_system/auth`，`Auth/Admin` 中间件通过接口注入读取用户数据，去除对控制器与全局 DB 的直接耦合。
+- 聊天上下文读写迁移到 `internal/platform/cache/` 通用函数，缓存访问路径统一。
+- 主配置新增 `redis` 节点，统一缓存连接参数收敛在 `internal/platform/config/config.json`。
+- Auth 边界解耦：JWT 逻辑收敛到 `internal/modules/login/domain/auth`，`Auth/Admin` 中间件通过接口注入读取用户数据，去除对控制器与全局 DB 的直接耦合。
 
 ### 15.2 当前边界
 
