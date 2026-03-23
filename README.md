@@ -53,6 +53,16 @@ go run .
 - `INVITE_CODE_ADMIN`：管理员升级邀请码（默认值仅供开发）
 - `DB_PATH`：主业务库路径（默认 `DB/auth_system.db`）
 - `HISTORICAL_CASE_DB_PATH`：历史案件库路径（默认 `DB/historical_case_library.db`）
+- API Key 环境变量覆盖（高优先级，若设置则覆盖 `config/config.json`）：
+  - `AGENT_MAIN_API_KEY`
+  - `AGENT_IMAGE_API_KEY`
+  - `AGENT_IMAGE_QUICK_API_KEY`
+  - `AGENT_VIDEO_API_KEY`
+  - `AGENT_AUDIO_API_KEY`
+  - `AGENT_CASE_COLLECTION_API_KEY`
+  - `EMBEDDING_API_KEY`
+  - `CHAT_API_KEY`
+  - `TAVILY_API_KEY`
 
 ---
 
@@ -73,6 +83,12 @@ go run .
   - `retry.max_retries`、`retry.retry_delay_ms`：统一重试策略
 
 说明：聊天模块配置已并入主配置文件（`chat_system/config/config.go` 已移除），聊天上下文存取统一走 `cache/` 模块，实际 Redis 连接由 `config/config.json` 的 `redis` 节点决定。
+
+配置优先级说明：
+
+- 普通运行参数仍按现有逻辑读取（如 `PORT`、`DB_PATH`、`JWT_SECRET`）。
+- 上述 API Key 类字段默认读取 `config/config.json`。
+- 若对应环境变量存在且非空，则环境变量优先覆盖 `config/config.json` 中的 `api_key` 配置。
 
 ### 4.1 Redis 缓存键规范（当前实现）
 

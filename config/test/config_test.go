@@ -140,6 +140,56 @@ func TestConfigChatFallbackToMainModel(t *testing.T) {
 	}
 }
 
+func TestConfigEnvOverridesAPIKeys(t *testing.T) {
+	t.Setenv("AGENT_MAIN_API_KEY", "env-main-key")
+	t.Setenv("CHAT_API_KEY", "env-chat-key")
+	t.Setenv("EMBEDDING_API_KEY", "env-embedding-key")
+	t.Setenv("TAVILY_API_KEY", "env-tavily-key")
+
+	cfg := validConfig()
+	cfg.Tavily = appcfg.TavilyConfig{
+		APIKey: "config-tavily-key",
+	}
+
+	file := writeConfigFile(t, cfg)
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.Agents.Main.APIKey != "env-main-key" {
+		t.Fatalf("expected env override for agents.main.api_key, got %q", loaded.Agents.Main.APIKey)
+	}
+	if loaded.Chat.APIKey != "env-chat-key" {
+		t.Fatalf("expected env override for chat.api_key, got %q", loaded.Chat.APIKey)
+	}
+	if loaded.Embedding.APIKey != "env-embedding-key" {
+		t.Fatalf("expected env override for embedding.api_key, got %q", loaded.Embedding.APIKey)
+	}
+	if loaded.Tavily.APIKey != "env-tavily-key" {
+		t.Fatalf("expected env override for tavily.api_key, got %q", loaded.Tavily.APIKey)
+	}
+}
+
+func TestConfigFallsBackToFileAPIKeysWhenEnvMissing(t *testing.T) {
+	cfg := validConfig()
+	cfg.Agents.Image.APIKey = "config-image-key"
+	cfg.Chat.APIKey = "config-chat-key"
+
+	file := writeConfigFile(t, cfg)
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.Agents.Image.APIKey != "config-image-key" {
+		t.Fatalf("expected config fallback for agents.image.api_key, got %q", loaded.Agents.Image.APIKey)
+	}
+	if loaded.Chat.APIKey != "config-chat-key" {
+		t.Fatalf("expected config fallback for chat.api_key, got %q", loaded.Chat.APIKey)
+	}
+}
+
 func TestConfigValidate(t *testing.T) {
 	cases := []struct {
 		name      string

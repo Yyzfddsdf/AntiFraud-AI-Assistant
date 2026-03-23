@@ -130,6 +130,7 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 
+	cfg.applyEnvOverrides()
 	cfg.normalize()
 	if err := cfg.validate(); err != nil {
 		return nil, err
@@ -152,6 +153,27 @@ func cloneConfig(cfg *Config) *Config {
 	}
 	cloned := *cfg
 	return &cloned
+}
+
+// applyEnvOverrides 允许通过环境变量覆盖 config.json 中的敏感配置，优先用于 API Key。
+func (c *Config) applyEnvOverrides() {
+	c.Agents.Main.APIKey = firstNonEmptyEnv("AGENT_MAIN_API_KEY", c.Agents.Main.APIKey)
+	c.Agents.Image.APIKey = firstNonEmptyEnv("AGENT_IMAGE_API_KEY", c.Agents.Image.APIKey)
+	c.Agents.ImageQuick.APIKey = firstNonEmptyEnv("AGENT_IMAGE_QUICK_API_KEY", c.Agents.ImageQuick.APIKey)
+	c.Agents.Video.APIKey = firstNonEmptyEnv("AGENT_VIDEO_API_KEY", c.Agents.Video.APIKey)
+	c.Agents.Audio.APIKey = firstNonEmptyEnv("AGENT_AUDIO_API_KEY", c.Agents.Audio.APIKey)
+	c.Agents.CaseCollection.APIKey = firstNonEmptyEnv("AGENT_CASE_COLLECTION_API_KEY", c.Agents.CaseCollection.APIKey)
+
+	c.Embedding.APIKey = firstNonEmptyEnv("EMBEDDING_API_KEY", c.Embedding.APIKey)
+	c.Chat.APIKey = firstNonEmptyEnv("CHAT_API_KEY", c.Chat.APIKey)
+	c.Tavily.APIKey = firstNonEmptyEnv("TAVILY_API_KEY", c.Tavily.APIKey)
+}
+
+func firstNonEmptyEnv(envName string, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(envName)); value != "" {
+		return value
+	}
+	return strings.TrimSpace(fallback)
 }
 
 // normalize 统一裁剪字符串空白，减少运行期参数格式问题。
