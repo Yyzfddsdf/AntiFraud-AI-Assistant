@@ -42,7 +42,6 @@ go run ./cmd/api
 启动后可访问：
 
 - API 基地址：`http://localhost:8081/api`
-- 测试页面：`http://localhost:8081/test-login`
 
 ### 2.3 独立前端服务（Vue 模块化版）
 
@@ -161,7 +160,6 @@ npm run dev
   - `domain/overview/`：风险总览领域逻辑
   - `adapters/inbound/http/`：智能体相关 API / WS
   - `adapters/outbound/`：案件库、状态存储、工具、用户历史索引
-- `web/`：前端静态页面资源（桌面端和移动端）
 - `frontend/desktop-vue/`：独立可启动的 Vue 模块化桌面端前端
 - `frontend/mobile-vue/`：独立可启动的 Vue 模块化移动端前端
 
@@ -212,7 +210,7 @@ flowchart TB
 架构说明（摘要）：
 
 - 第 6 节只保留系统模块边界，不展开智能体内部分析过程；完整分析链路见下一节“智能体交互图”。
-- `cmd/api` 启动服务，`internal/bootstrap/server` 统一挂载公开认证接口、受保护业务接口和静态页面入口，再把请求分发到登录、画像、家庭、聊天和智能体分析模块。
+- `cmd/api` 启动服务，`internal/bootstrap/server` 统一挂载公开认证接口和受保护业务接口，再把请求分发到登录、画像、家庭、聊天和智能体分析模块。
 - 数据层保持双库隔离：主业务库承载用户、家庭、任务和历史归档；案件库承载历史案件知识库与待审核案件。
 - Redis 统一承担验证码、限流、聊天上下文和案件向量缓存；聊天模块与智能体模块都会访问外部模型或搜索服务。
 - 家庭系统与智能体主链路保持解耦，只在“高风险历史事件”产生后接收通知回调。

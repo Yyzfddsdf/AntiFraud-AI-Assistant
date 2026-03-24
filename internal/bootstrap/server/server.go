@@ -70,7 +70,6 @@ func BuildRouter() (*gin.Engine, error) {
 	r.Use(corsMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
 
-	registerStaticRoutes(r)
 	registerAuthRoutes(r, authHandler, smsCodeService)
 	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, chatHandler)
 
@@ -102,14 +101,6 @@ func corsMiddleware() gin.HandlerFunc {
 		}
 		c.Next()
 	}
-}
-
-func registerStaticRoutes(r *gin.Engine) {
-	r.StaticFile("/test-login", "web/login/test_login.html")
-	r.StaticFile("/", "web/login/index.html")
-	r.Static("/assets", "web/login/assets")
-	r.StaticFile("/mobile", "web/login-mobile/index.html")
-	r.Static("/mobile/assets", "web/login-mobile/assets")
 }
 
 func registerAuthRoutes(r *gin.Engine, authHandler *controllers.AuthHandler, smsCodeService smscode.Service) {
