@@ -44,6 +44,36 @@ go run ./cmd/api
 - API 基地址：`http://localhost:8081/api`
 - 测试页面：`http://localhost:8081/test-login`
 
+### 2.3 独立前端服务（Vue 模块化版）
+
+前端拆成两个独立 Vue 工程：
+
+桌面端：
+
+```bash
+cd frontend/desktop-vue
+npm install
+npm run dev
+```
+
+默认开发地址：`http://localhost:5173`
+
+移动端：
+
+```bash
+cd frontend/mobile-vue
+npm install
+npm run dev
+```
+
+默认开发地址：`http://localhost:5174`
+
+说明：
+
+- 桌面端和移动端分别独立启动，互不影响
+- 两个 Vite 开发服务器都已代理 `/api` 到 `http://127.0.0.1:8081`
+- 联调时请先启动 Go 服务
+
 ---
 
 ## 3. 环境变量
@@ -132,6 +162,8 @@ go run ./cmd/api
   - `adapters/inbound/http/`：智能体相关 API / WS
   - `adapters/outbound/`：案件库、状态存储、工具、用户历史索引
 - `web/`：前端静态页面资源（桌面端和移动端）
+- `frontend/desktop-vue/`：独立可启动的 Vue 模块化桌面端前端
+- `frontend/mobile-vue/`：独立可启动的 Vue 模块化移动端前端
 
 ---
 

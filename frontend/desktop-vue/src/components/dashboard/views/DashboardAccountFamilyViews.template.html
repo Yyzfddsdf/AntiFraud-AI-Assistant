@@ -1,0 +1,318 @@
+﻿                <div v-if="activeTab === 'profile'" class="max-w-2xl mx-auto animate-fade-in">
+                    <h1 class="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">个人资料</h1>
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600 rounded-2xl flex items-center justify-center text-3xl font-extrabold shadow-inner">
+                                {{ getUserAvatarText(user) }}
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                                    {{ getUserDisplayName(user) }}
+                                    <span v-if="user.role" :class="['text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border', user.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100']">{{ user.role }}</span>
+                                </h2>
+                                <p v-if="getUserEmailText(user)" class="text-slate-500 mt-1 font-medium">{{ getUserEmailText(user) }}</p>
+                                <p v-if="getUserPhoneText(user)" class="text-slate-400 mt-1 text-sm font-mono">{{ getUserPhoneText(user) }}</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-8">
+                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-5">基本信息</h3>
+                            <div class="grid gap-5">
+                                <div class="grid grid-cols-3 items-center">
+                                    <label class="text-sm font-medium text-slate-500">当前年龄</label>
+                                    <div class="col-span-2">
+                                        <input v-model.number="ageForm.age" type="number" min="1" max="150" class="w-24 px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 items-center">
+                                    <label class="text-sm font-medium text-slate-500">职业</label>
+                                    <div class="col-span-2">
+                                        <select v-model="profileForm.occupation" class="w-full max-w-sm px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                            <option value="">未设置</option>
+                                            <option v-for="item in occupationOptions" :key="`occupation-${item}`" :value="item">{{ item }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 items-start">
+                                    <label class="text-sm font-medium text-slate-500 pt-1">近期标签</label>
+                                    <div class="col-span-2">
+                                        <div v-if="user.recent_tags && user.recent_tags.length" class="flex flex-wrap gap-2">
+                                            <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700">{{ tag }}</span>
+                                        </div>
+                                        <p v-else class="text-sm text-slate-400">暂无近期标签</p>
+                                        <p class="text-xs text-slate-400 mt-2">近期标签仅用于展示当前用户状态，不支持用户侧直接修改。</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 items-center">
+                                    <div></div>
+                                    <div class="col-span-2">
+                                        <button @click="updateUserProfile" :disabled="profileSaving" class="px-5 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-sm font-bold shadow-lg shadow-slate-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            {{ profileSaving ? '保存中...' : '保存资料' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-8" v-if="user.role !== 'admin'">
+                            <h3 class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-5 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                账户升级
+                            </h3>
+                            <div class="bg-brand-50/50 rounded-xl p-5 border border-brand-100">
+                                <label class="block text-xs font-bold text-brand-800 mb-2">管理员邀请码</label>
+                                <div class="flex gap-3">
+                                    <input v-model="inviteCode" type="text" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm placeholder:text-brand-300" placeholder="输入邀请码...">
+                                    <button @click="upgradeAccount" class="px-5 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-bold whitespace-nowrap shadow-md shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!inviteCode">立即升级</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-8">
+                            <h3 class="text-sm font-bold text-red-600 uppercase tracking-wider mb-5">危险区域</h3>
+                            <button @click="deleteAccount" class="w-full px-5 py-4 border border-red-200 bg-red-50/30 text-red-600 rounded-xl hover:bg-red-50 text-sm font-bold flex items-center justify-between group transition-colors">
+                                <span>删除当前账户</span>
+                                <svg class="w-5 h-5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Family View -->
+                <div v-if="activeTab === 'family'" class="max-w-6xl mx-auto animate-fade-in space-y-8">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">家庭中心</h1>
+                            <p class="text-slate-500 mt-2 text-lg">建立家庭联防关系、配置守护人，并查看高风险家庭通知。</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                            <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">未读家庭通知</div>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900">{{ familyUnreadCount }}</div>
+                        </div>
+                    </div>
+
+                    <div v-if="familyLoading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
+                        正在加载家庭数据...
+                    </div>
+
+                    <template v-else-if="!familyHasGroup">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-900">收到的家庭邀请</h2>
+                                        <p class="mt-2 text-sm text-slate-500">如果家人已经向你发起邀请，可以在这里直接查看并加入对应家庭。</p>
+                                    </div>
+                                    <span class="shrink-0 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{{ familyReceivedInvitations.length }} 条</span>
+                                </div>
+                                <div class="mt-5 space-y-3">
+                                    <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+                                        正在加载收到的邀请...
+                                    </div>
+                                    <div v-else-if="familyReceivedInvitations.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-400">
+                                        当前还没有收到新的家庭邀请
+                                    </div>
+                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-4">
+                                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h3 class="text-sm font-bold text-slate-900">{{ invitation.family_name || '家庭邀请' }}</h3>
+                                                    <span :class="['text-[11px] font-bold px-2 py-1 rounded-full border', invitation.status === 'pending' ? 'bg-white text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
+                                                </div>
+                                                <p class="mt-2 text-sm text-slate-600">邀请人：{{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</p>
+                                                <p class="mt-1 text-sm text-slate-500">角色：{{ invitation.role }} / 关系：{{ invitation.relation || '未填写' }}</p>
+                                                <p class="mt-1 text-xs text-slate-400 font-mono break-all">邀请码：{{ invitation.invite_code }}</p>
+                                                <p class="mt-1 text-xs text-slate-400">有效期至：{{ formatTime(invitation.expires_at) }}</p>
+                                            </div>
+                                            <button
+                                                @click="acceptReceivedFamilyInvitation(invitation.invite_code, invitation.id)"
+                                                :disabled="invitation.status !== 'pending' || familyAcceptingInvitations[invitation.id]"
+                                                class="shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                                {{ familyAcceptingInvitations[invitation.id] ? '加入中...' : '接受邀请' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">创建家庭</h2>
+                                <p class="mt-2 text-sm text-slate-500">创建后你将成为家庭创建者，可邀请家人并配置守护关系。</p>
+                                <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                                    <input v-model="familyCreateForm.name" type="text" placeholder="例如：张三家庭" class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                    <button @click="createFamily" class="px-5 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition-colors">创建家庭</button>
+                                </div>
+                            </section>
+
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">接受邀请</h2>
+                                <p class="mt-2 text-sm text-slate-500">输入家人发来的邀请码，加入已有家庭。</p>
+                                <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                                    <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium uppercase">
+                                    <button @click="acceptFamilyInvitation" class="px-5 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors">加入家庭</button>
+                                </div>
+                            </section>
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                                <div>
+                                    <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">家庭信息</div>
+                                    <h2 class="mt-2 text-2xl font-extrabold text-slate-900">{{ familyOverview.family.name }}</h2>
+                                    <p class="mt-2 text-sm text-slate-500">家庭邀请码：<span class="font-mono text-slate-700">{{ familyOverview.family.invite_code }}</span></p>
+                                    <p class="mt-1 text-sm text-slate-500">家庭创建者：{{ familyOverview.family.owner_name }} / {{ familyOverview.family.owner_email }}</p>
+                                    <p v-if="familyOverview.family.owner_phone" class="mt-1 text-sm text-slate-400 font-mono">{{ familyOverview.family.owner_phone }}</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 min-w-[240px]">
+                                    <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                                        <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">成员数</div>
+                                        <div class="mt-2 text-2xl font-extrabold text-slate-900">{{ familyOverview.family.member_count }}</div>
+                                    </div>
+                                    <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                                        <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">守护人数</div>
+                                        <div class="mt-2 text-2xl font-extrabold text-slate-900">{{ familyOverview.family.guardian_count }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">邀请家庭成员</h2>
+                                <p class="mt-2 text-sm text-slate-500">可通过邮箱或手机号发送邀请，配置对方加入后的角色和关系。</p>
+                                <div class="mt-5 grid grid-cols-1 gap-3">
+                                    <input v-model="familyInviteForm.invitee_email" type="email" placeholder="受邀邮箱（可选）" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                    <input v-model="familyInviteForm.invitee_phone" type="tel" placeholder="受邀手机号（可选）" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <select v-model="familyInviteForm.role" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                            <option value="member">普通成员</option>
+                                            <option value="guardian">守护人</option>
+                                        </select>
+                                        <input v-model="familyInviteForm.relation" type="text" placeholder="关系描述，例如：父亲/女儿" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                    </div>
+                                    <button @click="createFamilyInvitation" class="px-5 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition-colors">创建邀请</button>
+                                </div>
+                            </section>
+
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">配置守护关系</h2>
+                                <p class="mt-2 text-sm text-slate-500">为家庭中的成员指定守护人，高风险事件会通知到对应守护人。</p>
+                                <div class="mt-5 grid grid-cols-1 gap-3">
+                                    <select v-model="familyGuardianForm.guardian_user_id" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                        <option value="">选择守护人</option>
+                                        <option v-for="member in familyGuardianCandidates" :key="`guardian-${member.user_id}`" :value="member.user_id">{{ member.username }} ({{ member.role }})</option>
+                                    </select>
+                                    <select v-model="familyGuardianForm.member_user_id" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                                        <option value="">选择被守护成员</option>
+                                        <option v-for="member in familyProtectedCandidates" :key="`member-${member.user_id}`" :value="member.user_id">{{ member.username }} ({{ member.relation || member.role }})</option>
+                                    </select>
+                                    <button @click="createGuardianLink" class="px-5 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors">保存守护关系</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-900">家庭成员</h2>
+                                    <p class="mt-1 text-sm text-slate-500">当前家庭中的所有活跃成员。</p>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50/80 border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs">用户名</th>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs">邮箱</th>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs">手机号</th>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs">角色</th>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs">关系</th>
+                                            <th class="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="member in familyMembers" :key="member.member_id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 font-bold text-slate-900">{{ member.username }}</td>
+                                            <td class="px-6 py-4 text-slate-500">{{ member.email }}</td>
+                                            <td class="px-6 py-4 text-slate-500">{{ member.phone || '-' }}</td>
+                                            <td class="px-6 py-4 text-slate-500">{{ member.role }}</td>
+                                            <td class="px-6 py-4 text-slate-500">{{ member.relation || '-' }}</td>
+                                            <td class="px-6 py-4 text-right">
+                                                <button v-if="familyOverview.current_member && familyOverview.current_member.role === 'owner' && member.role !== 'owner'" @click="deleteFamilyMember(member)" :disabled="familyDeletingMembers[member.member_id]" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100 disabled:opacity-50 transition-colors">移除</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">家庭邀请记录</h2>
+                                <div class="mt-4 space-y-3">
+                                    <div v-for="invitation in familyInvitations" :key="invitation.id" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-800">{{ invitation.invitee_email || invitation.invitee_phone || '未指定目标' }}</div>
+                                                <div class="mt-1 text-xs text-slate-500">角色：{{ invitation.role }} / 关系：{{ invitation.relation || '未填写' }}</div>
+                                                <div class="mt-1 text-xs text-slate-400 font-mono">邀请码：{{ invitation.invite_code }}</div>
+                                            </div>
+                                            <div class="text-right text-xs text-slate-500">
+                                                <div>{{ invitation.status }}</div>
+                                                <div class="mt-1">{{ formatTime(invitation.expires_at) }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-if="familyInvitations.length === 0" class="text-sm text-slate-400">暂无邀请记录</div>
+                                </div>
+                            </section>
+
+                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <h2 class="text-lg font-bold text-slate-900">守护关系</h2>
+                                <div class="mt-4 space-y-3">
+                                    <div v-for="link in familyGuardianLinks" :key="link.id" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+                                        <div>
+                                            <div class="text-sm font-bold text-slate-800">{{ link.guardian_name }} -> {{ link.member_name }}</div>
+                                            <div class="mt-1 text-xs text-slate-500">{{ link.guardian_email }} / {{ link.member_email }}</div>
+                                        </div>
+                                        <button v-if="familyOverview.current_member && familyOverview.current_member.role === 'owner'" @click="deleteGuardianLink(link)" :disabled="familyDeletingGuardianLinks[link.id]" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100 disabled:opacity-50 transition-colors">删除</button>
+                                    </div>
+                                    <div v-if="familyGuardianLinks.length === 0" class="text-sm text-slate-400">尚未配置守护关系</div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-900">家庭风险通知</h2>
+                                    <p class="mt-1 text-sm text-slate-500">当被守护成员出现高风险案件时，守护人会在这里收到通知。</p>
+                                </div>
+                                <div class="text-xs text-slate-400">{{ familyNotificationConnectionLabel }}</div>
+                            </div>
+                            <div class="mt-4 space-y-3">
+                                <div v-for="notification in familyNotifications" :key="notification.id" :class="['rounded-2xl border px-4 py-4 transition-colors', notification.read_at ? 'border-slate-200 bg-slate-50' : 'border-rose-200 bg-rose-50/70']">
+                                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span v-if="!notification.read_at" class="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
+                                                <h3 class="text-sm font-bold text-slate-900">{{ notification.title || '高风险家庭通知' }}</h3>
+                                            </div>
+                                            <p class="mt-2 text-sm text-slate-600">{{ notification.summary }}</p>
+                                            <p class="mt-2 text-xs text-slate-500">成员：{{ notification.target_name }} / 类型：{{ notification.scam_type || '未知' }} / 风险：{{ notification.risk_level || '高' }}</p>
+                                            <p class="mt-1 text-xs text-slate-400">{{ notification.case_summary || '暂无案件摘要' }}</p>
+                                        </div>
+                                        <div class="flex flex-col items-start lg:items-end gap-2">
+                                            <div class="text-xs text-slate-400">{{ formatTime(notification.event_at) }}</div>
+                                            <button v-if="!notification.read_at" @click="markFamilyNotificationRead(notification)" :disabled="familyMarkingNotifications[notification.id]" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 disabled:opacity-50 transition-colors">标记已读</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-if="familyNotifications.length === 0" class="text-sm text-slate-400">暂无家庭通知</div>
+                            </div>
+                        </section>
+                    </template>
+                </div>

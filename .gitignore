@@ -6,3 +6,7 @@ CLAUDE.md
 .gocache
 .claude/
 sentinel-react-frontend/node_modules
+frontend/desktop-vue/node_modules
+frontend/desktop-vue/dist
+frontend/mobile-vue/node_modules
+frontend/mobile-vue/dist
