@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"antifraud/internal/modules/login/domain/models"
@@ -56,16 +55,5 @@ func ConnectDB() error {
 
 // defaultDBPath 在未配置 DB_PATH 时给出默认数据库路径。
 func defaultDBPath() string {
-	_, currentFile, _, ok := runtime.Caller(0)
-	if ok {
-		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), ".."))
-		return filepath.Join(projectRoot, "DB", "auth_system.db")
-	}
-
-	workingDir, err := os.Getwd()
-	if err == nil {
-		return filepath.Join(workingDir, "DB", "auth_system.db")
-	}
-
-	return filepath.Join("DB", "auth_system.db")
+	return defaultProjectDBPath("auth_system.db")
 }

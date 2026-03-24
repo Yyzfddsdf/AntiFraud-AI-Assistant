@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -125,16 +124,5 @@ func resolveHistoricalCaseDBPath() string {
 	if configuredPath := strings.TrimSpace(os.Getenv(historicalCaseDBPathEnv)); configuredPath != "" {
 		return configuredPath
 	}
-
-	_, currentFile, _, ok := runtime.Caller(0)
-	if ok {
-		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), ".."))
-		return filepath.Join(projectRoot, "DB", "historical_case_library.db")
-	}
-
-	workingDir, err := os.Getwd()
-	if err == nil {
-		return filepath.Join(workingDir, "DB", "historical_case_library.db")
-	}
-	return filepath.Join("DB", "historical_case_library.db")
+	return defaultProjectDBPath("historical_case_library.db")
 }

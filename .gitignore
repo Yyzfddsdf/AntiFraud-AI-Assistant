@@ -5,3 +5,4 @@ AGENTS.md
 CLAUDE.md
 .gocache
 .claude/
+sentinel-react-frontend/node_modules
