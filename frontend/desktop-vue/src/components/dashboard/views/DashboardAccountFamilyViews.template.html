@@ -28,10 +28,14 @@
                                 <div class="grid grid-cols-3 items-center">
                                     <label class="text-sm font-medium text-slate-500">职业</label>
                                     <div class="col-span-2">
-                                        <select v-model="profileForm.occupation" class="w-full max-w-sm px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
-                                            <option value="">未设置</option>
-                                            <option v-for="item in occupationOptions" :key="`occupation-${item}`" :value="item">{{ item }}</option>
-                                        </select>
+                                        <CustomSelect
+                                            v-model="profileForm.occupation"
+                                            :options="[{ label: '未设置', value: '' }, ...occupationOptions.map(item => ({ label: item, value: item }))]"
+                                            placeholder="未设置"
+                                            wrapper-class="w-full max-w-sm relative"
+                                            trigger-class="py-2.5 rounded-lg border-slate-300"
+                                            menu-class="max-h-64 overflow-y-auto rounded-xl"
+                                        />
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 items-start">
@@ -187,10 +191,16 @@
                                     <input v-model="familyInviteForm.invitee_email" type="email" placeholder="受邀邮箱（可选）" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
                                     <input v-model="familyInviteForm.invitee_phone" type="tel" placeholder="受邀手机号（可选）" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <select v-model="familyInviteForm.role" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
-                                            <option value="member">普通成员</option>
-                                            <option value="guardian">守护人</option>
-                                        </select>
+                                        <CustomSelect
+                                            v-model="familyInviteForm.role"
+                                            :options="[
+                                                { label: '普通成员', value: 'member' },
+                                                { label: '守护人', value: 'guardian' }
+                                            ]"
+                                            wrapper-class="relative"
+                                            trigger-class="py-3 bg-slate-50"
+                                            menu-class="max-h-64 overflow-y-auto"
+                                        />
                                         <input v-model="familyInviteForm.relation" type="text" placeholder="关系描述，例如：父亲/女儿" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
                                     </div>
                                     <button @click="createFamilyInvitation" class="px-5 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition-colors">创建邀请</button>
@@ -201,14 +211,34 @@
                                 <h2 class="text-lg font-bold text-slate-900">配置守护关系</h2>
                                 <p class="mt-2 text-sm text-slate-500">为家庭中的成员指定守护人，高风险事件会通知到对应守护人。</p>
                                 <div class="mt-5 grid grid-cols-1 gap-3">
-                                    <select v-model="familyGuardianForm.guardian_user_id" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
-                                        <option value="">选择守护人</option>
-                                        <option v-for="member in familyGuardianCandidates" :key="`guardian-${member.user_id}`" :value="member.user_id">{{ member.username }} ({{ member.role }})</option>
-                                    </select>
-                                    <select v-model="familyGuardianForm.member_user_id" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
-                                        <option value="">选择被守护成员</option>
-                                        <option v-for="member in familyProtectedCandidates" :key="`member-${member.user_id}`" :value="member.user_id">{{ member.username }} ({{ member.relation || member.role }})</option>
-                                    </select>
+                                    <CustomSelect
+                                        v-model="familyGuardianForm.guardian_user_id"
+                                        :options="[
+                                            { label: '选择守护人', value: '' },
+                                            ...familyGuardianCandidates.map(member => ({
+                                                label: `${member.username} (${member.role})`,
+                                                value: member.user_id
+                                            }))
+                                        ]"
+                                        placeholder="选择守护人"
+                                        wrapper-class="relative"
+                                        trigger-class="py-3 bg-slate-50"
+                                        menu-class="max-h-64 overflow-y-auto"
+                                    />
+                                    <CustomSelect
+                                        v-model="familyGuardianForm.member_user_id"
+                                        :options="[
+                                            { label: '选择被守护成员', value: '' },
+                                            ...familyProtectedCandidates.map(member => ({
+                                                label: `${member.username} (${member.relation || member.role})`,
+                                                value: member.user_id
+                                            }))
+                                        ]"
+                                        placeholder="选择被守护成员"
+                                        wrapper-class="relative"
+                                        trigger-class="py-3 bg-slate-50"
+                                        menu-class="max-h-64 overflow-y-auto"
+                                    />
                                     <button @click="createGuardianLink" class="px-5 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors">保存守护关系</button>
                                 </div>
                             </section>
