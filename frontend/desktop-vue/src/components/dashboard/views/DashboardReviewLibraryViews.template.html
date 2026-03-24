@@ -119,6 +119,22 @@
                             录入新案件
                         </button>
                     </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                        <div class="text-sm text-slate-500">
+                            共 {{ caseLibraryPagination.total }} 条历史案件，当前第 {{ caseLibraryPagination.page }} / {{ caseLibraryPagination.total_pages || 1 }} 页
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="text-sm text-slate-500">每页条数</label>
+                            <select
+                                :value="caseLibraryPagination.page_size"
+                                @change="changeCaseLibraryPageSize(Number($event.target.value))"
+                                class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option :value="10">10</option>
+                                <option :value="20">20</option>
+                                <option :value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto">
@@ -155,6 +171,28 @@
                             </table>
                         </div>
                         <div v-if="caseLibrary.length === 0" class="p-12 text-center text-slate-400">暂无历史案件数据</div>
+                        <div v-else class="px-6 py-4 border-t border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div class="text-sm text-slate-500">
+                                当前显示 {{ caseLibrary.length }} 条记录
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    @click="goToCaseLibraryPage(caseLibraryPagination.page - 1)"
+                                    :disabled="!caseLibraryPagination.has_prev"
+                                    class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
+                                    上一页
+                                </button>
+                                <span class="px-3 py-2 text-sm font-semibold text-slate-600">
+                                    {{ caseLibraryPagination.page }} / {{ caseLibraryPagination.total_pages || 1 }}
+                                </span>
+                                <button
+                                    @click="goToCaseLibraryPage(caseLibraryPagination.page + 1)"
+                                    :disabled="!caseLibraryPagination.has_next"
+                                    class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
+                                    下一页
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

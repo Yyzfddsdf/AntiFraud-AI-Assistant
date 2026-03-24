@@ -21,6 +21,10 @@ func (s *Service) ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) 
 	return ListHistoricalCasePreviews()
 }
 
+func (s *Service) ListHistoricalCasePreviewsPaged(page int, pageSize int) (HistoricalCasePreviewPage, error) {
+	return ListHistoricalCasePreviewsPaged(page, pageSize)
+}
+
 func (s *Service) GetHistoricalCaseByID(caseID string) (HistoricalCaseRecord, bool, error) {
 	return GetHistoricalCaseByID(caseID)
 }

@@ -2,6 +2,14 @@ import { ref, watch } from 'vue';
 
 export function useCaseLibraryModule(deps) {
   const caseLibrary = ref([]);
+  const caseLibraryPagination = ref({
+    total: 0,
+    page: 1,
+    page_size: 20,
+    total_pages: 0,
+    has_next: false,
+    has_prev: false
+  });
   const pendingReviews = ref([]);
   const startingCaseCollection = ref(false);
   const selectedReview = ref(null);
@@ -30,12 +38,35 @@ export function useCaseLibraryModule(deps) {
     case_count: 5
   });
 
-  const fetchCaseLibrary = async () => {
+  const fetchCaseLibrary = async (page = caseLibraryPagination.value.page, pageSize = caseLibraryPagination.value.page_size) => {
     if (!deps.isAuthenticated.value || deps.user.value.role !== 'admin') return;
-    const res = await deps.request('/scam/case-library/cases');
+    const normalizedPage = Number.isInteger(page) && page > 0 ? page : 1;
+    const normalizedPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : caseLibraryPagination.value.page_size;
+    const res = await deps.request(`/scam/case-library/cases?page=${normalizedPage}&page_size=${normalizedPageSize}`);
     if (res && res.cases) {
       deps.replaceListIfChanged(caseLibrary, res.cases);
+      caseLibraryPagination.value = {
+        total: Number(res.total) || 0,
+        page: Number(res.page) || normalizedPage,
+        page_size: Number(res.page_size) || normalizedPageSize,
+        total_pages: Number(res.total_pages) || 0,
+        has_next: Boolean(res.has_next),
+        has_prev: Boolean(res.has_prev)
+      };
     }
+  };
+
+  const goToCaseLibraryPage = async (page) => {
+    const targetPage = Number(page);
+    if (!Number.isInteger(targetPage) || targetPage < 1) return;
+    if (caseLibraryPagination.value.total_pages > 0 && targetPage > caseLibraryPagination.value.total_pages) return;
+    await fetchCaseLibrary(targetPage, caseLibraryPagination.value.page_size);
+  };
+
+  const changeCaseLibraryPageSize = async (pageSize) => {
+    const nextPageSize = Number(pageSize);
+    if (!Number.isInteger(nextPageSize) || nextPageSize < 1) return;
+    await fetchCaseLibrary(1, nextPageSize);
   };
 
   const fetchPendingReviews = async () => {
@@ -234,7 +265,7 @@ export function useCaseLibraryModule(deps) {
         duplicateCaseConflict.value = null;
         deps.showToast('案件录入成功');
         showCaseModal.value = false;
-        fetchCaseLibrary();
+        fetchCaseLibrary(caseLibraryPagination.value.page, caseLibraryPagination.value.page_size);
         fetchCaseOptionLists();
         await deps.refreshAdminStats(true);
       }
@@ -257,7 +288,10 @@ export function useCaseLibraryModule(deps) {
       const res = await deps.request(`/scam/case-library/cases/${item.case_id}`, 'DELETE');
       if (res) {
         deps.showToast(res.message || '案件已删除');
-        fetchCaseLibrary();
+        const fallbackPage = caseLibrary.value.length === 1 && caseLibraryPagination.value.page > 1
+          ? caseLibraryPagination.value.page - 1
+          : caseLibraryPagination.value.page;
+        fetchCaseLibrary(fallbackPage, caseLibraryPagination.value.page_size);
         await deps.refreshAdminStats(true);
         if (selectedCase.value && selectedCase.value.case_id === item.case_id) {
           selectedCase.value = null;
@@ -276,6 +310,7 @@ export function useCaseLibraryModule(deps) {
 
   return {
     caseLibrary,
+    caseLibraryPagination,
     pendingReviews,
     startingCaseCollection,
     selectedReview,
@@ -289,6 +324,8 @@ export function useCaseLibraryModule(deps) {
     caseForm,
     caseCollectionForm,
     fetchCaseLibrary,
+    goToCaseLibraryPage,
+    changeCaseLibraryPageSize,
     fetchPendingReviews,
     viewReviewDetail,
     approveReview,

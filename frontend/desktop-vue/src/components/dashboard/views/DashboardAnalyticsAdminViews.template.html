@@ -157,47 +157,80 @@
                             </div>
                         </div>
 
-                        <div v-if="adminGraphData && adminGraphData.profiles && adminGraphData.profiles.length" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <div v-for="profile in adminGraphData.profiles" :key="profile.scam_type" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                                <div class="flex items-start justify-between gap-4 mb-4">
-                                    <div>
-                                        <h4 class="text-base font-bold text-slate-900">{{ profile.scam_type }}</h4>
-                                        <p class="text-xs text-slate-500 mt-1">典型案例 {{ profile.case_count }} 条</p>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2 justify-end text-xs">
-                                        <span class="px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-100">高 {{ profile.risk_distribution.high }}</span>
-                                        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">中 {{ profile.risk_distribution.medium }}</span>
-                                        <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">低 {{ profile.risk_distribution.low }}</span>
-                                    </div>
-                                </div>
+                        <div v-if="adminGraphData && adminGraphData.profiles && adminGraphData.profiles.length" class="space-y-6">
+                            <!-- 标签页：所有案件类型 -->
+                            <div class="flex flex-wrap gap-2">
+                                <button v-for="profile in adminGraphData.profiles" :key="`tab-${profile.scam_type}`"
+                                    @click="selectedGraphProfile = profile.scam_type"
+                                    :class="[
+                                        'px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2',
+                                        (!selectedGraphProfile && adminGraphData.profiles[0].scam_type === profile.scam_type) || selectedGraphProfile === profile.scam_type
+                                            ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-md shadow-fuchsia-500/20'
+                                            : 'bg-white text-slate-700 border-slate-200 hover:border-fuchsia-200 hover:bg-fuchsia-50/70'
+                                    ]">
+                                    <span>{{ profile.scam_type }}</span>
+                                    <span :class="(!selectedGraphProfile && adminGraphData.profiles[0].scam_type === profile.scam_type) || selectedGraphProfile === profile.scam_type ? 'bg-white/20 text-fuchsia-50' : 'bg-slate-100 text-slate-500'" class="px-2 py-0.5 rounded-full text-xs font-extrabold">
+                                        {{ profile.case_count }} 案
+                                    </span>
+                                </button>
+                            </div>
 
-                                <div class="space-y-4 text-sm">
-                                    <div>
-                                        <div class="text-slate-500 text-xs font-semibold mb-2 uppercase tracking-wider">高频目标人群</div>
-                                        <div class="flex flex-wrap gap-2">
-                                            <button v-for="item in profile.top_target_groups" :key="`${profile.scam_type}-target-${item.name}`" type="button" @click="fetchAdminTargetGroupChart(item.name)" :class="selectedGraphTargetGroup === item.name ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/50'" class="px-3 py-1.5 rounded-full border text-sm transition-colors">
-                                                {{ item.name }} · {{ item.count }}
-                                            </button>
+                            <!-- 详情卡片 -->
+                            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-h-[250px]">
+                                <template v-for="profile in adminGraphData.profiles" :key="`detail-${profile.scam_type}`">
+                                    <div v-show="(!selectedGraphProfile && adminGraphData.profiles[0].scam_type === profile.scam_type) || selectedGraphProfile === profile.scam_type" class="animate-fade-in">
+                                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-5 border-b border-slate-100">
+                                            <div>
+                                                <h4 class="text-xl font-bold text-slate-900">{{ profile.scam_type }}</h4>
+                                                <p class="text-sm text-slate-500 mt-1">该类型典型案例共 {{ profile.case_count }} 条</p>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2 text-sm">
+                                                <span class="px-3 py-1.5 rounded-full bg-red-50 text-red-700 border border-red-100 font-medium">高风险 {{ profile.risk_distribution.high }}</span>
+                                                <span class="px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 font-medium">中风险 {{ profile.risk_distribution.medium }}</span>
+                                                <span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium">低风险 {{ profile.risk_distribution.low }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <div class="text-slate-500 text-xs font-semibold mb-2 uppercase tracking-wider">高频关键词</div>
-                                        <div class="flex flex-wrap gap-2">
-                                            <span v-for="item in profile.top_keywords" :key="`${profile.scam_type}-keyword-${item.name}`" class="px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700">
-                                                {{ item.name }} · {{ item.count }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="text-slate-500 text-xs font-semibold mb-2 uppercase tracking-wider">相似诈骗类型</div>
-                                        <div class="space-y-2">
-                                            <div v-for="item in profile.similar_types" :key="`${profile.scam_type}-similar-${item.scam_type}`" class="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
-                                                <span class="text-slate-700 font-medium">{{ item.scam_type }}</span>
-                                                <span class="text-xs font-bold text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-100 px-2.5 py-1 rounded-full">{{ formatGraphScore(item.score) }}</span>
+
+                                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-sm">
+                                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                                <div class="text-slate-500 text-xs font-bold mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <span class="w-1.5 h-3 bg-emerald-500 rounded-full"></span>
+                                                    高频目标人群
+                                                </div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <button v-for="item in profile.top_target_groups" :key="`${profile.scam_type}-target-${item.name}`" type="button" @click="fetchAdminTargetGroupChart(item.name)" :class="selectedGraphTargetGroup === item.name ? 'bg-emerald-100 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'" class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors">
+                                                        {{ item.name }}
+                                                        <span class="ml-1 text-xs text-slate-400 font-mono">{{ item.count }}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                                <div class="text-slate-500 text-xs font-bold mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
+                                                    高频关键词
+                                                </div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <span v-for="item in profile.top_keywords" :key="`${profile.scam_type}-keyword-${item.name}`" class="px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium">
+                                                        {{ item.name }}
+                                                        <span class="ml-1 text-xs opacity-60 font-mono">{{ item.count }}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                                <div class="text-slate-500 text-xs font-bold mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <span class="w-1.5 h-3 bg-fuchsia-500 rounded-full"></span>
+                                                    相似诈骗类型
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <div v-for="item in profile.similar_types" :key="`${profile.scam_type}-similar-${item.scam_type}`" class="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2">
+                                                        <span class="text-slate-700 font-medium truncate pr-2">{{ item.scam_type }}</span>
+                                                        <span class="shrink-0 text-xs font-bold text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-100 px-2 py-0.5 rounded-md">{{ formatGraphScore(item.score) }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </template>
                             </div>
                         </div>
 

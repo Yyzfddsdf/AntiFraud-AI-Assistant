@@ -1827,15 +1827,25 @@ curl -X POST "http://localhost:8081/api/scam/case-library/cases" \
 ### 说明
 
 - 仅管理员可调用此接口。
-- 返回所有历史案件的预览信息。
+- 返回历史案件的分页预览信息。
 - 按 `created_at desc` 倒序返回。
 - 预览仅包含：`title`、`target_group`、`risk_level`、`scam_type`，并附带 `case_id` 方便请求详情。
+
+### Query 参数
+
+- `page`（可选）：页码，正整数，默认 `1`。
+- `page_size`（可选）：每页条数，正整数，默认 `20`，最大 `100`。
 
 ### 成功响应（200）
 
 ```json
 {
   "total": 2,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 1,
+  "has_next": false,
+  "has_prev": false,
   "cases": [
     {
       "case_id": "HCASE-5F3C91AA12DE",
@@ -1859,12 +1869,13 @@ curl -X POST "http://localhost:8081/api/scam/case-library/cases" \
 
 - `401` 未认证。
 - `403` 权限不足（非管理员）。
+- `400` `page` 或 `page_size` 非正整数。
 - `500` 预览查询失败。
 
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases" \
+curl -X GET "http://localhost:8081/api/scam/case-library/cases?page=1&page_size=20" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 

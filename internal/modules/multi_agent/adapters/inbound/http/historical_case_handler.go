@@ -1,7 +1,9 @@
 package httpapi
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,14 +88,25 @@ func CreateHistoricalCaseHandle(c *gin.Context) {
 // GetHistoricalCasePreviewHandle 返回历史案件预览列表。
 // 仅包含标题、目标人群、风险等级以及 case_id（便于前端点详情）。
 func GetHistoricalCasePreviewHandle(c *gin.Context) {
-	previews, err := defaultCaseLibraryService.ListHistoricalCasePreviews()
+	page, err := parsePositiveIntQuery(c, "page", 1)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	pageSize, err := parsePositiveIntQuery(c, "page_size", 20)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := defaultCaseLibraryService.ListHistoricalCasePreviewsPaged(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "历史案件预览查询失败: " + err.Error()})
 		return
 	}
 
-	items := make([]apimodel.HistoricalCasePreviewItem, 0, len(previews))
-	for _, preview := range previews {
+	items := make([]apimodel.HistoricalCasePreviewItem, 0, len(result.Items))
+	for _, preview := range result.Items {
 		items = append(items, apimodel.HistoricalCasePreviewItem{
 			CaseID:      preview.CaseID,
 			Title:       preview.Title,
@@ -104,8 +117,13 @@ func GetHistoricalCasePreviewHandle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, apimodel.HistoricalCasePreviewResponse{
-		Total: len(items),
-		Cases: items,
+		Total:      result.Total,
+		Page:       result.Page,
+		PageSize:   result.PageSize,
+		TotalPages: result.TotalPages,
+		HasNext:    result.HasNext,
+		HasPrev:    result.HasPrev,
+		Cases:      items,
 	})
 }
 
@@ -180,6 +198,15 @@ func GetHistoricalCaseScamTypeOptionsHandle(c *gin.Context) {
 		"total":   len(options),
 		"options": options,
 	})
+}
+
+func parsePositiveIntQuery(c *gin.Context, key string, defaultValue int) (int, error) {
+	raw := strings.TrimSpace(c.DefaultQuery(key, strconv.Itoa(defaultValue)))
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 {
+		return 0, fmt.Errorf("%s 必须为正整数", key)
+	}
+	return value, nil
 }
 
 // GetHistoricalCaseTargetGroupOptionsHandle 返回可选目标人群列表（仅管理员）。

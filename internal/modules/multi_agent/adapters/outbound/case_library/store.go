@@ -53,7 +53,14 @@ func IsValidationError(err error) bool {
 type CreateHistoricalCaseInput = model.CreateHistoricalCaseInput
 type HistoricalCaseRecord = model.HistoricalCaseRecord
 type HistoricalCasePreview = model.HistoricalCasePreview
+type HistoricalCasePreviewPage = model.HistoricalCasePreviewPage
 type historicalCaseEntity = model.HistoricalCaseEntity
+
+const (
+	defaultHistoricalCasePreviewPage     = 1
+	defaultHistoricalCasePreviewPageSize = 20
+	maxHistoricalCasePreviewPageSize     = 100
+)
 
 // CreateHistoricalCase 将历史案件写入独立数据库，并保存 embedding 向量。
 func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistoricalCaseInput) (HistoricalCaseRecord, error) {
@@ -70,6 +77,11 @@ func CreateHistoricalCase(ctx context.Context, userID string, input CreateHistor
 // ListHistoricalCasePreviews 返回历史案件预览数据，用于列表页展示。
 func ListHistoricalCasePreviews() ([]HistoricalCasePreview, error) {
 	return listHistoricalCasePreviewsFromDB()
+}
+
+// ListHistoricalCasePreviewsPaged 返回历史案件预览分页结果，用于列表页展示。
+func ListHistoricalCasePreviewsPaged(page int, pageSize int) (HistoricalCasePreviewPage, error) {
+	return listHistoricalCasePreviewsPageFromDB(page, pageSize)
 }
 
 // StreamHistoricalCasePreviews executes a streaming query for case previews to avoid memory pressure.
@@ -140,6 +152,81 @@ func listHistoricalCasePreviewsFromDB() ([]HistoricalCasePreview, error) {
 		})
 	}
 	return previews, nil
+}
+
+func listHistoricalCasePreviewsPageFromDB(page int, pageSize int) (HistoricalCasePreviewPage, error) {
+	db, err := database.GetHistoricalCaseDB()
+	if err != nil {
+		return HistoricalCasePreviewPage{}, err
+	}
+
+	normalizedPage, normalizedPageSize := normalizeHistoricalCasePreviewPagination(page, pageSize)
+
+	var total int64
+	if err := db.Model(&historicalCaseEntity{}).Count(&total).Error; err != nil {
+		return HistoricalCasePreviewPage{}, fmt.Errorf("count historical case previews failed: %w", err)
+	}
+
+	rows := make([]historicalCaseEntity, 0)
+	offset := (normalizedPage - 1) * normalizedPageSize
+	if err := db.Select("case_id", "title", "target_group", "risk_level", "scam_type", "created_at").
+		Order("created_at desc").
+		Limit(normalizedPageSize).
+		Offset(offset).
+		Find(&rows).Error; err != nil {
+		return HistoricalCasePreviewPage{}, fmt.Errorf("query historical case previews page failed: %w", err)
+	}
+
+	items := make([]HistoricalCasePreview, 0, len(rows))
+	for _, row := range rows {
+		normalizedRiskLevel := normalizeRiskLevel(row.RiskLevel)
+		if normalizedRiskLevel == "" {
+			normalizedRiskLevel = strings.TrimSpace(row.RiskLevel)
+		}
+
+		items = append(items, HistoricalCasePreview{
+			CaseID:      strings.TrimSpace(row.CaseID),
+			Title:       strings.TrimSpace(row.Title),
+			TargetGroup: strings.TrimSpace(row.TargetGroup),
+			RiskLevel:   normalizedRiskLevel,
+			ScamType:    strings.TrimSpace(row.ScamType),
+			CreatedAt:   row.CreatedAt,
+		})
+	}
+
+	totalInt := int(total)
+	totalPages := 0
+	if totalInt > 0 {
+		totalPages = (totalInt + normalizedPageSize - 1) / normalizedPageSize
+	}
+	if totalPages > 0 && normalizedPage > totalPages {
+		normalizedPage = totalPages
+	}
+
+	return HistoricalCasePreviewPage{
+		Items:      items,
+		Total:      totalInt,
+		Page:       normalizedPage,
+		PageSize:   normalizedPageSize,
+		TotalPages: totalPages,
+		HasNext:    totalPages > 0 && normalizedPage < totalPages,
+		HasPrev:    normalizedPage > 1 && totalPages > 0,
+	}, nil
+}
+
+func normalizeHistoricalCasePreviewPagination(page int, pageSize int) (int, int) {
+	normalizedPage := page
+	if normalizedPage < 1 {
+		normalizedPage = defaultHistoricalCasePreviewPage
+	}
+	normalizedPageSize := pageSize
+	if normalizedPageSize < 1 {
+		normalizedPageSize = defaultHistoricalCasePreviewPageSize
+	}
+	if normalizedPageSize > maxHistoricalCasePreviewPageSize {
+		normalizedPageSize = maxHistoricalCasePreviewPageSize
+	}
+	return normalizedPage, normalizedPageSize
 }
 
 // GetHistoricalCaseByID 根据 case_id 返回完整历史案件详情。

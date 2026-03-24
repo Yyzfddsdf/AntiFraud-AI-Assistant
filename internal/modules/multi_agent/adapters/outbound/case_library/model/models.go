@@ -54,6 +54,17 @@ type HistoricalCasePreview struct {
 	CreatedAt   time.Time
 }
 
+// HistoricalCasePreviewPage 表示历史案件预览分页结果。
+type HistoricalCasePreviewPage struct {
+	Items      []HistoricalCasePreview
+	Total      int
+	Page       int
+	PageSize   int
+	TotalPages int
+	HasNext    bool
+	HasPrev    bool
+}
+
 // HistoricalCaseEntity 是 historical_case_library 表 ORM 映射实体。
 type HistoricalCaseEntity struct {
 	ID                 uint      `gorm:"primaryKey"`

@@ -427,6 +427,7 @@ flowchart TB
   - 只有关键词整体质量足够时才会拼入 embedding 文本
 - 配置化模型路由：embedding 的 `APIKey/BaseURL/Model` 从 `internal/platform/config/config.json` 读取
 - 管理员权限隔离：上传、预览、详情、删除接口统一放在管理员路由组
+- 历史案件预览接口已支持分页查询：`GET /api/scam/case-library/cases?page=<n>&page_size=<m>`，默认每页 `20` 条，避免一次性返回全量数据
 
 ### 8.4 向量检索与缓存优化（当前实现）
 
@@ -690,7 +691,7 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 历史案件库（admin）：
 
 - `POST /api/scam/case-library/cases`
-- `GET /api/scam/case-library/cases`
+- `GET /api/scam/case-library/cases?page=<n>&page_size=<m>`
 - `GET /api/scam/case-library/options/scam-types`
 - `GET /api/scam/case-library/options/target-groups`
 - `GET /api/scam/case-library/cases/:caseId`

@@ -13,6 +13,7 @@ export function useChartsModule(deps) {
   const adminTargetGroupChartCache = ref({});
   const selectedGraphTargetGroup = ref('');
   const showGraphModal = ref(false);
+  const selectedGraphProfile = ref('');
 
   let pieChartInstance = null;
   let lineChartInstance = null;
@@ -220,6 +221,12 @@ export function useChartsModule(deps) {
         if (hasChanged || forceRefresh) {
           adminGraphData.value = res;
           adminGraphCache.value = res;
+          
+          if (res.profiles && res.profiles.length > 0) {
+            selectedGraphProfile.value = res.profiles[0].scam_type;
+          } else {
+            selectedGraphProfile.value = '';
+          }
         }
       }
       if (selectedGraphTargetGroup.value) {
@@ -529,6 +536,7 @@ export function useChartsModule(deps) {
     adminTargetGroupChartData,
     selectedGraphTargetGroup,
     showGraphModal,
+    selectedGraphProfile,
     availableGraphTargetGroups,
     fetchRiskTrend,
     getRiskTrendAnalysisClass,

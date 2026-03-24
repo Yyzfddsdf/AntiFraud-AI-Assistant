@@ -48,8 +48,13 @@ type HistoricalCasePreviewItem struct {
 
 // HistoricalCasePreviewResponse 历史案件预览列表响应体。
 type HistoricalCasePreviewResponse struct {
-	Total int                         `json:"total"`
-	Cases []HistoricalCasePreviewItem `json:"cases"`
+	Total      int                         `json:"total"`
+	Page       int                         `json:"page"`
+	PageSize   int                         `json:"page_size"`
+	TotalPages int                         `json:"total_pages"`
+	HasNext    bool                        `json:"has_next"`
+	HasPrev    bool                        `json:"has_prev"`
+	Cases      []HistoricalCasePreviewItem `json:"cases"`
 }
 
 // HistoricalCaseDetailItem 历史案件详情条目（包含向量）。
