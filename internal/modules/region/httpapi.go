@@ -1,6 +1,7 @@
 package region_system
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ func RegisterRoutes(api gin.IRoutes, service *Service) {
 	api.GET("/regions/cities", listCitiesHandle(service))
 	api.GET("/regions/districts", listDistrictsHandle(service))
 	api.POST("/regions/resolve", resolveRegionHandle(service))
+	api.GET("/regions/cases/stats/current", currentRegionCaseStatsHandle(service))
 }
 
 func listProvincesHandle(service *Service) gin.HandlerFunc {
@@ -61,5 +63,38 @@ func resolveRegionHandle(service *Service) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"region": selection})
+	}
+}
+
+func currentRegionCaseStatsHandle(service *Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDValue, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+			return
+		}
+
+		numericUserID, ok := userIDValue.(uint)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+			return
+		}
+
+		result, err := service.GetCurrentUserRegionCaseStats(c.Request.Context(), numericUserID)
+		if err != nil {
+			switch {
+			case errors.Is(err, ErrUserNotFound):
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			case errors.Is(err, ErrUserRegionNotSet):
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			case errors.Is(err, ErrRegionServiceUnavailable):
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "地区案件统计查询失败"})
+			}
+			return
+		}
+
+		c.JSON(http.StatusOK, result)
 	}
 }

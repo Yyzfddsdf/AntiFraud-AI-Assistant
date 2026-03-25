@@ -1,11 +1,24 @@
 package region_system
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
+	"time"
+
+	"antifraud/internal/platform/cache"
+	"antifraud/internal/platform/database"
 
 	gb2260 "github.com/cn/GB2260.go"
+	"gorm.io/gorm"
+)
+
+const (
+	regionCaseStatsCacheVersionKey = "cache:user_region_case_stats:v1:version"
+	regionCaseStatsCacheKeyPrefix  = "cache:user_region_case_stats:v1:data:"
+	regionCaseStatsCacheTTL        = 2 * time.Minute
 )
 
 type RegionOption struct {
@@ -29,9 +42,49 @@ type ResolveRegionInput struct {
 	DistrictCandidates []string `json:"district_candidates"`
 }
 
+type RegionCaseStatScamType struct {
+	ScamType string `json:"scam_type"`
+	Count    int    `json:"count"`
+}
+
+type RegionCaseStatsRegion struct {
+	ProvinceCode     string `json:"province_code"`
+	ProvinceName     string `json:"province_name"`
+	CityCode         string `json:"city_code"`
+	CityName         string `json:"city_name"`
+	DistrictCode     string `json:"district_code"`
+	DistrictName     string `json:"district_name"`
+	Granularity      string `json:"granularity"`
+	GranularityLabel string `json:"granularity_label"`
+}
+
+type RegionCaseStatsSummary struct {
+	TodayCount   int `json:"today_count"`
+	Last7dCount  int `json:"last_7d_count"`
+	Last30dCount int `json:"last_30d_count"`
+	TotalCount   int `json:"total_count"`
+	HighCount    int `json:"high_count"`
+	MidCount     int `json:"mid_count"`
+	LowCount     int `json:"low_count"`
+}
+
+type RegionCaseStatsResponse struct {
+	GeneratedAt  string                   `json:"generated_at"`
+	Region       RegionCaseStatsRegion    `json:"region"`
+	Summary      RegionCaseStatsSummary   `json:"summary"`
+	TopScamTypes []RegionCaseStatScamType `json:"top_scam_types"`
+}
+
 type Service struct {
 	gb gb2260.GB2260
+	db *gorm.DB
 }
+
+var (
+	ErrRegionServiceUnavailable = errors.New("地区服务当前不可用")
+	ErrUserNotFound             = errors.New("用户不存在")
+	ErrUserRegionNotSet         = errors.New("用户未设置城市信息")
+)
 
 var specialRegionProvinceNames = map[string]string{
 	"710000": "台湾省",
@@ -54,7 +107,7 @@ var deprecatedDistrictCodesByCity = map[string]map[string]struct{}{
 }
 
 func NewService() *Service {
-	return &Service{gb: gb2260.NewGB2260("")}
+	return &Service{gb: gb2260.NewGB2260(""), db: database.DB}
 }
 
 func (s *Service) ListProvinces() []RegionOption {
@@ -409,4 +462,191 @@ func matchesAnyDistrictCandidate(districtName string, candidates []string) bool 
 		}
 	}
 	return false
+}
+
+func (s *Service) GetCurrentUserRegionCaseStats(ctx context.Context, userID uint) (RegionCaseStatsResponse, error) {
+	if s == nil || s.db == nil {
+		return RegionCaseStatsResponse{}, ErrRegionServiceUnavailable
+	}
+
+	cacheKey := buildRegionCaseStatsCacheKey(userID)
+	var cached RegionCaseStatsResponse
+	if found, err := cache.GetJSON(cacheKey, &cached); err == nil && found {
+		return cached, nil
+	}
+
+	type userRegionRow struct {
+		ProvinceCode string `gorm:"column:province_code"`
+		ProvinceName string `gorm:"column:province_name"`
+		CityCode     string `gorm:"column:city_code"`
+		CityName     string `gorm:"column:city_name"`
+		DistrictCode string `gorm:"column:district_code"`
+		DistrictName string `gorm:"column:district_name"`
+	}
+
+	var userRegion userRegionRow
+	if err := s.db.WithContext(ctx).
+		Table("users").
+		Select("province_code, province_name, city_code, city_name, district_code, district_name").
+		Where("id = ?", userID).
+		Take(&userRegion).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return RegionCaseStatsResponse{}, ErrUserNotFound
+		}
+		return RegionCaseStatsResponse{}, err
+	}
+
+	provinceCode := strings.TrimSpace(userRegion.ProvinceCode)
+	provinceName := strings.TrimSpace(userRegion.ProvinceName)
+	cityCode := strings.TrimSpace(userRegion.CityCode)
+	cityName := strings.TrimSpace(userRegion.CityName)
+	districtCode := strings.TrimSpace(userRegion.DistrictCode)
+	districtName := strings.TrimSpace(userRegion.DistrictName)
+
+	if cityCode == "" && provinceCode != "" {
+		cityCode = provinceCode
+	}
+	if cityName == "" && provinceName != "" {
+		cityName = provinceName
+	}
+
+	if cityCode == "" || cityName == "" {
+		return RegionCaseStatsResponse{}, ErrUserRegionNotSet
+	}
+
+	granularity := inferRegionGranularity(districtCode, districtName)
+	regionFilterColumn := "u.city_code"
+	regionFilterCode := cityCode
+	if granularity == "county" || granularity == "district" {
+		regionFilterColumn = "u.district_code"
+		regionFilterCode = districtCode
+	}
+
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	last7dStart := todayStart.AddDate(0, 0, -6)
+	last30dStart := todayStart.AddDate(0, 0, -29)
+
+	type aggregateRow struct {
+		TodayCount   int `gorm:"column:today_count"`
+		Last7dCount  int `gorm:"column:last_7d_count"`
+		Last30dCount int `gorm:"column:last_30d_count"`
+		TotalCount   int `gorm:"column:total_count"`
+		HighCount    int `gorm:"column:high_count"`
+		MidCount     int `gorm:"column:mid_count"`
+		LowCount     int `gorm:"column:low_count"`
+	}
+
+	var aggregate aggregateRow
+	if err := s.db.WithContext(ctx).
+		Table("history_cases AS hc").
+		Select(
+			"COALESCE(SUM(CASE WHEN hc.created_at >= ? THEN 1 ELSE 0 END), 0) AS today_count, "+
+				"COALESCE(SUM(CASE WHEN hc.created_at >= ? THEN 1 ELSE 0 END), 0) AS last_7d_count, "+
+				"COALESCE(SUM(CASE WHEN hc.created_at >= ? THEN 1 ELSE 0 END), 0) AS last_30d_count, "+
+				"COUNT(1) AS total_count, "+
+				"COALESCE(SUM(CASE WHEN hc.risk_level = '高' THEN 1 ELSE 0 END), 0) AS high_count, "+
+				"COALESCE(SUM(CASE WHEN hc.risk_level = '中' THEN 1 ELSE 0 END), 0) AS mid_count, "+
+				"COALESCE(SUM(CASE WHEN hc.risk_level = '低' THEN 1 ELSE 0 END), 0) AS low_count",
+			todayStart,
+			last7dStart,
+			last30dStart,
+		).
+		Joins("JOIN users AS u ON CAST(u.id AS TEXT) = hc.user_id").
+		Where("hc.status = ?", "completed").
+		Where(regionFilterColumn+" = ?", regionFilterCode).
+		Scan(&aggregate).Error; err != nil {
+		return RegionCaseStatsResponse{}, err
+	}
+
+	topScamTypes := make([]RegionCaseStatScamType, 0, 5)
+	if err := s.db.WithContext(ctx).
+		Table("history_cases AS hc").
+		Select("hc.scam_type AS scam_type, COUNT(1) AS count").
+		Joins("JOIN users AS u ON CAST(u.id AS TEXT) = hc.user_id").
+		Where("hc.status = ?", "completed").
+		Where(regionFilterColumn+" = ?", regionFilterCode).
+		Group("hc.scam_type").
+		Order("count DESC, hc.scam_type ASC").
+		Limit(5).
+		Scan(&topScamTypes).Error; err != nil {
+		return RegionCaseStatsResponse{}, err
+	}
+
+	outputDistrictCode := ""
+	outputDistrictName := ""
+	if granularity == "county" || granularity == "district" {
+		outputDistrictCode = districtCode
+		outputDistrictName = districtName
+	}
+
+	result := RegionCaseStatsResponse{
+		GeneratedAt: now.Format(time.RFC3339),
+		Region: RegionCaseStatsRegion{
+			ProvinceCode:     provinceCode,
+			ProvinceName:     provinceName,
+			CityCode:         cityCode,
+			CityName:         cityName,
+			DistrictCode:     outputDistrictCode,
+			DistrictName:     outputDistrictName,
+			Granularity:      granularity,
+			GranularityLabel: granularityLabel(granularity),
+		},
+		Summary: RegionCaseStatsSummary{
+			TodayCount:   aggregate.TodayCount,
+			Last7dCount:  aggregate.Last7dCount,
+			Last30dCount: aggregate.Last30dCount,
+			TotalCount:   aggregate.TotalCount,
+			HighCount:    aggregate.HighCount,
+			MidCount:     aggregate.MidCount,
+			LowCount:     aggregate.LowCount,
+		},
+		TopScamTypes: topScamTypes,
+	}
+	_ = cache.SetJSON(cacheKey, result, regionCaseStatsCacheTTL)
+	return result, nil
+}
+
+func inferRegionGranularity(districtCode string, districtName string) string {
+	if strings.TrimSpace(districtCode) == "" {
+		return "city"
+	}
+	trimmed := strings.TrimSpace(districtName)
+	if strings.Contains(trimmed, "县") || strings.Contains(trimmed, "旗") {
+		return "county"
+	}
+	if strings.Contains(trimmed, "区") {
+		return "district"
+	}
+	return "city"
+}
+
+func granularityLabel(granularity string) string {
+	switch strings.TrimSpace(granularity) {
+	case "county":
+		return "县"
+	case "district":
+		return "区"
+	case "city":
+		return "市"
+	default:
+		return "市"
+	}
+}
+
+func RegionCaseStatsCacheVersion() string {
+	var version string
+	found, err := cache.GetJSON(regionCaseStatsCacheVersionKey, &version)
+	if err != nil || !found || strings.TrimSpace(version) == "" {
+		return "0"
+	}
+	return strings.TrimSpace(version)
+}
+
+func TouchRegionCaseStatsCacheVersion() {
+	_ = cache.SetJSON(regionCaseStatsCacheVersionKey, fmt.Sprintf("%d", time.Now().UnixNano()), 0)
+}
+
+func buildRegionCaseStatsCacheKey(userID uint) string {
+	return fmt.Sprintf("%s%s:user:%d", regionCaseStatsCacheKeyPrefix, RegionCaseStatsCacheVersion(), userID)
 }

@@ -415,5 +415,59 @@
                             </div>
                         </div>
                     </div>
+
+                    <div v-if="regionCaseStatsNeedsSetup" class="mt-8 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-5 flex items-start justify-between gap-4">
+                        <div>
+                            <div class="text-sm font-bold text-amber-800">尚未设置所在地区</div>
+                            <div class="text-sm text-amber-700 mt-1">{{ regionCaseStatsMessage || '请先在“个人资料”中完善省/市/县（区）信息，才能查看所在地区案件统计。' }}</div>
+                        </div>
+                        <button @click="activeTab = 'profile'" class="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">去设置</button>
+                    </div>
+
+                    <div v-else-if="regionCaseStats && regionCaseStats.region" class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-cyan-100">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                                    <span class="w-1.5 h-4 bg-cyan-500 rounded-full"></span>
+                                    所在{{ regionCaseStats.region.granularity_label || '市' }}案件统计
+                                </h3>
+                                <p class="text-sm text-slate-500">
+                                    {{ ['county', 'district'].includes(regionCaseStats.region.granularity) ? `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name} / ${regionCaseStats.region.district_name}` : `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name}` }}
+                                </p>
+                            </div>
+                            <span class="text-xs bg-cyan-50 text-cyan-700 border border-cyan-100 px-3 py-1.5 rounded-full font-medium">总计 {{ regionCaseStats.summary ? regionCaseStats.summary.total_count : 0 }}</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                                <div class="text-xs text-slate-400">今日</div>
+                                <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.today_count : 0 }}</div>
+                            </div>
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                                <div class="text-xs text-slate-400">近7天</div>
+                                <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.last_7d_count : 0 }}</div>
+                            </div>
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                                <div class="text-xs text-slate-400">近30天</div>
+                                <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.last_30d_count : 0 }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6" v-if="regionCaseStats.top_scam_types && regionCaseStats.top_scam_types.length">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">高发骗局 Top5</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div v-for="(item, idx) in regionCaseStats.top_scam_types" :key="`desktop-region-scam-${idx}-${item.scam_type}`" class="flex items-center justify-between bg-cyan-50/60 border border-cyan-100 rounded-lg px-3 py-2">
+                                    <span class="text-sm font-medium text-slate-700">{{ item.scam_type }}</span>
+                                    <span class="text-sm font-bold text-cyan-700">{{ item.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 rounded-xl border px-4 py-3" :class="getRegionSignalClass(getRegionStatsSignal(regionCaseStats).level)">
+                            <div class="text-sm font-bold">{{ getRegionStatsSignal(regionCaseStats).title }}</div>
+                            <div class="text-sm mt-1 opacity-90">{{ getRegionStatsSignal(regionCaseStats).detail }}</div>
+                            <div class="text-xs mt-2 font-medium">{{ getRegionTopScamHint(regionCaseStats) }}</div>
+                        </div>
+                    </div>
                 </div>
 

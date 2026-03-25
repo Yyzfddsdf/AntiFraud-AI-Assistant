@@ -28,10 +28,12 @@ export function createMobileTabChangeHandler(deps) {
     if (newTab === 'tasks') {
       deps.fetchTasks();
       deps.fetchRiskTrend();
+      deps.fetchCurrentRegionCaseStats();
     }
 
     if (newTab === 'risk_trend') {
       deps.fetchRiskTrend();
+      deps.fetchCurrentRegionCaseStats();
     }
   };
 }

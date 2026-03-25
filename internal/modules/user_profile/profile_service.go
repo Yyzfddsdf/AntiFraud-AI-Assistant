@@ -91,6 +91,7 @@ func (s *Service) UpdateCurrentUserProfile(userID uint, input UpdateProfileInput
 		return loginmodel.UserResponse{}, err
 	}
 	_ = cache.SetJSON("cache:case_library:geo_map:v1:version", fmt.Sprintf("%d", time.Now().UnixNano()), 0)
+	region_system.TouchRegionCaseStatsCacheVersion()
 	return s.GetCurrentUserResponse(userID)
 }
 

@@ -53,6 +53,7 @@ func BuildRouter() (*gin.Engine, error) {
 
 	state.RegisterHistoryObserver(func(record state.CaseHistoryRecord) {
 		_ = cache.SetJSON("cache:case_library:geo_map:v1:version", fmt.Sprintf("%d", time.Now().UnixNano()), 0)
+		region_system.TouchRegionCaseStatsCacheVersion()
 		if record.RiskLevel != "高" {
 			return
 		}

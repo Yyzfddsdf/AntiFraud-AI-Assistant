@@ -487,6 +487,7 @@ export function useDesktopApp() {
     if (res && res.user) {
       user.value = res.user;
       syncProfileForm(res.user);
+      await chartsModule.fetchCurrentRegionCaseStats();
       showToast(res.message || '用户画像更新成功');
     }
   };
@@ -615,6 +616,7 @@ export function useDesktopApp() {
     fetchHistory,
     fetchTasks,
     fetchRiskTrend: chartsModule.fetchRiskTrend,
+    fetchCurrentRegionCaseStats: chartsModule.fetchCurrentRegionCaseStats,
     fetchAdminStats,
     fetchGeoRiskMap: geoRiskMapModule.fetchGeoRiskMap
   });
@@ -624,6 +626,7 @@ export function useDesktopApp() {
   startPolling = () => {
     fetchTasks({ silent: true });
     fetchHistory({ silent: true });
+    chartsModule.fetchCurrentRegionCaseStats();
     familyModule.fetchFamilyOverview({ silent: true });
     alertsModule.connectAlertWebSocket();
     familyModule.connectFamilyNotificationWebSocket();
@@ -708,6 +711,7 @@ export function useDesktopApp() {
     if (token.value) {
       await getUserInfo();
       await hydrateRegionOptionsFromProfile();
+      await chartsModule.fetchCurrentRegionCaseStats();
     } else {
       reconcileRouteState({ replace: true });
     }

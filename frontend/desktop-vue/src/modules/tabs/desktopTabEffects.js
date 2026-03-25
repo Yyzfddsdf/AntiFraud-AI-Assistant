@@ -21,7 +21,10 @@ export const createDesktopTabChangeHandler = (deps) => {
     if (newTab === 'users') deps.fetchUsers();
     if (newTab === 'history') deps.fetchHistory();
     if (newTab === 'tasks') deps.fetchTasks();
-    if (newTab === 'risk_trend') deps.fetchRiskTrend();
+    if (newTab === 'risk_trend') {
+      deps.fetchRiskTrend();
+      deps.fetchCurrentRegionCaseStats();
+    }
     if (newTab === 'admin_stats') deps.fetchAdminStats();
     if (newTab === 'geo_risk_map') deps.fetchGeoRiskMap();
     if (newTab === 'geo_risk_map_full') deps.fetchGeoRiskMap();

@@ -456,6 +456,63 @@
 
 ---
 
+## 4.7) 获取当前用户所在地区案件统计（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/regions/cases/stats/current`
+
+### 说明
+
+- 本接口会基于当前登录用户画像中的地理位置（`district_code`）统计该地区案件。
+- 统计口径来自已归档案件（`history_cases.status = completed`）。
+- 接口结果使用 Redis 缓存，缓存键带版本号并按用户维度隔离，默认 `TTL=2分钟`。
+- 当用户更新地区画像，或产生新的已归档案件记录时，会触发版本号更新，从而使旧缓存自然失效。
+- 地区粒度遵循“优先县级，其次区级，无区县则市级”的展示约定：
+  - 若末级行政区名称包含“县/旗”，按县级统计，`granularity=county`，`granularity_label=县`
+  - 若末级行政区名称包含“区”，按区级统计，`granularity=district`，`granularity_label=区`
+  - 若无可用区县信息（如部分特殊地区），按市级统计，`granularity=city`，`granularity_label=市`
+- 若用户未设置城市信息，会返回 `400`。
+
+### 成功响应（200）
+
+```json
+{
+  "generated_at": "2026-03-25T11:20:30+08:00",
+  "region": {
+    "province_code": "330000",
+    "province_name": "浙江省",
+    "city_code": "330100",
+    "city_name": "杭州市",
+    "district_code": "",
+    "district_name": "",
+    "granularity": "city",
+    "granularity_label": "市"
+  },
+  "summary": {
+    "today_count": 1,
+    "last_7d_count": 8,
+    "last_30d_count": 19,
+    "total_count": 62,
+    "high_count": 17,
+    "mid_count": 28,
+    "low_count": 17
+  },
+  "top_scam_types": [
+    { "scam_type": "冒充客服类", "count": 15 },
+    { "scam_type": "刷单返利类", "count": 11 }
+  ]
+}
+```
+
+### 常见失败响应
+
+- `400` 用户未设置城市信息
+- `401` 未认证
+- `404` 用户不存在
+- `503` 地区服务不可用
+
+---
+
 ## 5) 删除当前用户（需鉴权）
 
 - **Method**: `DELETE`
@@ -1674,15 +1731,16 @@ GET /api/users?query=admin
 6. `GET /api/user`
 7. `GET /api/user/profile/options/occupations`
 8. `PUT /api/user/profile`
-9. `POST /api/scam/multimodal/analyze`
-10. `GET /api/scam/multimodal/tasks`
-11. `GET /api/scam/multimodal/history`
-12. `GET /api/scam/multimodal/history/overview`
-13. `GET /api/scam/multimodal/tasks/:taskId`
-14. `POST /api/chat`
-15. `GET /api/chat/context`
-16. `POST /api/chat/refresh`
-16. `DELETE /api/user`
+9. `GET /api/regions/cases/stats/current`
+10. `POST /api/scam/multimodal/analyze`
+11. `GET /api/scam/multimodal/tasks`
+12. `GET /api/scam/multimodal/history`
+13. `GET /api/scam/multimodal/history/overview`
+14. `GET /api/scam/multimodal/tasks/:taskId`
+15. `POST /api/chat`
+16. `GET /api/chat/context`
+17. `POST /api/chat/refresh`
+18. `DELETE /api/user`
 
 ---
 
@@ -1788,6 +1846,13 @@ curl -X GET "http://localhost:8081/api/scam/multimodal/history" \
 
 ```bash
 curl -X GET "http://localhost:8081/api/scam/multimodal/history/overview?interval=day" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 查询当前用户所在地区案件统计
+
+```bash
+curl -X GET "http://localhost:8081/api/regions/cases/stats/current" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 

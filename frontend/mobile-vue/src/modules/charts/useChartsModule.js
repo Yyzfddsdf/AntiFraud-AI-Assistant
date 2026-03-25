@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 export function useChartsModule(deps) {
   const riskInterval = ref('day');
   const riskData = ref(null);
+  const regionCaseStats = ref(null);
   const riskCache = {};
   let pieChartInstance = null;
   let lineChartInstance = null;
@@ -299,6 +300,75 @@ export function useChartsModule(deps) {
     }
   };
 
+  const fetchCurrentRegionCaseStats = async () => {
+    if (!deps.isAuthenticated.value) return;
+    try {
+      const res = await deps.request('/regions/cases/stats/current', 'GET', null, { silent: true });
+      if (res) {
+        regionCaseStats.value = res;
+      }
+    } catch (error) {
+      console.error('Fetch current region case stats failed:', error);
+    }
+  };
+
+  const getRegionStatsSignal = (statsPayload) => {
+    const summary = statsPayload && statsPayload.summary ? statsPayload.summary : null;
+    if (!summary) {
+      return {
+        level: 'neutral',
+        title: '地区风险态势待补充',
+        detail: '当前统计样本不足，建议继续观察。'
+      };
+    }
+
+    const todayCount = Number(summary.today_count) || 0;
+    const last7dCount = Number(summary.last_7d_count) || 0;
+    const totalCount = Number(summary.total_count) || 0;
+    const highCount = Number(summary.high_count) || 0;
+    const weeklyAverage = last7dCount > 0 ? last7dCount / 7 : 0;
+    const highRiskRatio = totalCount > 0 ? highCount / totalCount : 0;
+
+    if (todayCount >= Math.max(3, weeklyAverage * 1.5) || highRiskRatio >= 0.35) {
+      return {
+        level: 'high',
+        title: '近期风险有抬升信号',
+        detail: '今日增量或高风险占比偏高，建议减少陌生转账与验证码操作。'
+      };
+    }
+    if (todayCount >= Math.max(1, weeklyAverage * 0.8) || highRiskRatio >= 0.2) {
+      return {
+        level: 'medium',
+        title: '近期风险保持活跃',
+        detail: '建议重点核验陌生来电、客服退款与投资荐股类话术。'
+      };
+    }
+    return {
+      level: 'low',
+      title: '近期风险相对平稳',
+      detail: '仍需保持警惕，遇到催转账和索要验证码请先核实。'
+    };
+  };
+
+  const getRegionTopScamHint = (statsPayload) => {
+    const topList = Array.isArray(statsPayload?.top_scam_types) ? statsPayload.top_scam_types : [];
+    if (!topList.length) {
+      return '近期未形成明显高发类型，注意通用防诈规则。';
+    }
+    const topItem = topList[0] || {};
+    const scamType = String(topItem.scam_type || '').trim() || '当前高发类型';
+    const count = Number(topItem.count) || 0;
+    return `最近高发：${scamType}${count > 0 ? `（${count}起）` : ''}，同类话术请优先核验来源。`;
+  };
+
+  const getRegionSignalClass = (signalLevel) => {
+    const level = String(signalLevel || '').trim();
+    if (level === 'high') return 'bg-red-50 text-red-700 border-red-200';
+    if (level === 'medium') return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (level === 'low') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    return 'bg-slate-50 text-slate-700 border-slate-200';
+  };
+
   const getRecentRiskTrendRows = (limit = 7) => {
     if (!riskData.value || !Array.isArray(riskData.value.trend)) return [];
     const normalizedLimit = Number(limit) > 0 ? Number(limit) : 7;
@@ -356,14 +426,19 @@ export function useChartsModule(deps) {
   return {
     riskInterval,
     riskData,
+    regionCaseStats,
     todayRiskStatsSummary,
     riskStatsSummary,
     fetchRiskTrend,
+    fetchCurrentRegionCaseStats,
     formatChartLabel,
     getRecentRiskTrendRows,
     getRiskTrendAnalysisClass,
     formatRiskTrendDescriptor,
     getRiskTrendHeadline,
+    getRegionStatsSignal,
+    getRegionTopScamHint,
+    getRegionSignalClass,
     resizeCharts,
     disposeCharts
   };

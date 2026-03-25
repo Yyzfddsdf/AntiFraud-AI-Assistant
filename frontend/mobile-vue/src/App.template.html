@@ -307,6 +307,44 @@
                         </div>
                     </div>
 
+                    <div class="m-card p-4 border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white" v-if="regionCaseStats && regionCaseStats.region">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <div class="text-[11px] uppercase tracking-[0.16em] text-cyan-600 font-bold">所在{{ regionCaseStats.region.granularity_label || '市' }}案件统计</div>
+                                <div class="mt-1 text-sm font-extrabold text-slate-900">{{ ['county', 'district'].includes(regionCaseStats.region.granularity) ? `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name} / ${regionCaseStats.region.district_name}` : `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name}` }}</div>
+                            </div>
+                            <div class="text-xs text-slate-500">总计 {{ regionCaseStats.summary ? regionCaseStats.summary.total_count : 0 }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-3">
+                            <div class="rounded-xl bg-white border border-slate-100 p-2 text-center">
+                                <div class="text-[10px] text-slate-400">今日</div>
+                                <div class="text-base font-black text-slate-900">{{ regionCaseStats.summary ? regionCaseStats.summary.today_count : 0 }}</div>
+                            </div>
+                            <div class="rounded-xl bg-white border border-slate-100 p-2 text-center">
+                                <div class="text-[10px] text-slate-400">近7天</div>
+                                <div class="text-base font-black text-slate-900">{{ regionCaseStats.summary ? regionCaseStats.summary.last_7d_count : 0 }}</div>
+                            </div>
+                            <div class="rounded-xl bg-white border border-slate-100 p-2 text-center">
+                                <div class="text-[10px] text-slate-400">近30天</div>
+                                <div class="text-base font-black text-slate-900">{{ regionCaseStats.summary ? regionCaseStats.summary.last_30d_count : 0 }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3" v-if="regionCaseStats.top_scam_types && regionCaseStats.top_scam_types.length">
+                            <div class="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-bold mb-2">高发骗局 Top5</div>
+                            <div class="space-y-1.5">
+                                <div v-for="(item, idx) in regionCaseStats.top_scam_types" :key="`region-scam-${idx}-${item.scam_type}`" class="flex items-center justify-between text-xs bg-white border border-slate-100 rounded-lg px-2.5 py-1.5">
+                                    <span class="font-medium text-slate-700">{{ item.scam_type }}</span>
+                                    <span class="font-bold text-cyan-700">{{ item.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 rounded-xl border px-3 py-2" :class="getRegionSignalClass(getRegionStatsSignal(regionCaseStats).level)">
+                            <div class="text-xs font-bold">{{ getRegionStatsSignal(regionCaseStats).title }}</div>
+                            <div class="text-[11px] mt-1 opacity-90">{{ getRegionStatsSignal(regionCaseStats).detail }}</div>
+                            <div class="text-[11px] mt-1.5 font-medium">{{ getRegionTopScamHint(regionCaseStats) }}</div>
+                        </div>
+                    </div>
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between px-1">
                             <h3 class="font-bold text-base text-slate-900">最近窗口 <span class="text-xs font-normal text-slate-400 ml-1">近7天</span></h3>
