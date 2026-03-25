@@ -1,15 +1,9 @@
 <template>
-  <div class="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-slate-50 relative">
-    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-      <div class="absolute inset-0 tech-bg"></div>
-      <!-- High-end, concise geometric overlay instead of messy colorful blurs -->
-      <div class="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-brand-50/80 to-transparent"></div>
-    </div>
+  <div class="flex-1 flex flex-col h-full overflow-hidden bg-slate-100">
+    <DashboardTopNav :app="app" />
 
-    <DashboardSidebar :app="app" />
-
-    <main class="flex-1 overflow-y-auto relative z-30 custom-scrollbar">
-      <div class="max-w-7xl mx-auto p-6 md:p-10 min-h-full">
+    <main class="flex-1 overflow-y-auto custom-scrollbar">
+      <div class="max-w-[1600px] mx-auto p-4 min-h-full">
         <DashboardCoreViews :app="app" />
         <DashboardAnalyticsAdminViews :app="app" />
         <DashboardAccountFamilyViews :app="app" />
@@ -20,7 +14,7 @@
 </template>
 
 <script>
-import DashboardSidebar from './DashboardSidebar.vue';
+import DashboardTopNav from './DashboardTopNav.vue';
 import DashboardCoreViews from './views/DashboardCoreViews.vue';
 import DashboardAnalyticsAdminViews from './views/DashboardAnalyticsAdminViews.vue';
 import DashboardAccountFamilyViews from './views/DashboardAccountFamilyViews.vue';
@@ -29,7 +23,7 @@ import DashboardReviewLibraryViews from './views/DashboardReviewLibraryViews.vue
 export default {
   name: 'DashboardWorkspace',
   components: {
-    DashboardSidebar,
+    DashboardTopNav,
     DashboardCoreViews,
     DashboardAnalyticsAdminViews,
     DashboardAccountFamilyViews,
