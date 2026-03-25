@@ -79,12 +79,21 @@ export function useMobileApp() {
   let smsCodeCooldownTimer = null;
   let bannerCarouselTimer = null;
 
+  const scrollContainerToTop = (selector) => {
+    const element = document.querySelector(selector);
+    if (element instanceof HTMLElement) {
+      element.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  };
+
   const scrollMainToTop = () => {
     requestAnimationFrame(() => {
-      const mainEl = document.querySelector('main');
-      if (mainEl instanceof HTMLElement) {
-        mainEl.scrollTo({ top: 0, behavior: 'auto' });
-      }
+      [
+        'main',
+        '[data-mobile-scroll="submit-page"]',
+        '[data-mobile-scroll="simulation-overview"]',
+        '[data-mobile-scroll="simulation-exam"]'
+      ].forEach(scrollContainerToTop);
     });
   };
 
@@ -177,10 +186,16 @@ export function useMobileApp() {
 
   const openSimulationExamView = () => {
     simulationViewMode.value = 'exam';
+    requestAnimationFrame(() => {
+      scrollContainerToTop('[data-mobile-scroll="simulation-exam"]');
+    });
   };
 
   const closeSimulationExamView = () => {
     simulationViewMode.value = 'overview';
+    requestAnimationFrame(() => {
+      scrollContainerToTop('[data-mobile-scroll="simulation-overview"]');
+    });
   };
 
   const fetchSimulationPacks = async () => {

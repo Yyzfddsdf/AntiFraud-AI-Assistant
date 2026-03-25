@@ -1,11 +1,11 @@
-﻿                <!-- Submit Task View -->
+                <!-- Submit Task View -->
                 <div v-if="activeTab === 'submit'" class="max-w-4xl mx-auto animate-fade-in">
                     <div class="mb-10">
                         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">新建分析任务</h1>
                         <p class="text-slate-500 mt-2 text-lg">上传文本、音频、视频或图片，AI 将为您进行多维度反诈分析。</p>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-8 space-y-8">
                             <!-- Text Input -->
                             <div>
@@ -13,7 +13,7 @@
                                     <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     案情描述 / 对话文本
                                 </label>
-                                <textarea v-model="analyzeForm.text" class="w-full h-40 px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none transition-all placeholder:text-slate-400 text-slate-700 leading-relaxed" placeholder="请详细描述遇到的情况，或直接粘贴可疑的聊天记录文本..."></textarea>
+                                <textarea v-model="analyzeForm.text" class="w-full h-40 px-5 py-4 bg-slate-50 border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none transition-all placeholder:text-slate-400 text-slate-700 leading-relaxed" placeholder="请详细描述遇到的情况，或直接粘贴可疑的聊天记录文本..."></textarea>
                             </div>
 
                             <!-- File Upload Area -->
@@ -24,15 +24,15 @@
                                         <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                         图片凭证
                                     </label>
-                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
                                         <input type="file" multiple accept="image/*" @change="handleFileSelect($event, 'images')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                                        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <div class="w-12 h-12 rounded-sm bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                                             <svg class="w-6 h-6 text-slate-400 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         </div>
                                         <span class="text-sm font-medium text-slate-600 group-hover:text-brand-600">点击上传图片</span>
                                         <span class="text-xs text-slate-400 mt-1">支持 JPG, PNG</span>
                                     </div>
-                                    <div v-if="analyzeForm.images.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-full">
+                                    <div v-if="analyzeForm.images.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         已选择 {{ analyzeForm.images.length }} 个文件
                                     </div>
@@ -44,15 +44,15 @@
                                         <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                                         通话录音
                                     </label>
-                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
                                         <input type="file" multiple accept="audio/*" @change="handleFileSelect($event, 'audios')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                                        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <div class="w-12 h-12 rounded-sm bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                                             <svg class="w-6 h-6 text-slate-400 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         </div>
                                         <span class="text-sm font-medium text-slate-600 group-hover:text-brand-600">点击上传音频</span>
                                         <span class="text-xs text-slate-400 mt-1">支持 MP3, WAV</span>
                                     </div>
-                                    <div v-if="analyzeForm.audios.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-full">
+                                    <div v-if="analyzeForm.audios.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         已选择 {{ analyzeForm.audios.length }} 个文件
                                     </div>
@@ -64,15 +64,15 @@
                                         <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                         视频资料
                                     </label>
-                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
+                                    <div class="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 p-4 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center group">
                                         <input type="file" multiple accept="video/*" @change="handleFileSelect($event, 'videos')" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                                        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <div class="w-12 h-12 rounded-sm bg-slate-100 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                                             <svg class="w-6 h-6 text-slate-400 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         </div>
                                         <span class="text-sm font-medium text-slate-600 group-hover:text-brand-600">点击上传视频</span>
                                         <span class="text-xs text-slate-400 mt-1">支持 MP4, MOV</span>
                                     </div>
-                                    <div v-if="analyzeForm.videos.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-full">
+                                    <div v-if="analyzeForm.videos.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         已选择 {{ analyzeForm.videos.length }} 个文件
                                     </div>
@@ -80,8 +80,8 @@
                             </div>
                         </div>
                         <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-end">
-                            <button @click="submitAnalysis" :disabled="analyzing" class="bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-500/25 transition-all active:scale-[0.98] flex items-center gap-3">
-                                <span v-if="analyzing" class="loader !w-5 !h-5 !border-white/30 !border-t-white"></span>
+                            <button @click="submitAnalysis" :disabled="analyzing" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-8 rounded-sm transition-colors active:scale-[0.98] flex items-center gap-3">
+                                <span v-if="analyzing" class="loader !w-4 !h-4 !border-white/30 !border-t-white"></span>
                                 {{ analyzing ? '智能分析中...' : '开始智能分析' }}
                             </button>
                         </div>
@@ -95,13 +95,13 @@
                             <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">任务监控</h1>
                             <p class="text-slate-500 mt-2">实时查看所有分析任务的进度与结果</p>
                         </div>
-                        <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-full flex items-center gap-2 font-medium">
-                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 系统运行正常
+                        <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-sm flex items-center gap-2 font-medium">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-sm"></span> 系统运行正常
                         </span>
                     </div>
 
-                    <div v-if="tasks.length === 0" class="text-center py-24 bg-white rounded-2xl border border-slate-200 border-dashed">
-                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div v-if="tasks.length === 0" class="text-center py-24 bg-white rounded-sm border border-slate-200 border-dashed">
+                        <div class="w-20 h-20 bg-slate-50 rounded-sm flex items-center justify-center mx-auto mb-4">
                             <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                         </div>
                         <p class="text-slate-500 font-medium text-lg">暂无进行中的任务</p>
@@ -109,7 +109,7 @@
                     </div>
 
                     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="task in tasks" :key="task.task_id" class="bg-white p-6 rounded-2xl border border-slate-200 card-hover flex flex-col h-full">
+                        <div v-for="task in tasks" :key="task.task_id" class="bg-white p-6 rounded-sm border border-slate-200 card-hover flex flex-col h-full">
                             <div class="flex justify-between items-start mb-4">
                                 <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
                                 <span class="text-xs text-slate-400 font-mono">#{{ task.task_id.substring(0,8) }}</span>
@@ -134,19 +134,19 @@
         </div>
 
         <!-- Graph Modal -->
-        <div v-if="showGraphModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 animate-fade-in" @click.self="showGraphModal = false">
-            <div class="w-full max-w-[95vw] h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-slide-up">
+        <div v-if="showGraphModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in" @click.self="showGraphModal = false">
+            <div class="w-full max-w-[95vw] h-[90vh] bg-white rounded-sm shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-slide-up">
                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
                     <div>
                         <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">案件关联全景图谱</h3>
                         <p class="text-xs text-slate-500 mt-1">支持滚轮缩放、拖拽平移，点击节点可查看详情</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button @click="resetGraphZoom" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+                        <button @click="resetGraphZoom" class="px-3 py-1.5 rounded-sm border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
                             重置视角
                         </button>
-                        <button @click="showGraphModal = false" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                        <button @click="showGraphModal = false" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
@@ -156,17 +156,17 @@
                     <div id="adminGraphNetwork" class="w-full h-full"></div>
                     
                     <!-- Legend -->
-                    <div class="absolute top-6 left-6 bg-white/90 backdrop-blur p-4 rounded-2xl border border-slate-200 shadow-xl space-y-3 pointer-events-none">
+                    <div class="absolute top-6 left-6 bg-white/90 backdrop-blur p-4 rounded-sm border border-slate-200 shadow-xl space-y-3 pointer-events-none">
                         <div class="flex items-center gap-3">
-                            <span class="w-4 h-4 rounded-lg bg-emerald-500 shadow-sm shadow-emerald-500/30 transform rotate-45"></span>
+                            <span class="w-4 h-4 rounded-sm bg-emerald-500 shadow-sm shadow-emerald-500/30 transform rotate-45"></span>
                             <span class="text-xs font-bold text-slate-700">人群视角锚点 (Target Hubs)</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="w-4 h-4 rounded-full bg-fuchsia-500 shadow-sm shadow-fuchsia-500/30"></span>
+                            <span class="w-4 h-4 rounded-sm bg-fuchsia-500 shadow-sm shadow-fuchsia-500/30"></span>
                             <span class="text-xs font-bold text-slate-700">诈骗手法类型 (Scam Types)</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="w-4 h-4 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/30"></span>
+                            <span class="w-4 h-4 rounded-sm bg-brand-500 shadow-sm shadow-brand-500/30"></span>
                             <span class="text-xs font-bold text-slate-700">高频关键词 (Keywords)</span>
                         </div>
                         <div class="pt-2 border-t border-slate-100">
@@ -178,19 +178,20 @@
         </div>
 
         <!-- Case Detail Modal -->
-        <div v-if="selectedCase" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 animate-fade-in modal-overlay" @click.self="selectedCase = null">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+        <teleport to="body">
+        <div v-if="selectedCase" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedCase = null">
+            <div class="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
                     <div>
                         <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
                         <div class="flex items-center gap-3 mt-1">
-                             <span :class="['px-2 py-0.5 rounded-md text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
+                             <span :class="['px-2 py-0.5 rounded-sm text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
                                 {{ normalizeRiskLevelText(selectedCase.risk_level) }}风险
                             </span>
                             <span class="text-xs text-slate-400 font-mono">ID: {{ selectedCase.case_id }}</span>
                         </div>
                     </div>
-                    <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                    <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -199,15 +200,15 @@
                     
                     <!-- Basic Info -->
                     <div class="grid grid-cols-3 gap-6">
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
                             <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">诈骗类型</h4>
                             <p class="text-slate-800 font-semibold">{{ selectedCase.scam_type || '-' }}</p>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
                             <p class="text-slate-800 font-semibold">{{ formatTime(selectedCase.created_at) }}</p>
                         </div>
@@ -219,7 +220,7 @@
                             <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             案件描述
                         </h4>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 text-slate-600 text-sm leading-relaxed">
+                        <div class="bg-white p-5 rounded-sm border border-slate-200 text-slate-600 text-sm leading-relaxed">
                             {{ selectedCase.case_description }}
                         </div>
                     </div>
@@ -231,7 +232,7 @@
                             典型话术
                         </h4>
                         <div class="space-y-2">
-                            <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-indigo-900 text-sm flex gap-3">
+                            <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-sm border border-indigo-100 text-indigo-900 text-sm flex gap-3">
                                 <span class="text-indigo-400 font-bold text-xs mt-0.5">0{{ idx + 1 }}</span>
                                 {{ script }}
                             </div>
@@ -242,10 +243,10 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
-                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
                                 违反法律
                             </h4>
-                            <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100 text-red-800 text-sm leading-relaxed">
+                            <div class="bg-rose-50/50 p-4 rounded-sm border border-rose-100 text-rose-800 text-sm leading-relaxed">
                                 {{ selectedCase.violated_law }}
                             </div>
                         </div>
@@ -254,7 +255,7 @@
                                 <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 处置建议
                             </h4>
-                            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
+                            <div class="bg-emerald-50/50 p-4 rounded-sm border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
                                 {{ selectedCase.suggestion }}
                             </div>
                         </div>
@@ -264,7 +265,7 @@
                     <div>
                          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">关键词提取</h4>
                          <div class="flex flex-wrap gap-2">
-                             <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
+                             <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-sm text-xs font-bold border border-slate-200">
                                  # {{ kw }}
                              </span>
                          </div>
@@ -276,7 +277,7 @@
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                             技术调试信息
                         </h4>
-                        <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
+                        <div class="bg-slate-900 rounded-sm p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
                             <div class="flex justify-between border-b border-slate-700 pb-2">
                                 <span class="text-slate-500">Model:</span>
                                 <span class="text-emerald-400">{{ selectedCase.embedding_model }}</span>
@@ -290,7 +291,7 @@
                                     <span class="text-slate-500">Vector (First 10 dims):</span>
                                     <span class="text-[10px] text-slate-600">Total {{ selectedCase.embedding_vector ? selectedCase.embedding_vector.length : 0 }} dims</span>
                                 </div>
-                                <div class="bg-slate-950 p-3 rounded-lg overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
+                                <div class="bg-slate-950 p-3 rounded-sm overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
                                     [{{ selectedCase.embedding_vector ? selectedCase.embedding_vector.join(', ') : 'null' }}]
                                 </div>
                             </div>
@@ -299,12 +300,13 @@
                 </div>
             </div>
         </div>
+        </teleport>
 
                 <!-- History View -->
                 <div v-if="activeTab === 'history'" class="max-w-6xl mx-auto animate-fade-in">
                     <h1 class="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">历史档案</h1>
                     
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50/80 border-b border-slate-200">
@@ -323,7 +325,7 @@
                                         <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ item.record_id.substring(0,8) }}...</td>
                                         <td class="px-6 py-4 font-semibold text-slate-900">{{ item.title || '无标题' }}</td>
                                         <td class="px-6 py-4">
-                                            <span :class="['px-2.5 py-1 rounded-full text-xs font-bold border', getRiskClass(item.risk_level)]">
+                                            <span :class="['px-2.5 py-1 rounded-sm text-xs font-bold border', getRiskClass(item.risk_level)]">
                                                 {{ normalizeRiskLevelText(item.risk_level) }}
                                             </span>
                                         </td>
@@ -332,11 +334,11 @@
                                         <td class="px-6 py-4 text-slate-400 font-medium">{{ formatTime(item.created_at) }}</td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button @click="viewHistoryDetail(item)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-lg">查看</button>
+                                                <button @click="viewHistoryDetail(item)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-sm">查看</button>
                                                 <button
                                                     @click="deleteHistoryCase(item)"
                                                     :disabled="deletingHistory[item.record_id]"
-                                                    class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                                                    class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 px-3 py-1.5 rounded-sm disabled:opacity-50"
                                                 >
                                                     {{ deletingHistory[item.record_id] ? '...' : '删除' }}
                                                 </button>
@@ -350,26 +352,26 @@
                     </div>
                 </div>
 
-                <!-- Risk Trend View -->
+                <!-- Simulation Quiz View -->
                 <div v-if="activeTab === 'simulation_quiz'" class="max-w-7xl mx-auto animate-fade-in">
-                    <div class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(236,72,153,0.12),_transparent_30%),linear-gradient(180deg,_#ffffff_0%,_#f8fafc_100%)] p-8 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-fuchsia-500"></div>
+                    <div class="relative overflow-hidden rounded-sm border border-slate-200 bg-white p-8 shadow-sm">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-brand-600"></div>
                         <div class="flex items-start justify-between gap-6">
                             <div>
-                                <div class="text-[11px] font-black uppercase tracking-[0.34em] text-emerald-600">Sentinel AI</div>
+                                <div class="text-[11px] font-black uppercase tracking-[0.34em] text-brand-600">Sentinel AI</div>
                                 <h1 class="mt-3 text-4xl font-black tracking-tight text-slate-950">反诈模拟答题</h1>
                                 <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600">生成题包、进入模拟场景、逐题作答并即时评估。左侧是答题主舞台，右侧保留题包和报告管理。</p>
                             </div>
                             <div class="grid grid-cols-3 gap-3 text-right">
-                                <div class="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">结构</div>
                                     <div class="mt-1 text-xl font-black text-slate-900">10</div>
                                 </div>
-                                <div class="rounded-2xl border border-cyan-100 bg-white/80 px-4 py-3 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">状态</div>
                                     <div class="mt-1 text-sm font-black text-slate-900">{{ simulationStatus === 'completed' ? '已完成' : simulationStatus === 'in_progress' ? '答题中' : simulationStatus === 'pack_ready' ? '可开始' : '待生成' }}</div>
                                 </div>
-                                <div class="rounded-2xl border border-fuchsia-100 bg-white/80 px-4 py-3 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">当前分数</div>
                                     <div class="mt-1 text-xl font-black text-slate-900">{{ simulationCurrentScore }}</div>
                                 </div>
@@ -378,44 +380,44 @@
 
                         <div class="mt-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_380px] gap-6">
                             <div class="space-y-6">
-                                <div class="rounded-[1.6rem] border border-slate-200 bg-white/90 p-6 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
                                             <div class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Generator</div>
                                             <h3 class="mt-2 text-xl font-black text-slate-950">创建一套新的模拟试卷</h3>
                                         </div>
-                                        <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-500">桌面考试视图</span>
+                                        <span class="rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-500">桌面考试视图</span>
                                     </div>
                                     <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <label class="block">
                                             <div class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-[0.22em]">案件类型</div>
-                                            <input v-model="simulationForm.caseType" type="text" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="例如：冒充客服" />
+                                            <input v-model="simulationForm.caseType" type="text" class="w-full rounded-sm border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500" placeholder="例如：冒充客服" />
                                         </label>
                                         <label class="block">
                                             <div class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-[0.22em]">目标人群</div>
-                                            <input v-model="simulationForm.targetPersona" type="text" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="例如：普通居民" />
+                                            <input v-model="simulationForm.targetPersona" type="text" class="w-full rounded-sm border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500" placeholder="例如：普通居民" />
                                         </label>
                                     </div>
                                     <div class="mt-5 flex flex-wrap gap-3">
-                                        <button @click="simulationForm.difficulty = 'easy'" :class="['min-w-24 px-4 py-2.5 rounded-xl text-xs font-black border transition-all', simulationForm.difficulty === 'easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">简单</button>
-                                        <button @click="simulationForm.difficulty = 'medium'" :class="['min-w-24 px-4 py-2.5 rounded-xl text-xs font-black border transition-all', simulationForm.difficulty === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">中等</button>
-                                        <button @click="simulationForm.difficulty = 'hard'" :class="['min-w-24 px-4 py-2.5 rounded-xl text-xs font-black border transition-all', simulationForm.difficulty === 'hard' ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">困难</button>
+                                        <button @click="simulationForm.difficulty = 'easy'" :class="['min-w-24 px-4 py-2.5 rounded-sm text-xs font-black border transition-all', simulationForm.difficulty === 'easy' ? 'bg-brand-50 text-brand-700 border-brand-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">简单</button>
+                                        <button @click="simulationForm.difficulty = 'medium'" :class="['min-w-24 px-4 py-2.5 rounded-sm text-xs font-black border transition-all', simulationForm.difficulty === 'medium' ? 'bg-brand-50 text-brand-700 border-brand-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">中等</button>
+                                        <button @click="simulationForm.difficulty = 'hard'" :class="['min-w-24 px-4 py-2.5 rounded-sm text-xs font-black border transition-all', simulationForm.difficulty === 'hard' ? 'bg-brand-50 text-brand-700 border-brand-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50']">困难</button>
                                     </div>
                                     <div class="mt-6 flex flex-wrap gap-3">
-                                        <button @click="generateSimulationPack" :disabled="simulationGenerating" class="min-w-36 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:opacity-60">{{ simulationGenerating ? '生成中...' : '生成题包' }}</button>
-                                        <button @click="resetSimulation" class="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50">重置状态</button>
+                                        <button @click="generateSimulationPack" :disabled="simulationGenerating" class="min-w-36 rounded-sm bg-brand-600 hover:bg-brand-700 px-5 py-3 text-sm font-black text-white shadow-sm transition-colors disabled:opacity-60">{{ simulationGenerating ? '生成中...' : '生成题包' }}</button>
+                                        <button @click="resetSimulation" class="rounded-sm border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition-colors hover:bg-slate-50">重置状态</button>
                                     </div>
                                 </div>
 
-                                <div class="rounded-[1.8rem] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] overflow-hidden">
-                                    <div class="border-b border-slate-100 bg-[linear-gradient(135deg,_rgba(2,132,199,0.06),_rgba(236,72,153,0.06))] px-6 py-5">
+                                <div class="rounded-sm border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <div class="border-b border-slate-100 bg-slate-50 px-6 py-5">
                                         <div class="flex items-start justify-between gap-4">
                                             <div>
                                                 <div class="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Exam Stage</div>
                                                 <h3 class="mt-2 text-2xl font-black text-slate-950">{{ simulationPack?.title || '尚未载入题包' }}</h3>
                                                 <p class="mt-2 text-sm text-slate-600">{{ simulationPack?.intro || '先生成题包，再从右侧题目列表开始答题。' }}</p>
                                             </div>
-                                            <div class="w-52 shrink-0 rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
+                                            <div class="w-52 shrink-0 rounded-sm border border-slate-200 bg-white p-4 shadow-sm">
                                                 <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">当前分数</div>
                                                 <div class="mt-1 text-sm font-black text-slate-900">{{ simulationCurrentScore }}</div>
                                             </div>
@@ -423,8 +425,8 @@
                                     </div>
                                     <div class="px-6 py-6">
                                         <div v-if="simulationCurrentStep && simulationStatus === 'in_progress'" class="space-y-5">
-                                            <div class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{{ simulationCurrentStep.step_type }}</div>
-                                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 text-sm leading-7 text-slate-600">{{ simulationCurrentStep.narrative }}</div>
+                                            <div class="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{{ simulationCurrentStep.step_type }}</div>
+                                            <div class="rounded-sm border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">{{ simulationCurrentStep.narrative }}</div>
                                             <div class="text-2xl font-black leading-9 tracking-tight text-slate-950">{{ simulationCurrentStep.question }}</div>
                                             <div class="grid grid-cols-1 gap-3">
                                                 <button
@@ -432,23 +434,23 @@
                                                     :key="`sim-option-${simulationCurrentStep.step_id}-${option.key}`"
                                                     @click="submitSimulationAnswer(option.key)"
                                                     :disabled="simulationSubmitting || simulationStatus !== 'in_progress'"
-                                                    class="group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50/30 hover:shadow-md disabled:opacity-60">
-                                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-slate-700 transition-colors group-hover:bg-cyan-100 group-hover:text-cyan-700">{{ option.key }}</div>
+                                                    class="group flex items-start gap-4 rounded-sm border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition-all hover:border-brand-300 hover:bg-brand-50 disabled:opacity-60">
+                                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-slate-100 text-sm font-black text-slate-700 transition-colors group-hover:bg-brand-100 group-hover:text-brand-700">{{ option.key }}</div>
                                                     <div class="min-w-0">
                                                         <div class="text-base font-bold leading-7 text-slate-900">{{ option.text }}</div>
                                                     </div>
                                                 </button>
                                             </div>
                                         </div>
-                                        <div v-else-if="simulationStatus === 'completed' && simulationResult" class="rounded-[1.6rem] border border-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.08),_rgba(255,255,255,1))] p-6">
-                                            <h4 class="text-2xl font-black text-emerald-900">答题完成 · {{ simulationResult.level }}</h4>
-                                            <p class="mt-2 text-sm text-emerald-800">总分：{{ simulationResult.total_score }}</p>
+                                        <div v-else-if="simulationStatus === 'completed' && simulationResult" class="rounded-sm border border-brand-200 bg-brand-50 p-6">
+                                            <h4 class="text-2xl font-black text-brand-900">答题完成 · {{ simulationResult.level }}</h4>
+                                            <p class="mt-2 text-sm text-brand-800">总分：{{ simulationResult.total_score }}</p>
                                             <div class="mt-4 space-y-2 text-sm leading-6 text-slate-700" v-if="simulationResult.advice && simulationResult.advice.length">
                                                 <div v-for="(advice, idx) in simulationResult.advice" :key="`sim-advice-${idx}`">{{ idx + 1 }}. {{ advice }}</div>
                                             </div>
                                         </div>
-                                        <div v-else class="rounded-[1.6rem] border border-dashed border-slate-200 bg-slate-50 px-8 py-12 text-center">
-                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm"><span class="text-2xl font-black text-slate-400">Q</span></div>
+                                        <div v-else class="rounded-sm border border-dashed border-slate-200 bg-slate-50 px-8 py-12 text-center">
+                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-sm bg-white shadow-sm border border-slate-200"><span class="text-2xl font-black text-slate-400">Q</span></div>
                                             <h4 class="mt-4 text-xl font-black text-slate-900">考试主舞台待启动</h4>
                                             <p class="mt-2 text-sm leading-6 text-slate-500">先生成题包，再从右侧题目列表选择一套进入答题。</p>
                                         </div>
@@ -457,47 +459,47 @@
                             </div>
 
                             <div class="space-y-6">
-                                <div class="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
                                     <div class="flex items-center justify-between">
                                         <div>
                                             <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Question Packs</div>
                                             <h4 class="mt-2 text-lg font-black text-slate-950">题目列表</h4>
                                         </div>
-                                        <button @click="fetchSimulationPacks" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100">刷新</button>
+                                        <button @click="fetchSimulationPacks" class="rounded-sm border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100">刷新</button>
                                     </div>
                                     <div class="mt-4 space-y-3 max-h-[26rem] overflow-y-auto pr-1">
-                                        <div v-for="item in simulationPackList" :key="`pack-list-${item.pack_id}`" class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-cyan-200 hover:bg-white">
+                                        <div v-for="item in simulationPackList" :key="`pack-list-${item.pack_id}`" class="rounded-sm border border-slate-200 bg-slate-50 p-4 transition hover:border-brand-300 hover:bg-white">
                                             <div class="flex items-start justify-between gap-3">
                                                 <div class="min-w-0">
                                                     <div class="text-sm font-black text-slate-900">{{ item.title }}</div>
                                                     <div class="mt-1 text-xs text-slate-500 leading-5">{{ item.case_type }} · {{ item.difficulty }} · {{ formatTime(item.created_at) }}</div>
                                                 </div>
-                                                <button @click="startSimulationSession(item.pack_id)" :disabled="simulationSubmitting" class="shrink-0 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50">开始答题</button>
+                                                <button @click="startSimulationSession(item.pack_id)" :disabled="simulationSubmitting" class="shrink-0 rounded-sm bg-brand-600 hover:bg-brand-700 px-3 py-2 text-xs font-black text-white transition-colors disabled:opacity-50">开始答题</button>
                                             </div>
                                         </div>
-                                        <div v-if="!simulationPackList.length" class="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">暂无待答题目</div>
+                                        <div v-if="!simulationPackList.length" class="rounded-sm border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">暂无待答题目</div>
                                     </div>
                                 </div>
 
-                                <div class="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
                                     <div class="flex items-center justify-between">
                                         <div>
                                             <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Reports</div>
                                             <h4 class="mt-2 text-lg font-black text-slate-950">报告历史</h4>
                                         </div>
-                                        <button @click="fetchSimulationSessions" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100">刷新</button>
+                                        <button @click="fetchSimulationSessions" class="rounded-sm border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100">刷新</button>
                                     </div>
                                     <div class="mt-4 space-y-3 max-h-[26rem] overflow-y-auto pr-1">
-                                        <div v-for="item in simulationSessionList" :key="`session-list-${item.pack_id}`" class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                                        <div v-for="item in simulationSessionList" :key="`session-list-${item.pack_id}`" class="rounded-sm border border-slate-200 bg-slate-50 p-4">
                                             <div class="flex items-start justify-between gap-3">
                                                 <div class="min-w-0">
                                                     <div class="text-sm font-black text-slate-900">{{ item.title || '未命名题包' }}</div>
                                                     <div class="mt-1 text-xs text-slate-500 leading-5">{{ item.level || '未评分' }} · {{ item.score }} 分 · {{ formatTime(item.created_at) }}</div>
                                                 </div>
-                                                <button @click="deleteSimulationSession(item.pack_id)" class="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100">删除</button>
+                                                <button @click="deleteSimulationSession(item.pack_id)" class="shrink-0 rounded-sm border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100">删除</button>
                                             </div>
                                         </div>
-                                        <div v-if="!simulationSessionList.length" class="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">暂无报告</div>
+                                        <div v-if="!simulationSessionList.length" class="rounded-sm border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">暂无报告</div>
                                     </div>
                                 </div>
                             </div>
@@ -511,21 +513,21 @@
                             <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">风险趋势分析</h1>
                             <p class="text-slate-500 mt-2">查看您的风险等级分布与历史变化趋势</p>
                         </div>
-                        <div class="flex bg-slate-100 p-1 rounded-lg">
-                            <button @click="riskInterval = 'day'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', riskInterval === 'day' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">日</button>
-                            <button @click="riskInterval = 'week'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', riskInterval === 'week' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">周</button>
-                            <button @click="riskInterval = 'month'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-md transition-all', riskInterval === 'month' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">月</button>
+                        <div class="flex bg-slate-100 p-1 rounded-sm">
+                            <button @click="riskInterval = 'day'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-sm transition-all', riskInterval === 'day' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">日</button>
+                            <button @click="riskInterval = 'week'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-sm transition-all', riskInterval === 'week' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">周</button>
+                            <button @click="riskInterval = 'month'; fetchRiskTrend()" :class="['px-4 py-1.5 text-xs font-bold rounded-sm transition-all', riskInterval === 'month' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">月</button>
                             <button @click="fetchRiskTrend(true)" class="px-2 py-1.5 text-slate-400 hover:text-brand-600 ml-1 transition-colors" title="刷新数据">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                             </button>
                         </div>
                     </div>
 
-                    <div v-if="riskData && riskData.analysis" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                    <div v-if="riskData && riskData.analysis" class="bg-white p-6 rounded-sm shadow-sm border border-slate-200 mb-8">
                         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
-                                    <span class="w-1.5 h-4 bg-rose-500 rounded-full"></span>
+                                    <span class="w-1.5 h-4 bg-rose-500 rounded-sm"></span>
                                     中文趋势判断
                                 </h3>
                                 <p class="text-sm text-slate-600 leading-7">{{ riskData.analysis.summary || '暂无趋势分析结论。' }}</p>
@@ -534,11 +536,11 @@
                                 </p>
                             </div>
                             <div class="flex flex-wrap gap-3 lg:justify-end">
-                                <div class="px-4 py-3 rounded-xl min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.overall_trend)">
+                                <div class="px-4 py-3 rounded-sm min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.overall_trend)">
                                     <div class="text-xs opacity-80 mb-1">整体风险</div>
                                     <div class="text-base font-bold">{{ riskData.analysis.overall_trend }}</div>
                                 </div>
-                                <div class="px-4 py-3 rounded-xl min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.high_risk_trend)">
+                                <div class="px-4 py-3 rounded-sm min-w-[140px]" :class="getRiskTrendAnalysisClass(riskData.analysis.high_risk_trend)">
                                     <div class="text-xs opacity-80 mb-1">高风险案件</div>
                                     <div class="text-base font-bold">{{ riskData.analysis.high_risk_trend }}</div>
                                 </div>
@@ -548,9 +550,9 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Pie Chart -->
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="bg-white p-6 rounded-sm shadow-sm border border-slate-200">
                             <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                                <span class="w-1.5 h-4 bg-indigo-500 rounded-sm"></span>
                                 风险等级分布
                             </h3>
                             <div class="relative h-64 w-full flex items-center justify-center">
@@ -559,9 +561,9 @@
                         </div>
 
                         <!-- Line Chart -->
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="bg-white p-6 rounded-sm shadow-sm border border-slate-200">
                             <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <span class="w-1.5 h-4 bg-brand-500 rounded-full"></span>
+                                <span class="w-1.5 h-4 bg-brand-500 rounded-sm"></span>
                                 风险变化趋势
                             </h3>
                             <div class="relative h-64 w-full">
@@ -570,38 +572,38 @@
                         </div>
                     </div>
 
-                    <div v-if="regionCaseStatsNeedsSetup" class="mt-8 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-5 flex items-start justify-between gap-4">
+                    <div v-if="regionCaseStatsNeedsSetup" class="mt-8 bg-amber-50 border border-amber-200 rounded-sm px-6 py-5 flex items-start justify-between gap-4">
                         <div>
                             <div class="text-sm font-bold text-amber-800">尚未设置所在地区</div>
                             <div class="text-sm text-amber-700 mt-1">{{ regionCaseStatsMessage || '请先在“个人资料”中完善省/市/县（区）信息，才能查看所在地区案件统计。' }}</div>
                         </div>
-                        <button @click="activeTab = 'profile'" class="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">去设置</button>
+                        <button @click="activeTab = 'profile'" class="shrink-0 px-4 py-2 text-xs font-bold rounded-sm bg-amber-600 text-white hover:bg-amber-700 transition-colors">去设置</button>
                     </div>
 
-                    <div v-else-if="regionCaseStats && regionCaseStats.region" class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-cyan-100">
+                    <div v-else-if="regionCaseStats && regionCaseStats.region" class="mt-8 bg-white p-6 rounded-sm shadow-sm border border-cyan-100">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
-                                    <span class="w-1.5 h-4 bg-cyan-500 rounded-full"></span>
+                                    <span class="w-1.5 h-4 bg-cyan-500 rounded-sm"></span>
                                     所在{{ regionCaseStats.region.granularity_label || '市' }}案件统计
                                 </h3>
                                 <p class="text-sm text-slate-500">
                                     {{ ['county', 'district'].includes(regionCaseStats.region.granularity) ? `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name} / ${regionCaseStats.region.district_name}` : `${regionCaseStats.region.province_name} / ${regionCaseStats.region.city_name}` }}
                                 </p>
                             </div>
-                            <span class="text-xs bg-cyan-50 text-cyan-700 border border-cyan-100 px-3 py-1.5 rounded-full font-medium">总计 {{ regionCaseStats.summary ? regionCaseStats.summary.total_count : 0 }}</span>
+                            <span class="text-xs bg-cyan-50 text-cyan-700 border border-cyan-100 px-3 py-1.5 rounded-sm font-medium">总计 {{ regionCaseStats.summary ? regionCaseStats.summary.total_count : 0 }}</span>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
-                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                            <div class="rounded-sm border border-slate-100 bg-slate-50 px-4 py-3">
                                 <div class="text-xs text-slate-400">今日</div>
                                 <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.today_count : 0 }}</div>
                             </div>
-                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                            <div class="rounded-sm border border-slate-100 bg-slate-50 px-4 py-3">
                                 <div class="text-xs text-slate-400">近7天</div>
                                 <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.last_7d_count : 0 }}</div>
                             </div>
-                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                            <div class="rounded-sm border border-slate-100 bg-slate-50 px-4 py-3">
                                 <div class="text-xs text-slate-400">近30天</div>
                                 <div class="text-2xl font-black text-slate-900 mt-1">{{ regionCaseStats.summary ? regionCaseStats.summary.last_30d_count : 0 }}</div>
                             </div>
@@ -610,14 +612,14 @@
                         <div class="mt-6" v-if="regionCaseStats.top_scam_types && regionCaseStats.top_scam_types.length">
                             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">高发骗局 Top5</div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <div v-for="(item, idx) in regionCaseStats.top_scam_types" :key="`desktop-region-scam-${idx}-${item.scam_type}`" class="flex items-center justify-between bg-cyan-50/60 border border-cyan-100 rounded-lg px-3 py-2">
+                                <div v-for="(item, idx) in regionCaseStats.top_scam_types" :key="`desktop-region-scam-${idx}-${item.scam_type}`" class="flex items-center justify-between bg-cyan-50/60 border border-cyan-100 rounded-sm px-3 py-2">
                                     <span class="text-sm font-medium text-slate-700">{{ item.scam_type }}</span>
                                     <span class="text-sm font-bold text-cyan-700">{{ item.count }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-5 rounded-xl border px-4 py-3" :class="getRegionSignalClass(getRegionStatsSignal(regionCaseStats).level)">
+                        <div class="mt-5 rounded-sm border px-4 py-3" :class="getRegionSignalClass(getRegionStatsSignal(regionCaseStats).level)">
                             <div class="text-sm font-bold">{{ getRegionStatsSignal(regionCaseStats).title }}</div>
                             <div class="text-sm mt-1 opacity-90">{{ getRegionStatsSignal(regionCaseStats).detail }}</div>
                             <div class="text-xs mt-2 font-medium">{{ getRegionTopScamHint(regionCaseStats) }}</div>
