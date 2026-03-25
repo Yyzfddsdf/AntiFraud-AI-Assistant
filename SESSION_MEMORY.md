@@ -39,7 +39,7 @@
 - 对移动端模拟页遮挡、空白、滚动问题非常敏感。
 
 ## 建议的后续顺序
-1. 拆分 rontend/mobile-vue/src/App.template.html
+1. 拆分 frontend/mobile-vue/src/App.template.html
 2. 拆分后再逐页修复移动端模拟页问题
 3. 对桌面端模板改动做编译级验证
 4. 保持品牌文案稳定
