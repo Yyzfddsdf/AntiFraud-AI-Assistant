@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	chatapi "antifraud/internal/modules/chat/adapters/inbound/http"
 	chatapp "antifraud/internal/modules/chat/application"
@@ -17,7 +19,9 @@ import (
 	multihttp "antifraud/internal/modules/multi_agent/adapters/inbound/http"
 	"antifraud/internal/modules/multi_agent/adapters/outbound/case_library"
 	"antifraud/internal/modules/multi_agent/adapters/outbound/state"
+	region_system "antifraud/internal/modules/region"
 	"antifraud/internal/modules/user_profile"
+	"antifraud/internal/platform/cache"
 	appcfg "antifraud/internal/platform/config"
 	"antifraud/internal/platform/database"
 
@@ -43,10 +47,12 @@ func BuildRouter() (*gin.Engine, error) {
 	smsCodeService := smscode.NewDemoService()
 	familyService := family_system.NewService(database.DB)
 	userProfileService := user_profile_system.DefaultService()
+	regionService := region_system.NewService()
 	authHandler := controllers.NewDefaultAuthHandler(activeTokenManager, smsCodeService)
 	chatHandler := chatapi.NewHandler(chatapp.NewDefaultUseCase(defaultConfigPath))
 
 	state.RegisterHistoryObserver(func(record state.CaseHistoryRecord) {
+		_ = cache.SetJSON("cache:case_library:geo_map:v1:version", fmt.Sprintf("%d", time.Now().UnixNano()), 0)
 		if record.RiskLevel != "高" {
 			return
 		}
@@ -71,7 +77,7 @@ func BuildRouter() (*gin.Engine, error) {
 	r.Use(middleware.RateLimitMiddleware())
 
 	registerAuthRoutes(r, authHandler, smsCodeService)
-	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, chatHandler)
+	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, regionService, chatHandler)
 
 	return r, nil
 }
@@ -118,6 +124,7 @@ func registerProtectedRoutes(
 	authHandler *controllers.AuthHandler,
 	userProfileService *user_profile_system.Service,
 	familyService *family_system.Service,
+	regionService *region_system.Service,
 	chatHandler *chatapi.Handler,
 ) {
 	api := r.Group("/api")
@@ -128,6 +135,7 @@ func registerProtectedRoutes(
 	api.GET("/users", middleware.AdminMiddleware(authUserReader), authHandler.GetAllUsersHandle)
 	api.POST("/upgrade", authHandler.UpgradeUserHandle)
 	user_profile_system.RegisterRoutes(api, userProfileService)
+	region_system.RegisterRoutes(api, regionService)
 	chatapi.RegisterRoutes(api, chatHandler)
 	api.GET("/alert/ws", multihttp.AlertWebSocketHandle)
 	family_system.RegisterRoutes(api, familyService)
@@ -145,6 +153,7 @@ func registerProtectedRoutes(
 	adminCaseLibrary.GET("/cases", multihttp.GetHistoricalCasePreviewHandle)
 	adminCaseLibrary.GET("/cases/overview", multihttp.GetHistoricalCaseStatisticsOverviewHandle)
 	adminCaseLibrary.GET("/cases/graph", multihttp.GetHistoricalCaseGraphHandle)
+	adminCaseLibrary.GET("/cases/geo-map", multihttp.GetGeoCaseMapHandle)
 	adminCaseLibrary.GET("/options/scam-types", multihttp.GetHistoricalCaseScamTypeOptionsHandle)
 	adminCaseLibrary.GET("/options/target-groups", multihttp.GetHistoricalCaseTargetGroupOptionsHandle)
 	adminCaseLibrary.GET("/cases/:caseId", multihttp.GetHistoricalCaseDetailHandle)

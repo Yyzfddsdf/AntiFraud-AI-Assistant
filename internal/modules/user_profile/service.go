@@ -27,8 +27,15 @@ const (
 )
 
 type UpdateProfileInput struct {
-	Age        int
-	Occupation string
+	Age            int
+	Occupation     string
+	ProvinceCode   string
+	ProvinceName   string
+	CityCode       string
+	CityName       string
+	DistrictCode   string
+	DistrictName   string
+	LocationSource string
 }
 
 type UserRiskTrendAnalysis struct {
@@ -44,6 +51,13 @@ type UserRiskInfo struct {
 	UserName          string                `json:"user_name"`
 	Age               *int                  `json:"age"`
 	Occupation        string                `json:"occupation,omitempty"`
+	ProvinceCode      string                `json:"province_code,omitempty"`
+	ProvinceName      string                `json:"province_name,omitempty"`
+	CityCode          string                `json:"city_code,omitempty"`
+	CityName          string                `json:"city_name,omitempty"`
+	DistrictCode      string                `json:"district_code,omitempty"`
+	DistrictName      string                `json:"district_name,omitempty"`
+	LocationSource    string                `json:"location_source,omitempty"`
 	RecentTags        []string              `json:"recent_tags"`
 	TotalCaseCount    int                   `json:"total_case_count"`
 	HistoricalScore   int                   `json:"historical_score"`
@@ -59,20 +73,7 @@ var (
 )
 
 func ListOccupations() []string {
-	occupationsMu.RLock()
-	if len(occupationsCache) > 0 {
-		cached := append([]string{}, occupationsCache...)
-		occupationsMu.RUnlock()
-		return cached
-	}
-	occupationsMu.RUnlock()
-
-	items := loadOccupations()
-
-	occupationsMu.Lock()
-	occupationsCache = append([]string{}, items...)
-	occupationsMu.Unlock()
-	return append([]string{}, items...)
+	return loadCachedOptions(&occupationsMu, &occupationsCache, occupationsConfigPath)
 }
 
 func GetCurrentUserResponse(userID interface{}) (loginmodel.UserResponse, error) {
@@ -106,7 +107,20 @@ func normalizeOccupation(raw string) (string, error) {
 			return trimmed, nil
 		}
 	}
-	return "", fmt.Errorf("occupation is invalid, allowed values: %s", strings.Join(ListOccupations(), ", "))
+	return "", fmt.Errorf("职业无效，可选值为：%s", strings.Join(ListOccupations(), ", "))
+}
+
+func normalizeLocationSource(raw string) (string, error) {
+	trimmed := strings.TrimSpace(strings.ToLower(raw))
+	if trimmed == "" {
+		return "", nil
+	}
+	switch trimmed {
+	case "manual", "auto":
+		return trimmed, nil
+	default:
+		return "", fmt.Errorf("位置来源无效，可选值为：manual、auto")
+	}
 }
 
 func normalizeRecentTags(tags []string) ([]string, error) {
@@ -126,7 +140,7 @@ func normalizeRecentTags(tags []string) ([]string, error) {
 		seen[tag] = struct{}{}
 		normalized = append(normalized, tag)
 		if len(normalized) > maxRecentTagsCount {
-			return nil, fmt.Errorf("recent_tags count must be <= %d", maxRecentTagsCount)
+			return nil, fmt.Errorf("近期标签数量不能超过 %d 个", maxRecentTagsCount)
 		}
 	}
 	return normalized, nil
@@ -212,13 +226,34 @@ func parseNumericUserID(raw string) (uint64, error) {
 	}
 	userID, err := strconv.ParseUint(trimmed, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("user_id is invalid")
+		return 0, fmt.Errorf("用户 ID 无效")
 	}
 	return userID, nil
 }
 
 func loadOccupations() []string {
-	content, err := os.ReadFile(resolveConfigPath(occupationsConfigPath))
+	return loadStringOptions(occupationsConfigPath)
+}
+
+func loadCachedOptions(mu *sync.RWMutex, cache *[]string, configPath string) []string {
+	mu.RLock()
+	if len(*cache) > 0 {
+		cached := append([]string{}, (*cache)...)
+		mu.RUnlock()
+		return cached
+	}
+	mu.RUnlock()
+
+	items := loadStringOptions(configPath)
+
+	mu.Lock()
+	*cache = append([]string{}, items...)
+	mu.Unlock()
+	return append([]string{}, items...)
+}
+
+func loadStringOptions(configPath string) []string {
+	content, err := os.ReadFile(resolveConfigPath(configPath))
 	if err != nil {
 		return []string{}
 	}

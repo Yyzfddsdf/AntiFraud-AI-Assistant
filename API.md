@@ -233,6 +233,13 @@
   "role": "user",
   "age": 28,
   "occupation": "企业职员",
+  "province_code": "310000",
+  "province_name": "上海市",
+  "city_code": "310000",
+  "city_name": "上海市",
+  "district_code": "310115",
+  "district_name": "浦东新区",
+  "location_source": "manual",
   "recent_tags": [
     "近期频繁网购",
     "正在找工作"
@@ -296,7 +303,14 @@
 ```json
 {
   "age": 28,
-  "occupation": "企业职员"
+  "occupation": "企业职员",
+  "province_code": "310000",
+  "province_name": "上海市",
+  "city_code": "310000",
+  "city_name": "上海市",
+  "district_code": "310115",
+  "district_name": "浦东新区",
+  "location_source": "manual"
 }
 ```
 
@@ -304,6 +318,9 @@
 
 - `age` 取值范围：`1 ~ 150`
 - `occupation` 允许为空；若非空，必须命中 `config/occupations.json`
+- 地理位置需精确到当前地区可选的末级行政区，`province_code / city_code / district_code` 必须与后端地区库一致
+- 直辖市场景下，`city_code` 允许与 `province_code` 相同
+- `location_source` 当前支持 `manual` 和 `auto`
 - `recent_tags` 为只读用户画像字段，不允许通过该接口修改
 
 ### 成功响应（200）
@@ -319,6 +336,13 @@
     "role": "user",
     "age": 28,
     "occupation": "企业职员",
+    "province_code": "310000",
+    "province_name": "上海市",
+    "city_code": "310000",
+    "city_name": "上海市",
+    "district_code": "310115",
+    "district_name": "浦东新区",
+    "location_source": "manual",
     "recent_tags": [
       "近期频繁网购",
       "正在找工作"
@@ -329,8 +353,106 @@
 
 ### 常见失败响应
 
-- `400` 请求参数错误 / 年龄越界 / 职业不在枚举内
+- `400` 请求参数错误 / 年龄越界 / 职业不在枚举内 / 行政区编码不一致
 - `401` 未认证
+
+---
+
+## 4.3) 获取省级地区列表（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/regions/provinces`
+
+### 成功响应（200）
+
+```json
+{
+  "provinces": [
+    { "code": "110000", "name": "北京市" },
+    { "code": "310000", "name": "上海市" }
+  ],
+  "count": 2
+}
+```
+
+---
+
+## 4.4) 获取市级地区列表（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/regions/cities?province_code=<code>`
+
+### 说明
+
+- 返回指定省份下的市级列表
+- 直辖市场景下会返回一条与省级相同的“中间层级”选项，便于前端继续联动到末级行政区
+
+### 成功响应（200）
+
+```json
+{
+  "cities": [
+    { "code": "310000", "name": "上海市" }
+  ],
+  "count": 1
+}
+```
+
+---
+
+## 4.5) 获取末级行政区列表（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/regions/districts?city_code=<code>`
+
+### 成功响应（200）
+
+```json
+{
+  "districts": [
+    { "code": "310115", "name": "浦东新区" },
+    { "code": "310104", "name": "徐汇区" }
+  ],
+  "count": 2
+}
+```
+
+---
+
+## 4.6) 根据当前位置名称解析标准行政区（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/regions/resolve`
+
+### 请求体
+
+```json
+{
+  "province_name": "上海市",
+  "city_name": "上海市",
+  "district_name": "浦东新区"
+}
+```
+
+### 说明
+
+- 该接口用于前端“获取当前位置”后，把逆地理结果映射到后端 `GB/T 2260` 标准行政区
+- 解析成功后，前端应再把返回的标准 code/name 提交到 `/api/user/profile`
+
+### 成功响应（200）
+
+```json
+{
+  "region": {
+    "province_code": "310000",
+    "province_name": "上海市",
+    "city_code": "310000",
+    "city_name": "上海市",
+    "district_code": "310115",
+    "district_name": "浦东新区"
+  }
+}
+```
 
 ---
 
@@ -1790,7 +1912,37 @@ curl -X GET "http://localhost:8081/api/chat/context" \
 - `400` 必填字段缺失（`title`/`target_group`/`risk_level`/`scam_type`/`case_description`） / 字段格式错误 / `target_group`、`risk_level` 或 `scam_type` 非固定枚举值 / `case_description` 过短、过长（超过 400 字符）或疑似随机字符串。
 - `401` 未认证。
 - `403` 权限不足（非管理员）。
+- `409` 历史案件重复，已存在高度相似案件。
 - `500` embedding 调用失败 / 独立数据库写入失败。
+
+### 重复案件响应（409）
+
+当管理员上传的案件与知识库中已有案件高度相似时，服务端会拒绝写入，并返回重复案件信息，便于前端提示“是否改写后再提交”或引导管理员查看已存在案件。
+
+```json
+{
+  "error": "duplicate historical case detected: top1 similarity=0.9821 case_id=HCASE-001 title=已存在诈骗案件",
+  "message": "历史案件重复，已存在高度相似案件",
+  "duplicate_case": {
+    "case_id": "HCASE-001",
+    "title": "已存在诈骗案件",
+    "target_group": "老人",
+    "risk_level": "高",
+    "scam_type": "冒充客服类",
+    "similarity": 0.9821
+  }
+}
+```
+
+### 重复响应字段说明
+
+- `message`：面向前端和管理员展示的中文提示。
+- `duplicate_case.case_id`：命中的已存在案件 ID。
+- `duplicate_case.title`：命中的已存在案件标题。
+- `duplicate_case.target_group`：命中的已存在案件目标人群。
+- `duplicate_case.risk_level`：命中的已存在案件风险等级。
+- `duplicate_case.scam_type`：命中的已存在案件诈骗类型。
+- `duplicate_case.similarity`：当前上传内容与已存在案件的相似度，值越高表示越接近。
 
 ### cURL 示例
 
@@ -2102,6 +2254,161 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=冒充客服类&focus_group=老人&top_k=3" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
+
+---
+
+## 18.3) 全国反诈案件地理统计（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/cases/geo-map`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用。
+- 数据来源为：
+  - 用户历史案件：`history_cases`
+  - 用户本人位置：`users` 表中的 `province_code / city_code / district_code`
+- 该接口围绕地区、时间、案件类型三大维度进行聚合：
+  - 省份统计
+  - 省内城市统计
+  - 今日新增、近 7 天、近 30 天、全历史累计
+  - 每个地区 Top3 高发骗局
+  - 环比变化趋势与低/中/高风险等级
+- 该接口适用于管理员全国地理可视化地图页。
+
+### 成功响应（200）
+
+```json
+{
+  "generated_at": "2026-03-25T14:20:00+08:00",
+  "summary": {
+    "total_users_with_location": 128,
+    "total_cases": 642,
+    "province_count": 19,
+    "city_count": 84
+  },
+  "provinces": [
+    {
+      "region_code": "330000",
+      "region_name": "浙江省",
+      "stats": {
+        "today": {
+          "count": 6,
+          "previous_count": 4,
+          "change_rate": 0.5,
+          "trend": "上升",
+          "risk_level": "中",
+          "top_scam_types": [
+            { "scam_type": "冒充客服类", "count": 3 },
+            { "scam_type": "刷单返利类", "count": 2 },
+            { "scam_type": "虚假投资理财类", "count": 1 }
+          ]
+        },
+        "last_7d": {
+          "count": 18,
+          "previous_count": 12,
+          "change_rate": 0.5,
+          "trend": "上升",
+          "risk_level": "高",
+          "top_scam_types": [
+            { "scam_type": "冒充客服类", "count": 8 },
+            { "scam_type": "刷单返利类", "count": 5 },
+            { "scam_type": "虚假购物服务类", "count": 3 }
+          ]
+        },
+        "last_30d": {
+          "count": 56,
+          "previous_count": 42,
+          "change_rate": 0.3333,
+          "trend": "上升",
+          "risk_level": "高",
+          "top_scam_types": [
+            { "scam_type": "冒充客服类", "count": 21 },
+            { "scam_type": "刷单返利类", "count": 15 },
+            { "scam_type": "虚假投资理财类", "count": 8 }
+          ]
+        },
+        "all_time": {
+          "count": 133,
+          "previous_count": 0,
+          "change_rate": 1,
+          "trend": "上升",
+          "risk_level": "高",
+          "top_scam_types": [
+            { "scam_type": "冒充客服类", "count": 42 },
+            { "scam_type": "刷单返利类", "count": 27 },
+            { "scam_type": "虚假投资理财类", "count": 19 }
+          ]
+        }
+      },
+      "cities": [
+        {
+          "region_code": "330100",
+          "region_name": "杭州市",
+          "stats": {
+            "today": {
+              "count": 3,
+              "previous_count": 1,
+              "change_rate": 2,
+              "trend": "上升",
+              "risk_level": "高",
+              "top_scam_types": [
+                { "scam_type": "冒充客服类", "count": 2 },
+                { "scam_type": "刷单返利类", "count": 1 }
+              ]
+            },
+            "last_7d": {
+              "count": 9,
+              "previous_count": 6,
+              "change_rate": 0.5,
+              "trend": "上升",
+              "risk_level": "高",
+              "top_scam_types": [
+                { "scam_type": "冒充客服类", "count": 4 },
+                { "scam_type": "刷单返利类", "count": 3 },
+                { "scam_type": "虚假购物服务类", "count": 1 }
+              ]
+            },
+            "last_30d": {
+              "count": 28,
+              "previous_count": 17,
+              "change_rate": 0.6471,
+              "trend": "上升",
+              "risk_level": "高",
+              "top_scam_types": [
+                { "scam_type": "冒充客服类", "count": 10 },
+                { "scam_type": "刷单返利类", "count": 7 },
+                { "scam_type": "虚假投资理财类", "count": 4 }
+              ]
+            },
+            "all_time": {
+              "count": 73,
+              "previous_count": 0,
+              "change_rate": 1,
+              "trend": "上升",
+              "risk_level": "高",
+              "top_scam_types": [
+                { "scam_type": "冒充客服类", "count": 23 },
+                { "scam_type": "刷单返利类", "count": 14 },
+                { "scam_type": "虚假投资理财类", "count": 11 }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 常见失败响应
+
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `500` 全国地理统计查询失败。
 
 ---
 

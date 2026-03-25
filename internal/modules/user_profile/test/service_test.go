@@ -59,8 +59,15 @@ func TestUpdateCurrentUserProfile(t *testing.T) {
 	user := createUser(t, db, "profile_user")
 
 	resp, err := userprofile.UpdateCurrentUserProfile(user.ID, userprofile.UpdateProfileInput{
-		Age:        32,
-		Occupation: "企业职员",
+		Age:            32,
+		Occupation:     "企业职员",
+		ProvinceCode:   "310000",
+		ProvinceName:   "上海市",
+		CityCode:       "310000",
+		CityName:       "上海市",
+		DistrictCode:   "310115",
+		DistrictName:   "浦东新区",
+		LocationSource: "manual",
 	})
 	if err != nil {
 		t.Fatalf("update profile failed: %v", err)
@@ -76,6 +83,12 @@ func TestUpdateCurrentUserProfile(t *testing.T) {
 	if resp.Occupation != "企业职员" {
 		t.Fatalf("unexpected occupation: %q", resp.Occupation)
 	}
+	if resp.DistrictCode != "310115" || resp.DistrictName != "浦东新区" {
+		t.Fatalf("unexpected district: %s %s", resp.DistrictCode, resp.DistrictName)
+	}
+	if resp.LocationSource != "manual" {
+		t.Fatalf("unexpected location_source: %q", resp.LocationSource)
+	}
 	if len(recentTags) != 2 {
 		t.Fatalf("expected deduped recent tags, got %+v", recentTags)
 	}
@@ -86,8 +99,15 @@ func TestBuildUserRiskInfoIncludesRatios(t *testing.T) {
 	user := createUser(t, db, "risk_user")
 
 	if _, err := userprofile.UpdateCurrentUserProfile(user.ID, userprofile.UpdateProfileInput{
-		Age:        28,
-		Occupation: "学生",
+		Age:            28,
+		Occupation:     "学生",
+		ProvinceCode:   "110000",
+		ProvinceName:   "北京市",
+		CityCode:       "110000",
+		CityName:       "北京市",
+		DistrictCode:   "110108",
+		DistrictName:   "海淀区",
+		LocationSource: "auto",
 	}); err != nil {
 		t.Fatalf("update profile failed: %v", err)
 	}
@@ -109,6 +129,12 @@ func TestBuildUserRiskInfoIncludesRatios(t *testing.T) {
 	}
 	if info.Occupation != "学生" {
 		t.Fatalf("unexpected occupation: %q", info.Occupation)
+	}
+	if info.DistrictCode != "110108" || info.DistrictName != "海淀区" {
+		t.Fatalf("unexpected district: %s %s", info.DistrictCode, info.DistrictName)
+	}
+	if info.LocationSource != "auto" {
+		t.Fatalf("unexpected location_source: %q", info.LocationSource)
 	}
 	if len(info.RecentTags) != 1 || info.RecentTags[0] != "近期准备求职" {
 		t.Fatalf("unexpected recent_tags: %+v", info.RecentTags)

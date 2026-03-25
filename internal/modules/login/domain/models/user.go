@@ -10,14 +10,21 @@ import (
 // User 用户表模型。
 type User struct {
 	gorm.Model
-	Username      string  `gorm:"unique;not null" json:"username"`
-	Email         string  `gorm:"unique;not null" json:"email"`
-	Phone         *string `gorm:"uniqueIndex" json:"phone,omitempty"`
-	Age           *int    `gorm:"default:28" json:"age"`
-	Occupation    string  `gorm:"size:64" json:"occupation,omitempty"`
-	RecentTagsRaw string  `gorm:"column:recent_tags;type:text" json:"-"`
-	Password      string  `gorm:"not null" json:"-"`
-	Role          string  `gorm:"default:'user'" json:"role"` // 用户身份，默认为 "user"
+	Username       string  `gorm:"unique;not null" json:"username"`
+	Email          string  `gorm:"unique;not null" json:"email"`
+	Phone          *string `gorm:"uniqueIndex" json:"phone,omitempty"`
+	Age            *int    `gorm:"default:28" json:"age"`
+	Occupation     string  `gorm:"size:64" json:"occupation,omitempty"`
+	ProvinceCode   string  `gorm:"size:6" json:"province_code,omitempty"`
+	ProvinceName   string  `gorm:"size:32" json:"province_name,omitempty"`
+	CityCode       string  `gorm:"size:6" json:"city_code,omitempty"`
+	CityName       string  `gorm:"size:32" json:"city_name,omitempty"`
+	DistrictCode   string  `gorm:"size:6" json:"district_code,omitempty"`
+	DistrictName   string  `gorm:"size:32" json:"district_name,omitempty"`
+	LocationSource string  `gorm:"size:16" json:"location_source,omitempty"`
+	RecentTagsRaw  string  `gorm:"column:recent_tags;type:text" json:"-"`
+	Password       string  `gorm:"not null" json:"-"`
+	Role           string  `gorm:"default:'user'" json:"role"` // 用户身份，默认为 "user"
 }
 
 // LoginPayload 登录请求参数。
@@ -59,27 +66,41 @@ type SendSMSCodeResponse struct {
 
 // UserResponse 对外返回的用户信息（不包含密码）。
 type UserResponse struct {
-	ID         uint     `json:"id"`
-	Username   string   `json:"username"`
-	Email      string   `json:"email"`
-	Phone      *string  `json:"phone,omitempty"`
-	Age        *int     `json:"age"`
-	Occupation string   `json:"occupation,omitempty"`
-	RecentTags []string `json:"recent_tags"`
-	Role       string   `json:"role"`
+	ID             uint     `json:"id"`
+	Username       string   `json:"username"`
+	Email          string   `json:"email"`
+	Phone          *string  `json:"phone,omitempty"`
+	Age            *int     `json:"age"`
+	Occupation     string   `json:"occupation,omitempty"`
+	ProvinceCode   string   `json:"province_code,omitempty"`
+	ProvinceName   string   `json:"province_name,omitempty"`
+	CityCode       string   `json:"city_code,omitempty"`
+	CityName       string   `json:"city_name,omitempty"`
+	DistrictCode   string   `json:"district_code,omitempty"`
+	DistrictName   string   `json:"district_name,omitempty"`
+	LocationSource string   `json:"location_source,omitempty"`
+	RecentTags     []string `json:"recent_tags"`
+	Role           string   `json:"role"`
 }
 
 // ToUserResponse 将用户模型转换为公开响应结构。
 func ToUserResponse(user User) UserResponse {
 	return UserResponse{
-		ID:         user.ID,
-		Username:   user.Username,
-		Email:      user.Email,
-		Phone:      user.Phone,
-		Age:        user.Age,
-		Occupation: strings.TrimSpace(user.Occupation),
-		RecentTags: decodeRecentTags(user.RecentTagsRaw),
-		Role:       user.Role,
+		ID:             user.ID,
+		Username:       user.Username,
+		Email:          user.Email,
+		Phone:          user.Phone,
+		Age:            user.Age,
+		Occupation:     strings.TrimSpace(user.Occupation),
+		ProvinceCode:   strings.TrimSpace(user.ProvinceCode),
+		ProvinceName:   strings.TrimSpace(user.ProvinceName),
+		CityCode:       strings.TrimSpace(user.CityCode),
+		CityName:       strings.TrimSpace(user.CityName),
+		DistrictCode:   strings.TrimSpace(user.DistrictCode),
+		DistrictName:   strings.TrimSpace(user.DistrictName),
+		LocationSource: strings.TrimSpace(user.LocationSource),
+		RecentTags:     decodeRecentTags(user.RecentTagsRaw),
+		Role:           user.Role,
 	}
 }
 

@@ -7,6 +7,9 @@ export function useAlertsModule(deps) {
   const activeAlertEvent = ref(null);
   const alertConnectionStatus = ref('disconnected');
   const alertDrawerVisible = ref(false);
+  const alertEntryVisible = ref(false);
+
+  const alertEntryStorageKey = 'desktop_alert_entry_visible';
 
   let alertSocket = null;
   let alertReconnectTimer = null;
@@ -156,6 +159,24 @@ export function useAlertsModule(deps) {
 
   const closeAlertDrawer = () => {
     alertDrawerVisible.value = false;
+  };
+
+  const hideAlertEntry = () => {
+    alertEntryVisible.value = false;
+    try {
+      localStorage.setItem(alertEntryStorageKey, '0');
+    } catch {
+      // ignore persistence errors
+    }
+  };
+
+  const showAlertEntry = () => {
+    alertEntryVisible.value = true;
+    try {
+      localStorage.setItem(alertEntryStorageKey, '1');
+    } catch {
+      // ignore persistence errors
+    }
   };
 
   const toggleAlertDrawer = async () => {
@@ -313,6 +334,12 @@ export function useAlertsModule(deps) {
     alertSeenRecordIDs.clear();
   };
 
+  try {
+    alertEntryVisible.value = localStorage.getItem(alertEntryStorageKey) === '1';
+  } catch {
+    alertEntryVisible.value = false;
+  }
+
   return {
     alertEvents,
     alertUnreadCount,
@@ -321,11 +348,14 @@ export function useAlertsModule(deps) {
     alertConnectionStatus,
     alertConnectionLabel,
     alertDrawerVisible,
+    alertEntryVisible,
     recentRiskAlerts,
     normalizeAlertRiskLevel,
     getAlertSeverityTheme,
     markAlertReadByRecordID,
     closeAlertDrawer,
+    hideAlertEntry,
+    showAlertEntry,
     toggleAlertDrawer,
     openAlertCaseDetail,
     connectAlertWebSocket,

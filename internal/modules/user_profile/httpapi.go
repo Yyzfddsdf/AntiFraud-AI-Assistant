@@ -7,8 +7,15 @@ import (
 )
 
 type UpdateProfileRequest struct {
-	Age        int    `json:"age"`
-	Occupation string `json:"occupation"`
+	Age            int    `json:"age"`
+	Occupation     string `json:"occupation"`
+	ProvinceCode   string `json:"province_code"`
+	ProvinceName   string `json:"province_name"`
+	CityCode       string `json:"city_code"`
+	CityName       string `json:"city_name"`
+	DistrictCode   string `json:"district_code"`
+	DistrictName   string `json:"district_name"`
+	LocationSource string `json:"location_source"`
 }
 
 func RegisterRoutes(api gin.IRoutes, service *Service) {
@@ -43,8 +50,15 @@ func updateCurrentUserProfileHandle(service *Service) gin.HandlerFunc {
 		}
 
 		userResp, err := service.UpdateCurrentUserProfile(numericUserID, UpdateProfileInput{
-			Age:        payload.Age,
-			Occupation: payload.Occupation,
+			Age:            payload.Age,
+			Occupation:     payload.Occupation,
+			ProvinceCode:   payload.ProvinceCode,
+			ProvinceName:   payload.ProvinceName,
+			CityCode:       payload.CityCode,
+			CityName:       payload.CityName,
+			DistrictCode:   payload.DistrictCode,
+			DistrictName:   payload.DistrictName,
+			LocationSource: payload.LocationSource,
 		})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -682,6 +682,7 @@
                                     <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">画像资料</div>
                                     <div class="mt-1 text-sm font-semibold text-slate-800">年龄 {{ user.age || ageForm.age || '未设置' }}</div>
                                     <div class="mt-1 text-sm font-semibold text-slate-800">职业 {{ user.occupation || '未设置' }}</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">位置 {{ user.province_name || '未设置' }} / {{ user.city_name || '未设置' }} / {{ user.district_name || '未设置' }}</div>
                                     <div class="mt-2 flex flex-wrap gap-2" v-if="user.recent_tags && user.recent_tags.length">
                                         <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600">{{ tag }}</span>
                                     </div>
@@ -719,6 +720,72 @@
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">地理位置</div>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <div class="m-dropdown" data-custom-dropdown>
+                                            <button
+                                                type="button"
+                                                @click="toggleDropdown('profile_region_province')"
+                                                :class="['m-dropdown-trigger', openDropdownKey === 'profile_region_province' ? 'is-open' : '']">
+                                                <div class="min-w-0">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ profileForm.provinceName || '选择省' }}</div>
+                                                    <div class="text-[11px] text-slate-400 mt-1">先选择省级行政区</div>
+                                                </div>
+                                                <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openDropdownKey === 'profile_region_province' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div v-if="openDropdownKey === 'profile_region_province'" class="m-dropdown-menu hide-scrollbar">
+                                                <button v-for="item in provinceOptions" :key="`province-${item.code}`" type="button" class="m-dropdown-option" :class="{ 'is-selected': profileForm.provinceCode === item.code }" @click="selectProvinceValue(item.code)">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ item.name }}</div>
+                                                    <svg v-if="profileForm.provinceCode === item.code" class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="m-dropdown" data-custom-dropdown>
+                                            <button
+                                                type="button"
+                                                @click="profileForm.provinceCode && toggleDropdown('profile_region_city')"
+                                                :class="['m-dropdown-trigger', openDropdownKey === 'profile_region_city' ? 'is-open' : '', !profileForm.provinceCode ? 'opacity-50' : '']"
+                                                :disabled="!profileForm.provinceCode">
+                                                <div class="min-w-0">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ profileForm.cityName || '选择市' }}</div>
+                                                    <div class="text-[11px] text-slate-400 mt-1">根据已选省份加载城市</div>
+                                                </div>
+                                                <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openDropdownKey === 'profile_region_city' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div v-if="openDropdownKey === 'profile_region_city'" class="m-dropdown-menu hide-scrollbar">
+                                                <button v-for="item in cityOptions" :key="`city-${item.code}`" type="button" class="m-dropdown-option" :class="{ 'is-selected': profileForm.cityCode === item.code }" @click="selectCityValue(item.code)">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ item.name }}</div>
+                                                    <svg v-if="profileForm.cityCode === item.code" class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="m-dropdown" data-custom-dropdown>
+                                            <button
+                                                type="button"
+                                                @click="profileForm.cityCode && toggleDropdown('profile_region_district')"
+                                                :class="['m-dropdown-trigger', openDropdownKey === 'profile_region_district' ? 'is-open' : '', !profileForm.cityCode ? 'opacity-50' : '']"
+                                                :disabled="!profileForm.cityCode">
+                                                <div class="min-w-0">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ profileForm.districtName || '选择末级行政区' }}</div>
+                                                    <div class="text-[11px] text-slate-400 mt-1">选择当前地区可用的最后一级行政区</div>
+                                                </div>
+                                                <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openDropdownKey === 'profile_region_district' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div v-if="openDropdownKey === 'profile_region_district'" class="m-dropdown-menu hide-scrollbar">
+                                                <button v-for="item in districtOptions" :key="`district-${item.code}`" type="button" class="m-dropdown-option" :class="{ 'is-selected': profileForm.districtCode === item.code }" @click="selectDistrictValue(item.code)">
+                                                    <div class="text-sm font-semibold text-slate-800">{{ item.name }}</div>
+                                                    <svg v-if="profileForm.districtCode === item.code" class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="requestCurrentRegion" :disabled="locationResolving" class="w-full text-sm font-bold text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-lg border border-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        {{ locationResolving ? '定位中...' : '自动定位上传' }}
+                                    </button>
+                                    <div class="text-[11px] text-slate-400">支持手动选择行政区，也支持点击按钮自动识别到末级行政区。</div>
+                                    <div class="text-[11px] text-slate-500">当前选择：{{ profileForm.provinceName || '未选省级' }} / {{ profileForm.cityName || '未选中间层级' }} / {{ profileForm.districtName || '未选末级行政区' }}</div>
                                 </div>
                                 <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
                                     <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">近期标签</div>

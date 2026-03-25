@@ -40,10 +40,21 @@ export function useMobileApp() {
   const ageForm = reactive({ age: 28 });
   const profileForm = reactive({
     occupation: '',
-    recentTagsText: ''
+    recentTagsText: '',
+    provinceCode: '',
+    provinceName: '',
+    cityCode: '',
+    cityName: '',
+    districtCode: '',
+    districtName: '',
+    locationSource: 'manual'
   });
   const occupationOptions = ref([]);
+  const provinceOptions = ref([]);
+  const cityOptions = ref([]);
+  const districtOptions = ref([]);
   const profileSaving = ref(false);
+  const locationResolving = ref(false);
   const demoSMSCode = '000000';
   const smsCodeCooldown = ref(0);
   const smsCodeSending = ref(false);
@@ -77,6 +88,13 @@ export function useMobileApp() {
     const normalizedAge = Number(profile && profile.age);
     ageForm.age = Number.isFinite(normalizedAge) && normalizedAge > 0 ? normalizedAge : 28;
     profileForm.occupation = String(profile && profile.occupation ? profile.occupation : '').trim();
+    profileForm.provinceCode = String(profile?.province_code || '').trim();
+    profileForm.provinceName = String(profile?.province_name || '').trim();
+    profileForm.cityCode = String(profile?.city_code || '').trim();
+    profileForm.cityName = String(profile?.city_name || '').trim();
+    profileForm.districtCode = String(profile?.district_code || '').trim();
+    profileForm.districtName = String(profile?.district_name || '').trim();
+    profileForm.locationSource = String(profile?.location_source || '').trim() || 'manual';
     profileForm.recentTagsText = Array.isArray(profile && profile.recent_tags)
       ? profile.recent_tags.filter((item) => typeof item === 'string' && item.trim()).join('\n')
       : '';
@@ -123,6 +141,144 @@ export function useMobileApp() {
     const res = await request('/user/profile/options/occupations', 'GET', null, { silent: true });
     if (res && Array.isArray(res.occupations)) {
       occupationOptions.value = res.occupations.filter((item) => typeof item === 'string' && item.trim());
+    }
+  };
+
+  const toOptionMap = (items) => new Map((Array.isArray(items) ? items : []).map((item) => [String(item.code), item]));
+
+  const fetchProvinceOptions = async () => {
+    const res = await request('/regions/provinces', 'GET', null, { silent: true });
+    provinceOptions.value = Array.isArray(res?.provinces) ? res.provinces : [];
+  };
+
+  const fetchCityOptions = async (provinceCode) => {
+    if (!provinceCode) {
+      cityOptions.value = [];
+      return;
+    }
+    const res = await request(`/regions/cities?province_code=${encodeURIComponent(provinceCode)}`, 'GET', null, { silent: true });
+    cityOptions.value = Array.isArray(res?.cities) ? res.cities : [];
+  };
+
+  const fetchDistrictOptions = async (cityCode) => {
+    if (!cityCode) {
+      districtOptions.value = [];
+      return;
+    }
+    const res = await request(`/regions/districts?city_code=${encodeURIComponent(cityCode)}`, 'GET', null, { silent: true });
+    districtOptions.value = Array.isArray(res?.districts) ? res.districts : [];
+  };
+
+  const applyRegionSelection = async (selection, source = 'manual') => {
+    profileForm.provinceCode = String(selection?.province_code || '').trim();
+    profileForm.provinceName = String(selection?.province_name || '').trim();
+    await fetchCityOptions(profileForm.provinceCode);
+    profileForm.cityCode = String(selection?.city_code || '').trim();
+    profileForm.cityName = String(selection?.city_name || '').trim();
+    await fetchDistrictOptions(profileForm.cityCode);
+    profileForm.districtCode = String(selection?.district_code || '').trim();
+    profileForm.districtName = String(selection?.district_name || '').trim();
+    profileForm.locationSource = source;
+  };
+
+  const handleProvinceChange = async () => {
+    const option = toOptionMap(provinceOptions.value).get(String(profileForm.provinceCode));
+    profileForm.provinceName = option?.name || '';
+    profileForm.cityCode = '';
+    profileForm.cityName = '';
+    profileForm.districtCode = '';
+    profileForm.districtName = '';
+    districtOptions.value = [];
+    await fetchCityOptions(profileForm.provinceCode);
+  };
+
+  const handleCityChange = async () => {
+    const option = toOptionMap(cityOptions.value).get(String(profileForm.cityCode));
+    profileForm.cityName = option?.name || '';
+    profileForm.districtCode = '';
+    profileForm.districtName = '';
+    await fetchDistrictOptions(profileForm.cityCode);
+  };
+
+  const handleDistrictChange = () => {
+    const option = toOptionMap(districtOptions.value).get(String(profileForm.districtCode));
+    profileForm.districtName = option?.name || '';
+    profileForm.locationSource = 'manual';
+  };
+
+  const selectProvinceValue = async (code) => {
+    profileForm.provinceCode = String(code || '').trim();
+    await handleProvinceChange();
+    closeDropdown();
+  };
+
+  const selectCityValue = async (code) => {
+    profileForm.cityCode = String(code || '').trim();
+    await handleCityChange();
+    closeDropdown();
+  };
+
+  const selectDistrictValue = (code) => {
+    profileForm.districtCode = String(code || '').trim();
+    handleDistrictChange();
+    closeDropdown();
+  };
+
+  const hydrateRegionOptionsFromProfile = async () => {
+    if (profileForm.provinceCode) {
+      await fetchCityOptions(profileForm.provinceCode);
+    }
+    if (profileForm.cityCode) {
+      await fetchDistrictOptions(profileForm.cityCode);
+    }
+  };
+
+  const requestCurrentRegion = async () => {
+    if (!navigator.geolocation) {
+      showToast('当前浏览器不支持定位', 'error');
+      return;
+    }
+    locationResolving.value = true;
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      });
+      const lat = position?.coords?.latitude;
+      const lng = position?.coords?.longitude;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error('浏览器未返回有效定位坐标');
+      }
+      const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=zh`);
+      const geoData = await geoRes.json();
+      if (!geoRes.ok) {
+        throw new Error(geoData?.description || '当前位置解析失败');
+      }
+      const administrative = Array.isArray(geoData?.localityInfo?.administrative) ? geoData.localityInfo.administrative : [];
+      const districtCandidates = administrative
+        .map((item) => String(item?.name || '').trim())
+        .filter((name) => name && name !== geoData.countryName && name !== geoData.principalSubdivision)
+        .reverse();
+      const districtName = String(districtCandidates[0] || geoData.locality || geoData.city || '').trim();
+      const resolvePayload = {
+        province_name: String(geoData?.principalSubdivision || '').trim(),
+        city_name: String(geoData?.city || '').trim(),
+        district_name: districtName,
+        district_candidates: districtCandidates
+      };
+      const resolveRes = await request('/regions/resolve', 'POST', resolvePayload);
+      if (!resolveRes?.region) {
+        throw new Error('当前位置未匹配到标准行政区');
+      }
+      await applyRegionSelection(resolveRes.region, 'auto');
+      showToast('已自动识别当前位置');
+    } catch (error) {
+      showToast(error?.message || '定位获取失败', 'error');
+    } finally {
+      locationResolving.value = false;
     }
   };
 
@@ -301,7 +457,14 @@ export function useMobileApp() {
     profileSaving.value = true;
     const res = await request('/user/profile', 'PUT', {
       age: normalizedAge,
-      occupation: profileForm.occupation
+      occupation: profileForm.occupation,
+      province_code: profileForm.provinceCode,
+      province_name: profileForm.provinceName,
+      city_code: profileForm.cityCode,
+      city_name: profileForm.cityName,
+      district_code: profileForm.districtCode,
+      district_name: profileForm.districtName,
+      location_source: String(profileForm.locationSource || '').trim() || 'manual'
     });
     profileSaving.value = false;
     if (res && res.user) {
@@ -477,9 +640,11 @@ export function useMobileApp() {
       getContext: getRouteContext,
       onResolve: applyResolvedRoute
     });
+    fetchProvinceOptions();
     fetchCaptcha();
     if (token.value) {
       await getUserInfo();
+      await hydrateRegionOptionsFromProfile();
     } else {
       reconcileRouteState({ replace: true });
     }
@@ -517,7 +682,11 @@ export function useMobileApp() {
     ageForm,
     profileForm,
     occupationOptions,
+    provinceOptions,
+    cityOptions,
+    districtOptions,
     profileSaving,
+    locationResolving,
     demoSMSCode,
     requiresGraphCaptcha,
     shouldShowSMSCodeSection,
@@ -530,6 +699,13 @@ export function useMobileApp() {
     logout,
     updateAge,
     updateUserProfile,
+    requestCurrentRegion,
+    handleProvinceChange,
+    handleCityChange,
+    handleDistrictChange,
+    selectProvinceValue,
+    selectCityValue,
+    selectDistrictValue,
     deleteAccount,
     getUserDisplayName,
     getUserEmailText,

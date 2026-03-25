@@ -23,7 +23,7 @@
         </div>
 
         <!-- Alert Side Button -->
-        <div v-if="isAuthenticated" class="fixed right-5 top-1/2 -translate-y-1/2 z-[60] pointer-events-auto">
+        <div v-if="isAuthenticated && alertEntryVisible" class="fixed right-5 top-1/2 -translate-y-1/2 z-[60] pointer-events-auto">
             <button @click="toggleAlertDrawer" class="group relative rounded-2xl border border-red-200 bg-white/95 shadow-xl px-3.5 py-3 text-left backdrop-blur-md hover:shadow-2xl transition-all">
                 <div class="flex items-center gap-2.5">
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-600 border border-red-100">
@@ -34,6 +34,20 @@
                     <span class="text-sm font-semibold text-slate-700 whitespace-nowrap">风险预警</span>
                 </div>
                 <span v-if="alertUnreadCount > 0" class="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-600 text-white text-xs font-bold leading-[22px] text-center shadow-lg">{{ alertUnreadCount }}</span>
+            </button>
+            <button @click="hideAlertEntry" class="mt-2 ml-auto flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 bg-white/90 text-slate-400 hover:text-slate-700 hover:bg-white transition-colors shadow-lg" title="隐藏风险预警入口">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div v-else-if="isAuthenticated" class="fixed right-5 bottom-5 z-[60] pointer-events-auto">
+            <button @click="showAlertEntry" class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-xs font-bold text-slate-200 backdrop-blur-md hover:bg-slate-900 transition-colors shadow-xl">
+                <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                显示风险预警
             </button>
         </div>
 
