@@ -11,6 +11,8 @@
 - 实时风险预警（WebSocket 连接下的中高风险主动推送）
 - **家庭协同守护系统（MVP）**：家庭组、成员邀请、守护关系配置、家庭高风险通知
 - 用户所在地区案件统计（优先县级，其次区级，无区县则市级）
+- AI 反诈模拟答题（固定10步结构题包 + 意识评分报告）
+- AI 反诈模拟支持题包/报告历史预览与删除（便于复盘与运营管理）
 
 默认服务端口：`8081`
 
@@ -216,6 +218,12 @@ flowchart TB
 - 用户画像中的地理位置已统一改为县/区级行政区选择，标准来源于后端 `GB/T 2260` 地区库；桌面端和移动端都通过地区 API 拉取省市区数据，不自行维护行政区标准。
 - 新增“当前用户所在地区案件统计”能力：基于用户画像中的行政区信息统计同地区已归档案件，输出今日/近7天/近30天/累计数量及 Top 诈骗类型，粒度按“优先县级、其次区级、无区县则市级”展示。
 - 上述地区案件统计接口已加入 Redis 缓存（用户维度 key + 版本号 + 2 分钟 TTL），并在“用户更新地区信息”或“新增归档案件”后自动触发缓存版本更新，避免统计陈旧。
+- 新增“AI 反诈模拟答题”能力：先由专用子智能体通过固定工具 `submit_simulation_quiz_pack` 生成通用题包（固定10步题型骨架），再由用户逐步答题并计算反诈意识分。
+- 模拟模块新增列表预览能力：可查询全部题包列表、全部会话报告列表，并支持删除报告或删除未被会话占用的题包。
+- 模拟题包生成已改为异步任务：前端提交生成请求后立即返回 `task_id`，再轮询任务状态获取 `pack_id` 与题包内容，避免长请求阻塞。
+- 刷新后续答改为按题目维度：通过 `GET /api/scam/simulation/packs/:packId/ongoing` 获取指定题目状态并继续作答。
+- 约束更新：存在未完成会话时，不允许创建新题目；同一题包完成后不可重复作答。
+- 题包生成模型支持独立配置 `agents.simulation_quiz`（默认可配置为 DeepSeek），并支持单次生成 + 1 次结构修复重试。
 - 数据层保持双库隔离：主业务库承载用户、家庭、任务和历史归档；案件库承载历史案件知识库与待审核案件。
 - Redis 统一承担验证码、限流、聊天上下文和案件向量缓存；聊天模块与智能体模块都会访问外部模型或搜索服务。
 - 家庭系统与智能体主链路保持解耦，只在“高风险历史事件”产生后接收通知回调。
@@ -689,6 +697,12 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 - `GET /api/scam/multimodal/history/overview`
 - `DELETE /api/scam/multimodal/history/:recordId`
 - `GET /api/regions/cases/stats/current`
+- `POST /api/scam/simulation/packs/generate`
+- `GET /api/scam/simulation/packs`
+- `GET /api/scam/simulation/packs/:packId/ongoing`
+- `POST /api/scam/simulation/sessions/answer`
+- `GET /api/scam/simulation/sessions`
+- `DELETE /api/scam/simulation/sessions/:sessionId`
 
 实时告警：
 

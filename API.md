@@ -513,6 +513,298 @@
 
 ---
 
+## 4.8) 生成反诈模拟题包（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/simulation/packs/generate`
+
+### 请求体
+
+```json
+{
+  "case_type": "冒充客服",
+  "target_persona": "普通居民",
+  "difficulty": "medium",
+  "locale": "zh-CN"
+}
+```
+
+### 说明
+
+- 后端异步生成题目，前端只需轮询题目列表接口 `/api/scam/simulation/packs`。
+- 若存在未完成题目或生成中的题目，会返回 `409`。
+
+### 成功响应（200）
+
+```json
+{
+  "status": "submitted",
+  "message": "题目生成任务已提交，请轮询题目列表"
+}
+```
+
+### 常见失败响应
+
+```json
+{
+  "error": "题目正在生成中，请稍后查看",
+  "action": "请刷新题目列表，若长时间无结果可重试生成"
+}
+```
+
+### 超时策略
+
+- 若生成任务超过 10 分钟仍处于 `pending/processing`，后端会自动将该任务标记为失败并释放生成锁。
+- 用户随后可重新调用生成接口。
+
+---
+
+## 4.9) 查询当前用户题目列表（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/simulation/packs?limit=20&offset=0`
+
+- 仅返回当前可答题目列表（包含题目预览字段）。
+
+### 成功响应（200）
+
+```json
+{
+  "packs": [
+    {
+      "pack_id": "PACK-8E2A90A33F1B",
+      "title": "冒充客服退款反诈模拟",
+      "case_type": "冒充客服",
+      "difficulty": "medium",
+      "intro": "你接到一通自称电商客服的电话...",
+      "steps": [
+        {
+          "step_id": "step_01",
+          "step_type": "scenario_intro",
+          "narrative": "...",
+          "question": "...",
+          "options": [
+            {
+              "key": "A",
+              "text": "先核验官方渠道",
+              "risk_tag": "safe",
+              "score_delta": 8,
+              "rationale": "..."
+            }
+          ],
+          "knowledge_point": "官方核验",
+          "difficulty": 2,
+          "time_limit_sec": 30
+        }
+      ],
+      "created_at": "2026-03-25T13:00:00+08:00",
+      "has_session": false
+    }
+  ],
+  "limit": 20,
+  "offset": 0
+}
+```
+
+---
+
+## 4.10) 查询指定题目答题状态（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/simulation/packs/:packId/ongoing`
+
+- 用于刷新后继续答题：返回该题目的当前会话状态、下一题和已得分。
+
+### 成功响应（200）
+
+```json
+{
+  "status": "in_progress",
+  "pack_id": "PACK-8E2A90A33F1B",
+  "current_step": 3,
+  "current_score": 72,
+  "next_step": {
+    "step_id": "step_04",
+    "step_type": "escalation_signal",
+    "narrative": "...",
+    "question": "...",
+    "options": []
+  },
+  "result": {
+    "total_score": 72,
+    "level": "基础良好",
+    "weaknesses": ["transfer_or_link"],
+    "strengths": ["official_verification"],
+    "advice": ["..."]
+  },
+  "pack": {
+    "title": "冒充客服退款反诈模拟",
+    "case_type": "冒充客服",
+    "target_persona": "普通居民",
+    "difficulty": "medium",
+    "intro": "...",
+    "steps": []
+  }
+}
+```
+
+---
+
+## 4.11) 选择题目并答题（需鉴权）
+
+- **Method**: `POST`
+- **Path**: `/api/scam/simulation/sessions/answer`
+
+### 请求体
+
+```json
+{
+  "pack_id": "PACK-8E2A90A33F1B",
+  "step_id": "",
+  "option_key": ""
+}
+```
+
+- `step_id` 和 `option_key` 都为空时表示开始/继续该题目。
+- `step_id` 和 `option_key` 非空时表示提交当前步骤答案。
+
+### 开始/继续答题请求示例
+
+```json
+{
+  "pack_id": "PACK-8E2A90A33F1B",
+  "step_id": "",
+  "option_key": ""
+}
+```
+
+### 提交答案请求示例
+
+```json
+{
+  "pack_id": "PACK-8E2A90A33F1B",
+  "step_id": "step_04",
+  "option_key": "B"
+}
+```
+
+### 成功响应（200）
+
+```json
+{
+  "status": "in_progress",
+  "pack_id": "PACK-8E2A90A33F1B",
+  "current_step": 4,
+  "current_score": 80,
+  "next_step": {
+    "step_id": "step_05",
+    "step_type": "info_protection",
+    "narrative": "...",
+    "question": "...",
+    "options": []
+  },
+  "result": {
+    "total_score": 80,
+    "level": "基础良好",
+    "weaknesses": [],
+    "strengths": [],
+    "advice": ["..."]
+  },
+  "pack": {
+    "title": "冒充客服退款反诈模拟",
+    "case_type": "冒充客服",
+    "target_persona": "普通居民",
+    "difficulty": "medium",
+    "intro": "...",
+    "steps": []
+  }
+}
+```
+
+### 常见失败响应
+
+```json
+{
+  "error": "会话不存在"
+}
+```
+
+---
+
+## 4.12) 查询当前用户报告列表（需鉴权）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/simulation/sessions?limit=20&offset=0`
+
+- 返回全部报告摘要与报告预览内容。
+
+### 成功响应（200）
+
+```json
+{
+  "sessions": [
+    {
+      "pack_id": "PACK-8E2A90A33F1B",
+      "title": "冒充客服退款反诈模拟",
+      "case_type": "冒充客服",
+      "difficulty": "medium",
+      "current_step": 10,
+      "score": 92,
+      "level": "防护优秀",
+      "status": "completed",
+      "pack": {
+        "title": "冒充客服退款反诈模拟",
+        "case_type": "冒充客服",
+        "target_persona": "普通居民",
+        "difficulty": "medium",
+        "intro": "...",
+        "steps": []
+      },
+      "answers": [
+        {
+          "step_id": "step_01",
+          "step_type": "scenario_intro",
+          "option_key": "A",
+          "option_text": "先核验官方渠道",
+          "risk_tag": "safe",
+          "score_delta": 8,
+          "rationale": "...",
+          "answered_at": "2026-03-25T13:10:00+08:00"
+        }
+      ],
+      "result": {
+        "total_score": 92,
+        "level": "防护优秀",
+        "weaknesses": [],
+        "strengths": ["official_verification"],
+        "advice": ["..."]
+      },
+      "completed_at": "2026-03-25T13:15:00+08:00",
+      "created_at": "2026-03-25T13:05:00+08:00"
+    }
+  ],
+  "limit": 20,
+  "offset": 0
+}
+```
+
+---
+
+## 4.13) 删除模拟报告（需鉴权）
+
+- **Method**: `DELETE`
+- **Path**: `/api/scam/simulation/sessions/:sessionId`
+
+### 成功响应（200）
+
+```json
+{
+  "message": "报告删除成功"
+}
+```
+
+---
+
 ## 5) 删除当前用户（需鉴权）
 
 - **Method**: `DELETE`
@@ -1732,15 +2024,21 @@ GET /api/users?query=admin
 7. `GET /api/user/profile/options/occupations`
 8. `PUT /api/user/profile`
 9. `GET /api/regions/cases/stats/current`
-10. `POST /api/scam/multimodal/analyze`
-11. `GET /api/scam/multimodal/tasks`
-12. `GET /api/scam/multimodal/history`
-13. `GET /api/scam/multimodal/history/overview`
-14. `GET /api/scam/multimodal/tasks/:taskId`
-15. `POST /api/chat`
-16. `GET /api/chat/context`
-17. `POST /api/chat/refresh`
-18. `DELETE /api/user`
+10. `POST /api/scam/simulation/packs/generate`
+11. `GET /api/scam/simulation/packs`
+12. `GET /api/scam/simulation/packs/:packId/ongoing`
+13. `POST /api/scam/simulation/sessions/answer`
+14. `GET /api/scam/simulation/sessions`
+15. `DELETE /api/scam/simulation/sessions/:sessionId`
+16. `POST /api/scam/multimodal/analyze`
+17. `GET /api/scam/multimodal/tasks`
+18. `GET /api/scam/multimodal/history`
+19. `GET /api/scam/multimodal/history/overview`
+20. `GET /api/scam/multimodal/tasks/:taskId`
+21. `POST /api/chat`
+22. `GET /api/chat/context`
+23. `POST /api/chat/refresh`
+24. `DELETE /api/user`
 
 ---
 
@@ -1854,6 +2152,20 @@ curl -X GET "http://localhost:8081/api/scam/multimodal/history/overview?interval
 ```bash
 curl -X GET "http://localhost:8081/api/regions/cases/stats/current" \
   -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### 生成反诈模拟题包
+
+```bash
+curl -X POST "http://localhost:8081/api/scam/simulation/packs/generate" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "case_type": "冒充客服",
+    "target_persona": "普通居民",
+    "difficulty": "medium",
+    "locale": "zh-CN"
+  }'
 ```
 
 ### 聊天对话（SSE）

@@ -69,6 +69,14 @@ var caseCollectionToolHandlers = map[string]ToolHandler{
 	UploadHistoricalCaseToVectorDBToolName: &UploadHistoricalCaseToVectorDBHandler{},
 }
 
+var simulationQuizToolRegistry = []openai.Tool{
+	SubmitSimulationQuizPackTool,
+}
+
+var simulationQuizToolHandlers = map[string]ToolHandler{
+	SubmitSimulationQuizPackToolName: &SubmitSimulationQuizPackHandler{},
+}
+
 // MainAgentTools 返回主智能体可用工具列表（已过滤黑名单）。
 func MainAgentTools() []openai.Tool {
 	tools := make([]openai.Tool, 0, len(mainAgentToolRegistry))
@@ -97,4 +105,16 @@ func CaseCollectionTools() []openai.Tool {
 // GetCaseCollectionToolHandler 返回案件采集智能体的工具处理器。
 func GetCaseCollectionToolHandler(name string) ToolHandler {
 	return caseCollectionToolHandlers[name]
+}
+
+// SimulationQuizTools 返回模拟题包智能体可用工具列表。
+func SimulationQuizTools() []openai.Tool {
+	tools := make([]openai.Tool, 0, len(simulationQuizToolRegistry))
+	tools = append(tools, simulationQuizToolRegistry...)
+	return tools
+}
+
+// GetSimulationQuizToolHandler 返回模拟题包智能体工具处理器。
+func GetSimulationQuizToolHandler(name string) ToolHandler {
+	return simulationQuizToolHandlers[name]
 }

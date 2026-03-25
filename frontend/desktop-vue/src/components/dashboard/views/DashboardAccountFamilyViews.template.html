@@ -127,15 +127,29 @@
                 </div>
 
                 <!-- Family View -->
-                <div v-if="activeTab === 'family'" class="max-w-6xl mx-auto animate-fade-in space-y-8">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">家庭中心</h1>
-                            <p class="text-slate-500 mt-2 text-lg">建立家庭联防关系、配置守护人，并查看高风险家庭通知。</p>
-                        </div>
-                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">未读家庭通知</div>
-                            <div class="mt-1 text-2xl font-extrabold text-slate-900">{{ familyUnreadCount }}</div>
+                <div v-if="activeTab === 'family'" class="max-w-7xl mx-auto animate-fade-in space-y-8">
+                    <div class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#ffffff_0%,_#f8fafc_100%)] p-8 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-emerald-500 to-sky-500"></div>
+                        <div class="flex items-start justify-between gap-6">
+                            <div>
+                                <div class="text-[11px] font-black uppercase tracking-[0.34em] text-cyan-600">反诈卫士</div>
+                                <h1 class="mt-3 text-4xl font-black tracking-tight text-slate-950">家庭中心</h1>
+                                <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">建立家庭联防关系、配置守护人、统一管理邀请与通知。把高风险预警、成员守护和协同响应集中到一个工作台里。</p>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 text-right">
+                                <div class="rounded-2xl border border-cyan-100 bg-white/85 px-4 py-3 shadow-sm">
+                                    <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">未读通知</div>
+                                    <div class="mt-1 text-2xl font-black text-slate-900">{{ familyUnreadCount }}</div>
+                                </div>
+                                <div class="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3 shadow-sm">
+                                    <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">家庭状态</div>
+                                    <div class="mt-1 text-sm font-black text-slate-900">{{ familyHasGroup ? '已加入家庭' : '待创建/加入' }}</div>
+                                </div>
+                                <div class="rounded-2xl border border-sky-100 bg-white/85 px-4 py-3 shadow-sm">
+                                    <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">通知通道</div>
+                                    <div class="mt-1 text-sm font-black text-slate-900">{{ familyNotificationConnectionLabel }}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -145,10 +159,11 @@
 
                     <template v-else-if="!familyHasGroup">
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6 xl:col-span-2">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
-                                        <h2 class="text-lg font-bold text-slate-900">收到的家庭邀请</h2>
+                                        <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Received Invites</div>
+                                        <h2 class="mt-2 text-xl font-black text-slate-950">收到的家庭邀请</h2>
                                         <p class="mt-2 text-sm text-slate-500">如果家人已经向你发起邀请，可以在这里直接查看并加入对应家庭。</p>
                                     </div>
                                     <span class="shrink-0 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{{ familyReceivedInvitations.length }} 条</span>
@@ -183,8 +198,9 @@
                                 </div>
                             </section>
 
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">创建家庭</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Create</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">创建家庭</h2>
                                 <p class="mt-2 text-sm text-slate-500">创建后你将成为家庭创建者，可邀请家人并配置守护关系。</p>
                                 <div class="mt-5 flex flex-col sm:flex-row gap-3">
                                     <input v-model="familyCreateForm.name" type="text" placeholder="例如：张三家庭" class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
@@ -192,8 +208,9 @@
                                 </div>
                             </section>
 
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">接受邀请</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Join</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">接受邀请</h2>
                                 <p class="mt-2 text-sm text-slate-500">输入家人发来的邀请码，加入已有家庭。</p>
                                 <div class="mt-5 flex flex-col sm:flex-row gap-3">
                                     <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium uppercase">
@@ -204,11 +221,11 @@
                     </template>
 
                     <template v-else>
-                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <section class="bg-white rounded-[1.8rem] border border-slate-200 shadow-[0_18px_45px_rgba(15,23,42,0.06)] p-6">
                             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                                 <div>
-                                    <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">家庭信息</div>
-                                    <h2 class="mt-2 text-2xl font-extrabold text-slate-900">{{ familyOverview.family.name }}</h2>
+                                    <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-black">家庭信息</div>
+                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-950">{{ familyOverview.family.name }}</h2>
                                     <p class="mt-2 text-sm text-slate-500">家庭邀请码：<span class="font-mono text-slate-700">{{ familyOverview.family.invite_code }}</span></p>
                                     <p class="mt-1 text-sm text-slate-500">家庭创建者：{{ familyOverview.family.owner_name }} / {{ familyOverview.family.owner_email }}</p>
                                     <p v-if="familyOverview.family.owner_phone" class="mt-1 text-sm text-slate-400 font-mono">{{ familyOverview.family.owner_phone }}</p>
@@ -227,8 +244,9 @@
                         </section>
 
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">邀请家庭成员</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Invite Members</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">邀请家庭成员</h2>
                                 <p class="mt-2 text-sm text-slate-500">可通过邮箱或手机号发送邀请，配置对方加入后的角色和关系。</p>
                                 <div class="mt-5 grid grid-cols-1 gap-3">
                                     <input v-model="familyInviteForm.invitee_email" type="email" placeholder="受邀邮箱（可选）" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
@@ -250,8 +268,9 @@
                                 </div>
                             </section>
 
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">配置守护关系</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Guardian Setup</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">配置守护关系</h2>
                                 <p class="mt-2 text-sm text-slate-500">为家庭中的成员指定守护人，高风险事件会通知到对应守护人。</p>
                                 <div class="mt-5 grid grid-cols-1 gap-3">
                                     <CustomSelect
@@ -287,10 +306,11 @@
                             </section>
                         </div>
 
-                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <section class="bg-white rounded-[1.8rem] border border-slate-200 shadow-[0_18px_45px_rgba(15,23,42,0.06)] overflow-hidden">
                             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <h2 class="text-lg font-bold text-slate-900">家庭成员</h2>
+                                    <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Members</div>
+                                    <h2 class="mt-2 text-xl font-black text-slate-950">家庭成员</h2>
                                     <p class="mt-1 text-sm text-slate-500">当前家庭中的所有活跃成员。</p>
                                 </div>
                             </div>
@@ -323,8 +343,9 @@
                         </section>
 
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">家庭邀请记录</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Invite Records</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">家庭邀请记录</h2>
                                 <div class="mt-4 space-y-3">
                                     <div v-for="invitation in familyInvitations" :key="invitation.id" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                         <div class="flex items-center justify-between gap-3">
@@ -343,8 +364,9 @@
                                 </div>
                             </section>
 
-                            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <h2 class="text-lg font-bold text-slate-900">守护关系</h2>
+                            <section class="bg-white rounded-[1.7rem] border border-slate-200 shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Guardian Links</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">守护关系</h2>
                                 <div class="mt-4 space-y-3">
                                     <div v-for="link in familyGuardianLinks" :key="link.id" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
                                         <div>
@@ -358,10 +380,11 @@
                             </section>
                         </div>
 
-                        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <section class="bg-white rounded-[1.8rem] border border-slate-200 shadow-[0_18px_45px_rgba(15,23,42,0.06)] p-6">
                             <div class="flex items-center justify-between gap-4">
                                 <div>
-                                    <h2 class="text-lg font-bold text-slate-900">家庭风险通知</h2>
+                                    <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Risk Alerts</div>
+                                    <h2 class="mt-2 text-xl font-black text-slate-950">家庭风险通知</h2>
                                     <p class="mt-1 text-sm text-slate-500">当被守护成员出现高风险案件时，守护人会在这里收到通知。</p>
                                 </div>
                                 <div class="text-xs text-slate-400">{{ familyNotificationConnectionLabel }}</div>

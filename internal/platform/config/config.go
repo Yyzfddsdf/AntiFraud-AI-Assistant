@@ -70,6 +70,7 @@ type AgentModelConfig struct {
 	Video          ModelConfig `json:"video"`
 	Audio          ModelConfig `json:"audio"`
 	CaseCollection ModelConfig `json:"case_collection"`
+	SimulationQuiz ModelConfig `json:"simulation_quiz"`
 }
 
 // PromptConfig 统一托管各智能体提示词，避免硬编码散落在代码里。
@@ -80,6 +81,7 @@ type PromptConfig struct {
 	Video          string `json:"video"`
 	Audio          string `json:"audio"`
 	CaseCollection string `json:"case_collection"`
+	SimulationQuiz string `json:"simulation_quiz"`
 }
 
 // Config 是项目总配置对象。
@@ -163,6 +165,7 @@ func (c *Config) applyEnvOverrides() {
 	c.Agents.Video.APIKey = firstNonEmptyEnv("AGENT_VIDEO_API_KEY", c.Agents.Video.APIKey)
 	c.Agents.Audio.APIKey = firstNonEmptyEnv("AGENT_AUDIO_API_KEY", c.Agents.Audio.APIKey)
 	c.Agents.CaseCollection.APIKey = firstNonEmptyEnv("AGENT_CASE_COLLECTION_API_KEY", c.Agents.CaseCollection.APIKey)
+	c.Agents.SimulationQuiz.APIKey = firstNonEmptyEnv("AGENT_SIMULATION_QUIZ_API_KEY", c.Agents.SimulationQuiz.APIKey)
 
 	c.Embedding.APIKey = firstNonEmptyEnv("EMBEDDING_API_KEY", c.Embedding.APIKey)
 	c.Chat.APIKey = firstNonEmptyEnv("CHAT_API_KEY", c.Chat.APIKey)
@@ -184,6 +187,10 @@ func (c *Config) normalize() {
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
 	c.Agents.CaseCollection = normalizeModel(c.Agents.CaseCollection)
+	c.Agents.SimulationQuiz = normalizeModel(c.Agents.SimulationQuiz)
+	if c.Agents.SimulationQuiz.Model == "" {
+		c.Agents.SimulationQuiz = c.Agents.Main
+	}
 	c.Embedding = normalizeEmbedding(c.Embedding)
 	c.Chat = normalizeChat(c.Chat, c.Agents.Main)
 	c.Tavily = normalizeTavily(c.Tavily)
@@ -194,6 +201,10 @@ func (c *Config) normalize() {
 	c.Prompts.Video = strings.TrimSpace(c.Prompts.Video)
 	c.Prompts.Audio = strings.TrimSpace(c.Prompts.Audio)
 	c.Prompts.CaseCollection = strings.TrimSpace(c.Prompts.CaseCollection)
+	c.Prompts.SimulationQuiz = strings.TrimSpace(c.Prompts.SimulationQuiz)
+	if c.Prompts.SimulationQuiz == "" {
+		c.Prompts.SimulationQuiz = "你是反诈模拟题目生成智能体。你必须调用 submit_simulation_quiz_pack 工具提交固定10步结构的题包，不允许输出工具外文本。每一道题的正确选项分布必须有变化，不允许所有题目都使用同一个答案字母作为正确答案。"
+	}
 	c.AlertWS = normalizeAlertWS(c.AlertWS)
 	c.FamilyAlertWS = normalizeAlertWS(c.FamilyAlertWS)
 }
@@ -300,6 +311,9 @@ func (c Config) validate() error {
 	if err := validateModel("agents.case_collection", c.Agents.CaseCollection); err != nil {
 		return err
 	}
+	if err := validateModel("agents.simulation_quiz", c.Agents.SimulationQuiz); err != nil {
+		return err
+	}
 	if err := validateEmbedding("embedding", c.Embedding); err != nil {
 		return err
 	}
@@ -325,6 +339,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validatePrompt("prompts.case_collection", c.Prompts.CaseCollection); err != nil {
+		return err
+	}
+	if err := validatePrompt("prompts.simulation_quiz", c.Prompts.SimulationQuiz); err != nil {
 		return err
 	}
 	return nil

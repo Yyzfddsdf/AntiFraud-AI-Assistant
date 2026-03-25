@@ -2,6 +2,7 @@ export function createMobileTabChangeHandler(deps) {
   return (newTab) => {
     deps.syncRouteFromActiveTab();
     deps.closeDropdown();
+    deps.scrollMainToTop?.();
 
     if (newTab === 'family') {
       deps.fetchFamilyOverview().then(() => {
@@ -34,6 +35,13 @@ export function createMobileTabChangeHandler(deps) {
     if (newTab === 'risk_trend') {
       deps.fetchRiskTrend();
       deps.fetchCurrentRegionCaseStats();
+    }
+
+    if (newTab === 'simulation_quiz') {
+      deps.resetSimulation();
+      deps.fetchSimulationPacks();
+      deps.fetchSimulationSessions();
+      deps.resumeOngoingSimulationSession();
     }
   };
 }

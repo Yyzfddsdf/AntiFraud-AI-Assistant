@@ -20,6 +20,7 @@ import (
 	"antifraud/internal/modules/multi_agent/adapters/outbound/case_library"
 	"antifraud/internal/modules/multi_agent/adapters/outbound/state"
 	region_system "antifraud/internal/modules/region"
+	"antifraud/internal/modules/scam_simulation"
 	"antifraud/internal/modules/user_profile"
 	"antifraud/internal/platform/cache"
 	appcfg "antifraud/internal/platform/config"
@@ -48,6 +49,7 @@ func BuildRouter() (*gin.Engine, error) {
 	familyService := family_system.NewService(database.DB)
 	userProfileService := user_profile_system.DefaultService()
 	regionService := region_system.NewService()
+	simulationService := scam_simulation.NewService()
 	authHandler := controllers.NewDefaultAuthHandler(activeTokenManager, smsCodeService)
 	chatHandler := chatapi.NewHandler(chatapp.NewDefaultUseCase(defaultConfigPath))
 
@@ -78,7 +80,7 @@ func BuildRouter() (*gin.Engine, error) {
 	r.Use(middleware.RateLimitMiddleware())
 
 	registerAuthRoutes(r, authHandler, smsCodeService)
-	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, regionService, chatHandler)
+	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, regionService, simulationService, chatHandler)
 
 	return r, nil
 }
@@ -126,6 +128,7 @@ func registerProtectedRoutes(
 	userProfileService *user_profile_system.Service,
 	familyService *family_system.Service,
 	regionService *region_system.Service,
+	simulationService *scam_simulation.Service,
 	chatHandler *chatapi.Handler,
 ) {
 	api := r.Group("/api")
@@ -137,6 +140,7 @@ func registerProtectedRoutes(
 	api.POST("/upgrade", authHandler.UpgradeUserHandle)
 	user_profile_system.RegisterRoutes(api, userProfileService)
 	region_system.RegisterRoutes(api, regionService)
+	scam_simulation.RegisterRoutes(api, simulationService)
 	chatapi.RegisterRoutes(api, chatHandler)
 	api.GET("/alert/ws", multihttp.AlertWebSocketHandle)
 	family_system.RegisterRoutes(api, familyService)

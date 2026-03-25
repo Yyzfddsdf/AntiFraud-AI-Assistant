@@ -91,124 +91,130 @@
         </div>
 
         <!-- 2. 主界面 -->
-        <div v-else class="flex-1 min-h-0 flex flex-col bg-gray-50">
-            <!-- Header -->
-            <header class="h-16 px-4 pt-safe flex items-center justify-between bg-white shrink-0 sticky top-0 z-30">
-                <div class="flex items-center gap-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+        <div v-else class="flex-1 min-h-0 flex flex-col bg-slate-50">
+            <header v-if="activeTab !== 'simulation_quiz'" class="h-[68px] px-5 pt-safe flex items-center justify-between bg-white/80 backdrop-blur-xl shrink-0 sticky top-0 z-30 border-b border-slate-100/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-[14px] bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 ring-1 ring-white/50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     </div>
-                    <span class="font-bold text-lg tracking-tight text-slate-900">反诈卫士</span>
+                    <div class="flex flex-col">
+                        <span class="font-black text-xl tracking-tight text-slate-900 leading-none">反诈卫士</span>
+                        <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Sentinel AI</span>
+                    </div>
                 </div>
-                <div class="font-bold text-lg tracking-tight text-slate-900 absolute left-1/2 -translate-x-1/2">
-                    <span v-if="['tasks','history','risk_trend'].includes(activeTab)">概览</span>
-                    <span v-else-if="activeTab === 'submit'">分析</span>
-                    <span v-else-if="activeTab === 'alerts'">消息</span>
-                    <span v-else-if="activeTab === 'chat'">AI 助手</span>
-                    <span v-else-if="['family','family_invite'].includes(activeTab)">家庭</span>
-                    <span v-else-if="['profile','profile_privacy'].includes(activeTab)">我的</span>
-                </div>
-                <button v-if="activeTab !== 'alerts'" @click="activeTab = 'alerts'" class="relative w-10 h-10 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
-                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                     <span v-if="alertUnreadCount > 0" class="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                <button v-if="activeTab !== 'alerts'" @click="activeTab = 'alerts'" class="relative w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                     <span v-if="alertUnreadCount > 0" class="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
                 </button>
             </header>
 
             <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 relative bg-slate-50">
                 
                 <!-- Dashboard (Tasks) -->
-                <div v-show="activeTab === 'tasks'" class="pb-safe">
+                <div v-show="activeTab === 'tasks'" class="pb-safe space-y-4 pt-3">
                     <!-- Banner Carousel -->
-                    <div class="relative overflow-hidden w-full rounded-2xl" style="min-height: 160px;">
-                        <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: 'translateX(-' + currentBannerIndex * 100 + '%)' }">
-                            <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/background.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
-                            <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/2.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
-                        </div>
-                        <!-- Carousel Indicators -->
-                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                            <button @click="currentBannerIndex = 0" :class="['w-2 h-2 rounded-full transition-colors', currentBannerIndex === 0 ? 'bg-white' : 'bg-white/50']"></button>
-                            <button @click="currentBannerIndex = 1" :class="['w-2 h-2 rounded-full transition-colors', currentBannerIndex === 1 ? 'bg-white' : 'bg-white/50']"></button>
+                    <div class="px-4 relative z-20">
+                        <div class="relative overflow-hidden w-full rounded-3xl shadow-sm border border-slate-100" style="min-height: 160px;">
+                            <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: 'translateX(-' + currentBannerIndex * 100 + '%)' }">
+                                <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/background.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
+                                <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/2.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
+                            </div>
+                            <!-- Carousel Indicators -->
+                            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                                <button @click="currentBannerIndex = 0" :class="['w-1.5 h-1.5 rounded-full transition-all duration-300', currentBannerIndex === 0 ? 'w-4 bg-white' : 'bg-white/50']"></button>
+                                <button @click="currentBannerIndex = 1" :class="['w-1.5 h-1.5 rounded-full transition-all duration-300', currentBannerIndex === 1 ? 'w-4 bg-white' : 'bg-white/50']"></button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Grid Menu -->
-                    <div class="px-4 mt-3 relative z-20">
-                        <div class="bg-white rounded-2xl shadow-sm p-4 grid grid-cols-4 gap-y-3">
-                            <div @click="activeTab = 'chat'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    <div class="px-4 relative z-20">
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-100/50 p-4 grid grid-cols-5 gap-x-1 gap-y-3">
+                            <div @click="activeTab = 'chat'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
+                                <div class="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                                 </div>
-                                <span class="text-xs font-bold text-slate-700">AI助手</span>
+                                <span class="text-[11px] font-bold text-slate-700">AI助手</span>
                             </div>
-                            <div @click="activeTab = 'history'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-teal-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            <div @click="activeTab = 'history'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
+                                <div class="w-11 h-11 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 group-hover:bg-teal-100 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                                 </div>
-                                <span class="text-xs font-bold text-slate-700">历史档案</span>
+                                <span class="text-[11px] font-bold text-slate-700">历史</span>
                             </div>
-                            <div @click="activeTab = 'risk_trend'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-cyan-400 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                            <div @click="activeTab = 'risk_trend'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
+                                <div class="w-11 h-11 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 group-hover:bg-cyan-100 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
                                 </div>
-                                <span class="text-xs font-bold text-slate-700">风险趋势</span>
+                                <span class="text-[11px] font-bold text-slate-700">趋势</span>
                             </div>
-                            <div @click="activeTab = 'family'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform">
-                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-b from-lime-400 to-lime-500 flex items-center justify-center text-white shadow-lg shadow-lime-500/30">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <div @click="activeTab = 'family'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
+                                <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 </div>
-                                <span class="text-xs font-bold text-slate-700">家庭守护</span>
+                                <span class="text-[11px] font-bold text-slate-700">守护</span>
+                            </div>
+                            <div @click="activeTab = 'simulation_quiz'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
+                                <div class="w-11 h-11 rounded-2xl bg-fuchsia-50 flex items-center justify-center text-fuchsia-600 group-hover:bg-fuchsia-100 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <span class="text-[11px] font-bold text-slate-700">演练</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Stats Cards -->
-                    <div class="px-4 mt-3 grid grid-cols-2 gap-3">
-                        <div class="m-card p-3 h-24 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-100 rounded-bl-full"></div>
-                            <div class="absolute top-2.5 right-2.5 text-emerald-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="px-4 grid grid-cols-2 gap-3">
+                        <div class="bg-white rounded-3xl p-4 h-[104px] border border-slate-100 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-transform">
+                            <div class="absolute -top-6 -right-6 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                            <div class="absolute top-3 right-3 text-emerald-500 bg-emerald-100/50 p-1.5 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
-                            <div class="flex flex-col justify-center h-full relative z-10">
-                                <div class="text-emerald-700 text-xs font-bold">今日检测</div>
-                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ todayRiskStatsSummary.total }}</div>
+                            <div class="flex flex-col justify-end h-full relative z-10">
+                                <div class="text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">今日检测</div>
+                                <div class="text-[28px] font-black text-slate-900 leading-none">{{ todayRiskStatsSummary.total }}</div>
                             </div>
                         </div>
-                        <div class="m-card p-3 h-24 bg-gradient-to-br from-orange-50 to-white border border-orange-100 shadow-sm relative overflow-hidden">
-                             <div class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full"></div>
-                             <div class="absolute top-2.5 right-2.5 text-orange-500">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div class="bg-white rounded-3xl p-4 h-[104px] border border-slate-100 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-transform">
+                             <div class="absolute -top-6 -right-6 w-24 h-24 bg-rose-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                             <div class="absolute top-3 right-3 text-rose-500 bg-rose-100/50 p-1.5 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </div>
-                            <div class="flex flex-col justify-center h-full relative z-10">
-                                <div class="text-orange-600 text-xs font-bold">高风险</div>
-                                <div class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ todayRiskStatsSummary.high }}</div>
+                            <div class="flex flex-col justify-end h-full relative z-10">
+                                <div class="text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">高危预警</div>
+                                <div class="text-[28px] font-black text-slate-900 leading-none">{{ todayRiskStatsSummary.high }}</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Trend Chart -->
-                    <div class="px-4 mt-3">
-                        <div class="m-card p-3">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-bold text-sm text-slate-800 border-l-4 border-emerald-500 pl-2">风险趋势</h3>
-                                <button @click="activeTab = 'risk_trend'" class="text-xs text-emerald-600 font-medium">查看详情</button>
-                            </div>
-                            <div v-if="riskData && riskData.analysis" class="rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-900 text-white">
-                                <div class="px-3 py-3 border-b border-white/10">
-                                    <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/80">
-                                        <span class="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.8)]"></span>
-                                        AI 风险洞察
-                                    </div>
-                                    <h4 class="mt-2 text-base font-extrabold tracking-tight leading-snug">{{ getRiskTrendHeadline(riskData.analysis) }}</h4>
-                                    <p class="mt-2 text-xs leading-5 text-slate-200/90">{{ riskData.analysis.summary }}</p>
+                    <div class="px-4">
+                        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-1 h-4 rounded-full bg-emerald-500"></div>
+                                    <h3 class="font-bold text-[15px] text-slate-900">风险趋势</h3>
                                 </div>
-                                <div class="px-3 py-2.5 grid grid-cols-2 gap-2 bg-white/5">
-                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
-                                        <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">整体走势</div>
-                                        <div class="mt-1.5 text-xs font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.overall_trend) }}</div>
+                                <button @click="activeTab = 'risk_trend'" class="text-[13px] text-emerald-600 font-bold active:opacity-70 flex items-center gap-0.5">详情 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                            </div>
+                            <div v-if="riskData && riskData.analysis" class="rounded-[20px] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white relative">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-2xl rounded-full mix-blend-screen pointer-events-none"></div>
+                                <div class="px-4 py-4 border-b border-white/5 relative z-10">
+                                    <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
+                                        AI Insight
                                     </div>
-                                    <div class="rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
-                                        <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">高危信号</div>
-                                        <div class="mt-1.5 text-xs font-extrabold text-white">{{ formatRiskTrendDescriptor(riskData.analysis.high_risk_trend, 'high') }}</div>
+                                    <h4 class="mt-2 text-[15px] font-black tracking-tight leading-snug">{{ getRiskTrendHeadline(riskData.analysis) }}</h4>
+                                    <p class="mt-1.5 text-xs leading-relaxed text-slate-300">{{ riskData.analysis.summary }}</p>
+                                </div>
+                                <div class="px-4 py-3 grid grid-cols-2 gap-3 bg-black/20 relative z-10">
+                                    <div>
+                                        <div class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">整体走势</div>
+                                        <div class="mt-1 text-sm font-black text-white">{{ formatRiskTrendDescriptor(riskData.analysis.overall_trend) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">高危信号</div>
+                                        <div class="mt-1 text-sm font-black text-white">{{ formatRiskTrendDescriptor(riskData.analysis.high_risk_trend, 'high') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -216,21 +222,27 @@
                     </div>
 
                     <!-- Recent Tasks List -->
-                    <div class="px-4 mt-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="font-bold text-sm text-slate-800 border-l-4 border-emerald-500 pl-2">最近任务</h3>
-                            <button @click="activeTab = 'history'" class="text-xs text-gray-500">查看全部</button>
+                    <div class="px-4 pb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-1 h-4 rounded-full bg-emerald-500"></div>
+                                <h3 class="font-bold text-[15px] text-slate-900">最近任务</h3>
+                            </div>
+                            <button @click="activeTab = 'history'" class="text-[13px] text-slate-400 font-bold active:opacity-70 flex items-center gap-0.5">全部 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                         </div>
-                        <div class="space-y-2">
-                            <div v-for="task in tasks.slice(0, 3)" :key="task.task_id" class="m-card p-3 border-l-4 border-l-transparent hover:border-l-emerald-400 transition-all cursor-pointer active:bg-gray-50" @click="viewTaskDetail(task.task_id)">
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div v-for="(task, index) in tasks.slice(0, 3)" :key="task.task_id" 
+                                 class="p-4 cursor-pointer active:bg-slate-50 transition-colors"
+                                 :class="index !== tasks.slice(0, 3).length - 1 ? 'border-b border-slate-50' : ''"
+                                 @click="viewTaskDetail(task.task_id)">
                                 <div class="flex justify-between items-start mb-1.5">
                                     <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
-                                    <span class="text-xs text-gray-400">{{ formatTime(task.created_at) }}</span>
+                                    <span class="text-[11px] font-medium text-slate-400">{{ formatTime(task.created_at) }}</span>
                                 </div>
-                                <h4 class="font-bold text-sm truncate text-slate-800">{{ task.title || '未命名任务' }}</h4>
-                                <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ task.summary || '等待分析...' }}</p>
+                                <h4 class="font-bold text-[14px] truncate text-slate-900">{{ task.title || '未命名任务' }}</h4>
+                                <p class="text-xs text-slate-500 mt-1 line-clamp-1 leading-relaxed">{{ task.summary || '等待分析...' }}</p>
                             </div>
-                            <div v-if="tasks.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无任务</div>
+                            <div v-if="tasks.length === 0" class="text-center py-8 text-slate-400 text-sm font-medium">暂无检测记录</div>
                         </div>
                     </div>
                 </div>
@@ -505,235 +517,320 @@
                 </div>
 
                 <!-- Alerts -->
-                <div v-show="activeTab === 'alerts'" class="p-3 space-y-3">
-                    <div v-if="recentRiskAlerts.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-400">
-                        <svg class="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <p class="text-sm">暂无风险预警</p>
+                <div v-show="activeTab === 'alerts'" class="h-full overflow-y-auto bg-slate-50 pt-3 pb-28" style="-webkit-overflow-scrolling: touch;">
+                    <div class="px-5 mb-4">
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">消息中心</h2>
+                        <p class="text-xs font-bold text-slate-500 mt-1">您有 {{ alertUnreadCount }} 条未读风险预警</p>
                     </div>
-                    <div v-for="item in recentRiskAlerts" :key="item.record_id" @click="openAlertCaseDetail(item)" class="m-card p-4 active:bg-gray-50 transition-colors relative overflow-hidden">
-                        <div v-if="item.unread" :class="['absolute top-0 left-0 w-1 h-full', getAlertSeverityTheme(item.risk_level).barClass]"></div>
-                        <div class="flex justify-between items-start mb-2">
-                            <span :class="['inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded', getAlertSeverityTheme(item.risk_level).badgeClass]">{{ item.risk_level }} Risk</span>
-                            <span class="text-xs text-gray-400">{{ formatTime(item.created_at || item.sent_at) }}</span>
+                    <div class="px-4 space-y-3">
+                        <div v-if="recentRiskAlerts.length === 0" class="flex flex-col items-center justify-center py-24 text-slate-400 bg-white rounded-[24px] border border-slate-100 shadow-sm">
+                            <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            </div>
+                            <p class="text-sm font-bold text-slate-500">暂无风险预警</p>
+                            <p class="text-xs text-slate-400 mt-1">您的环境非常安全</p>
                         </div>
-                        <h3 class="font-bold text-base mb-1 truncate">{{ item.title }}</h3>
-                        <p class="text-sm text-gray-500 line-clamp-2">{{ item.case_summary }}</p>
+                        <div v-for="item in recentRiskAlerts" :key="item.record_id" @click="openAlertCaseDetail(item)" class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 active:scale-[0.98] transition-transform relative overflow-hidden group">
+                            <div v-if="item.unread" :class="['absolute top-0 left-0 w-1.5 h-full', getAlertSeverityTheme(item.risk_level).barClass]"></div>
+                            <div class="flex justify-between items-start mb-2 pl-1">
+                                <span :class="['inline-block px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg', getAlertSeverityTheme(item.risk_level).badgeClass]">{{ item.risk_level }} Risk</span>
+                                <span class="text-[11px] font-medium text-slate-400">{{ formatTime(item.created_at || item.sent_at) }}</span>
+                            </div>
+                            <h3 class="font-black text-[15px] mb-1.5 truncate text-slate-900 pl-1">{{ item.title }}</h3>
+                            <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed pl-1">{{ item.case_summary }}</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Family -->
-                <div v-show="activeTab === 'family'" class="p-3 space-y-3">
-                    <div v-if="familyLoading" class="m-card p-4 text-center text-sm text-slate-500 mt-3">
-                        正在加载家庭数据...
+                <div v-show="activeTab === 'family'" class="h-full overflow-y-auto bg-slate-50 pt-3 pb-28" style="-webkit-overflow-scrolling: touch;">
+                    <div class="px-5 mb-4">
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">家庭守护</h2>
+                        <p class="text-xs font-bold text-slate-500 mt-1">建立家人防线，共享安全状态</p>
                     </div>
-
-                    <div v-else-if="!familyHasGroup" class="space-y-3 text-center py-4">
-                        <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                            <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    
+                    <div class="px-4 space-y-4">
+                        <div v-if="familyLoading" class="bg-white rounded-[24px] p-6 text-center shadow-sm border border-slate-100">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="animate-spin w-6 h-6 text-emerald-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span class="text-sm font-bold text-slate-500">正在加载家庭数据...</span>
+                            </div>
                         </div>
-                        <h2 class="text-base font-bold">加入或创建家庭</h2>
-                        <div class="grid gap-3">
-                            <div class="m-card p-4 text-left">
-                                <div class="flex items-center justify-between gap-3 mb-2">
-                                    <h3 class="font-bold">收到的邀请</h3>
-                                    <span class="text-xs text-slate-400">{{ familyReceivedInvitations.length }} 条</span>
+
+                        <div v-else-if="!familyHasGroup" class="space-y-4 py-2">
+                            <div class="w-16 h-16 bg-white shadow-sm border border-slate-100 rounded-[20px] flex items-center justify-center mx-auto mb-2 text-emerald-500">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            </div>
+                            
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        <h3 class="font-bold text-[15px] text-slate-900">收到的邀请</h3>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">{{ familyReceivedInvitations.length }} 条</span>
                                 </div>
-                                <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-2 text-center">正在加载邀请...</div>
-                                <div v-else-if="familyReceivedInvitations.length === 0" class="text-sm text-slate-400 py-2 text-center">当前没有收到新的家庭邀请</div>
-                                <div v-else class="space-y-2">
-                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3">
-                                        <div class="flex items-start justify-between gap-3">
+                                <div v-if="familyReceivedLoading && familyReceivedInvitations.length === 0" class="text-xs font-bold text-slate-400 py-3 text-center">正在加载邀请...</div>
+                                <div v-else-if="familyReceivedInvitations.length === 0" class="text-xs font-bold text-slate-400 py-4 text-center bg-slate-50 rounded-2xl border border-slate-100 border-dashed">当前没有收到新的家庭邀请</div>
+                                <div v-else class="space-y-3">
+                                    <div v-for="invitation in familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4 relative overflow-hidden">
+                                        <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-100/50 rounded-bl-full"></div>
+                                        <div class="flex items-start justify-between gap-3 relative z-10">
                                             <div class="min-w-0">
-                                                <div class="text-sm font-bold text-slate-800">{{ invitation.family_name || '家庭邀请' }}</div>
-                                                <div class="text-xs text-slate-500 mt-1">邀请人：{{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</div>
-                                                <div class="text-xs text-slate-500 mt-1">角色：{{ invitation.role }} / 关系：{{ invitation.relation || '未填写' }}</div>
+                                                <div class="text-[15px] font-black text-slate-800">{{ invitation.family_name || '家庭邀请' }}</div>
+                                                <div class="text-xs font-medium text-slate-500 mt-1.5 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> {{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</div>
+                                                <div class="text-xs font-medium text-slate-500 mt-1">角色：{{ invitation.role }} · 关系：{{ invitation.relation || '未填写' }}</div>
                                             </div>
-                                            <span :class="['shrink-0 text-[11px] font-bold px-2 py-1 rounded-full border', invitation.status === 'pending' ? 'bg-white text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
+                                            <span :class="['shrink-0 text-[10px] font-bold px-2 py-1 rounded-md', invitation.status === 'pending' ? 'bg-white text-emerald-600 shadow-sm' : 'bg-slate-100 text-slate-500']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
                                         </div>
-                                        <div class="mt-1.5 rounded-xl bg-white border border-emerald-100 px-3 py-1.5">
-                                            <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">邀请码</div>
-                                            <div class="mt-0.5 font-mono text-sm font-semibold text-slate-800 break-all">{{ invitation.invite_code }}</div>
+                                        <div class="mt-3 bg-white rounded-xl border border-slate-100 p-2.5 flex items-center justify-between relative z-10">
+                                            <div class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">邀请码</div>
+                                            <div class="font-mono text-sm font-black text-emerald-700 tracking-wider">{{ invitation.invite_code }}</div>
                                         </div>
-                                        <div class="mt-1.5 text-xs text-slate-400">有效期至 {{ formatTime(invitation.expires_at) }}</div>
                                         <button
                                             @click="acceptFamilyInvitation(invitation.invite_code, invitation.id)"
                                             :disabled="invitation.status !== 'pending' || familyAcceptingInvitations[invitation.id]"
-                                            class="m-btn-primary mt-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            class="w-full mt-3 h-11 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-md active:scale-[0.98] transition-all disabled:opacity-50 relative z-10">
                                             {{ familyAcceptingInvitations[invitation.id] ? '加入中...' : '接受邀请' }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="m-card p-4 text-left">
-                                <h3 class="font-bold mb-1.5">创建新家庭</h3>
-                                <input v-model="familyCreateForm.name" type="text" placeholder="家庭名称" class="m-input mb-2.5">
-                                <button @click="createFamily" class="m-btn-primary">创建</button>
-                            </div>
-                            <div class="m-card p-4 text-left">
-                                <h3 class="font-bold mb-1.5">邀请码加入</h3>
-                                <p class="text-xs text-slate-500 mb-2.5">输入家人发来的邀请码，快速加入已有家庭。</p>
-                                <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="m-input mb-2.5 uppercase tracking-[0.16em]">
-                                <button @click="acceptFamilyInvitation" class="m-btn-primary">加入家庭</button>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div v-else class="space-y-3">
-                        <div class="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.22)]">
-                            <div class="flex justify-between items-start gap-3 mb-3">
-                                <div class="min-w-0">
-                                    <h3 class="font-bold text-lg truncate">{{ familyOverview.family.name }}</h3>
-                                    <p class="mt-0.5 text-xs text-emerald-50/80">成员 {{ familyMembers.length }} 人 · 未读通知 {{ familyUnreadCount }} 条</p>
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                    <h3 class="font-bold text-[15px] text-slate-900">创建新家庭</h3>
                                 </div>
-                                <button @click="activeTab = 'family_invite'" class="shrink-0 text-xs bg-white/20 hover:bg-white/25 px-3 py-1 rounded-full backdrop-blur-sm border border-white/15">管理/邀请</button>
-                            </div>
-                            <div class="rounded-2xl border border-white/15 bg-white/12 backdrop-blur-sm px-4 py-2.5 mb-3">
-                                <div class="text-[11px] uppercase tracking-[0.18em] text-white/75 font-bold">家庭邀请码</div>
-                                <div class="mt-1.5 flex items-start justify-between gap-3">
-                                    <p class="font-mono text-sm font-semibold break-all">{{ familyOverview.family.invite_code || '暂无邀请码' }}</p>
-                                    <span class="shrink-0 text-[11px] text-white/70">加入家庭时使用</span>
+                                <div class="relative mb-3">
+                                    <input v-model="familyCreateForm.name" type="text" placeholder="给家庭起个名字" class="w-full h-12 pl-4 pr-4 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-slate-800 placeholder-slate-400" />
                                 </div>
+                                <button @click="createFamily" class="w-full h-12 rounded-xl bg-blue-600 text-white text-[15px] font-bold shadow-md active:scale-[0.98] transition-all">创建</button>
                             </div>
-                            <div class="flex -space-x-2 overflow-hidden py-1">
-                                 <div v-for="member in familyMembers" :key="member.user_id" class="w-8 h-8 rounded-full border-2 border-white/70 bg-white/90 flex items-center justify-center text-teal-700 font-bold text-[11px] relative shadow-sm">
-                                    {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
-                                    <div v-if="member.risk_status === 'high'" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border border-white rounded-full"></div>
-                                 </div>
+
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></div>
+                                    <h3 class="font-bold text-[15px] text-slate-900">邀请码加入</h3>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-400 mb-4">输入家人发来的邀请码，快速加入已有家庭</p>
+                                <div class="relative mb-3">
+                                    <input v-model="familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="w-full h-12 pl-4 pr-4 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-fuchsia-500 text-sm font-bold text-slate-800 placeholder-slate-400 uppercase tracking-[0.16em]" />
+                                </div>
+                                <button @click="acceptFamilyInvitation" class="w-full h-12 rounded-xl bg-slate-900 text-white text-[15px] font-bold shadow-md active:scale-[0.98] transition-all">加入家庭</button>
                             </div>
                         </div>
 
-                        <div>
-                            <div class="flex items-center justify-between mb-2 px-1">
-                                <h3 class="font-bold text-sm">家庭成员</h3>
-                                <span class="text-xs text-slate-400">{{ familyMembers.length }} 人</span>
+                        <div v-else class="space-y-4">
+                            <!-- Family Card -->
+                            <div class="rounded-[24px] overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 text-white p-5 shadow-lg shadow-emerald-500/20 relative">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl"></div>
+                                <div class="flex justify-between items-start gap-3 mb-4 relative z-10">
+                                    <div class="min-w-0">
+                                        <h3 class="font-black text-2xl tracking-tight truncate">{{ familyOverview.family.name }}</h3>
+                                        <p class="mt-1 text-[13px] font-bold text-emerald-50/80 flex items-center gap-2">
+                                            <span>成员 {{ familyMembers.length }} 人</span>
+                                            <span class="w-1 h-1 rounded-full bg-white/50"></span>
+                                            <span>未读通知 {{ familyUnreadCount }} 条</span>
+                                        </p>
+                                    </div>
+                                    <button @click="activeTab = 'family_invite'" class="shrink-0 text-[11px] font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 transition-colors flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> 管理
+                                    </button>
+                                </div>
+                                <div class="rounded-2xl border border-white/20 bg-black/10 backdrop-blur-md px-4 py-3 mb-4 relative z-10 flex items-center justify-between">
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-[0.2em] text-white/60 font-black mb-1">家庭邀请码</div>
+                                        <p class="font-mono text-base font-black tracking-widest text-emerald-100">{{ familyOverview.family.invite_code || '暂无邀请码' }}</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                </div>
+                                <div class="flex -space-x-2.5 overflow-hidden py-1 relative z-10">
+                                     <div v-for="member in familyMembers" :key="member.user_id" class="w-10 h-10 rounded-full border-2 border-emerald-600 bg-white flex items-center justify-center text-teal-700 font-black text-sm relative shadow-sm">
+                                        {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
+                                        <div v-if="member.risk_status === 'high'" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full shadow-sm"></div>
+                                     </div>
+                                </div>
                             </div>
-                            <div class="space-y-2">
-                                <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="m-card p-3">
-                                    <div class="flex items-start gap-3">
-                                        <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
+
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        <h3 class="font-bold text-[15px] text-slate-900">家庭成员</h3>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-400">{{ familyMembers.length }} 人</span>
+                                </div>
+                                <div class="space-y-3">
+                                    <div v-for="member in familyMembers" :key="member.member_id || member.user_id" class="flex items-center gap-3 p-2 rounded-2xl active:bg-slate-50 transition-colors">
+                                        <div class="w-11 h-11 rounded-[14px] bg-slate-100 text-slate-600 flex items-center justify-center font-black text-[15px] shrink-0">
                                             {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
                                         </div>
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <p class="text-sm font-semibold text-slate-800">{{ member.username }}</p>
-                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{{ member.role }}</span>
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-[15px] font-bold text-slate-900 truncate">{{ member.username }}</p>
+                                                <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600">{{ member.role }}</span>
                                             </div>
-                                            <p class="text-xs text-slate-500 mt-1">{{ member.relation || '未设置关系' }}</p>
-                                            <p class="text-xs text-slate-400 mt-1">{{ member.email || member.phone || '-' }}</p>
+                                            <p class="text-[11px] font-bold text-slate-400 mt-1">{{ member.relation || '未设置关系' }} · {{ member.email || member.phone || '无联系方式' }}</p>
                                         </div>
                                     </div>
+                                    <div v-if="familyMembers.length === 0" class="text-center py-6 text-slate-400 text-sm font-bold bg-slate-50 rounded-2xl border border-slate-100 border-dashed">暂无家庭成员</div>
                                 </div>
-                                <div v-if="familyMembers.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无家庭成员</div>
                             </div>
-                        </div>
 
-                        <div>
-                            <div class="flex items-center justify-between mb-2 px-1">
-                                <h3 class="font-bold text-sm">守护关系</h3>
-                                <span class="text-xs text-slate-400">{{ familyGuardianLinks.length }} 条</span>
-                            </div>
-                            <div class="space-y-2">
-                                <div v-for="link in familyGuardianLinks" :key="link.id" class="m-card p-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p class="text-sm font-semibold text-slate-800">{{ link.guardian_name }} -> {{ link.member_name }}</p>
-                                            <p class="text-xs text-slate-500 mt-1">{{ link.guardian_email }} / {{ link.member_email }}</p>
-                                        </div>
-                                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-100">守护中</span>
+                            <!-- Guardian Links -->
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                                        <h3 class="font-bold text-[15px] text-slate-900">守护关系</h3>
                                     </div>
+                                    <span class="text-[11px] font-bold text-slate-400">{{ familyGuardianLinks.length }} 条</span>
                                 </div>
-                                <div v-if="familyGuardianLinks.length === 0" class="m-card p-3 text-sm text-slate-400 text-center">当前还没有守护关系</div>
+                                <div class="space-y-3">
+                                    <div v-for="link in familyGuardianLinks" :key="link.id" class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-black text-slate-800">{{ link.guardian_name }} <span class="text-slate-300 mx-1">→</span> {{ link.member_name }}</p>
+                                                <p class="text-[11px] font-bold text-slate-400 mt-1">{{ link.guardian_email }} / {{ link.member_email }}</p>
+                                            </div>
+                                            <span class="text-[10px] font-black px-2.5 py-1 rounded-md bg-cyan-100 text-cyan-700 shadow-sm">守护中</span>
+                                        </div>
+                                    </div>
+                                    <div v-if="familyGuardianLinks.length === 0" class="text-center py-5 text-slate-400 text-sm font-bold bg-slate-50 rounded-2xl border border-slate-100 border-dashed">当前还没有守护关系</div>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <h3 class="font-bold text-sm mb-2 px-1">最新动态</h3>
-                            <div class="space-y-2">
-                                 <div v-if="familyNotifications.length === 0" class="text-center py-6 text-gray-400 text-sm">无家庭动态</div>
-                                 <div v-for="note in familyNotifications" :key="note.id" class="m-card p-3">
-                                     <div class="flex items-start gap-3">
-                                         <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                         </div>
-                                         <div class="min-w-0 flex-1">
-                                             <div class="flex items-center gap-2 flex-wrap mb-1">
-                                                 <span class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded">{{ note.risk_level || '高' }}风险</span>
-                                                 <span class="text-[10px] text-gray-400">{{ formatTime(note.event_at) }}</span>
+                            <!-- Family Notifications -->
+                            <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
+                                    <h3 class="font-bold text-[15px] text-slate-900">最新动态</h3>
+                                </div>
+                                <div class="space-y-3">
+                                     <div v-if="familyNotifications.length === 0" class="text-center py-6 text-slate-400 text-sm font-bold bg-slate-50 rounded-2xl border border-slate-100 border-dashed">无家庭动态</div>
+                                     <div v-for="note in familyNotifications" :key="note.id" class="p-3 rounded-2xl bg-slate-50 border border-slate-100 relative overflow-hidden group">
+                                         <div class="absolute top-0 left-0 w-1 h-full bg-rose-400"></div>
+                                         <div class="flex items-start gap-3 pl-2">
+                                             <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0 text-rose-500">
+                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                                              </div>
-                                             <p class="text-sm font-bold text-slate-800">{{ note.title || '高风险案件预警' }}</p>
-                                             <p class="text-xs text-gray-600 mt-1.5 leading-relaxed line-clamp-2">{{ note.case_summary || note.summary }}</p>
-                                             <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-                                                 <span>成员：{{ note.target_name }}</span>
-                                                 <span v-if="note.scam_type">类型：{{ note.scam_type }}</span>
+                                             <div class="min-w-0 flex-1">
+                                                 <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                                     <span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-black rounded-md">{{ note.risk_level || '高' }}风险</span>
+                                                     <span class="text-[10px] font-bold text-slate-400">{{ formatTime(note.event_at) }}</span>
+                                                 </div>
+                                                 <p class="text-[14px] font-black text-slate-900 leading-snug">{{ note.title || '高风险案件预警' }}</p>
+                                                 <p class="text-xs text-slate-500 mt-1.5 leading-relaxed line-clamp-2">{{ note.case_summary || note.summary }}</p>
+                                                 <div class="flex items-center gap-3 mt-2.5 text-[11px] font-bold text-slate-400 bg-white px-2 py-1.5 rounded-lg border border-slate-100">
+                                                     <span>成员：{{ note.target_name }}</span>
+                                                     <span v-if="note.scam_type" class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                     <span v-if="note.scam_type">类型：{{ note.scam_type }}</span>
+                                                 </div>
                                              </div>
                                          </div>
                                      </div>
-                                 </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Profile -->
-                <div v-show="activeTab === 'profile'" class="p-3 space-y-4">
-                    <div class="flex items-center gap-4 mt-4">
-                        <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500">
+                <div v-show="activeTab === 'profile'" class="h-full overflow-y-auto bg-slate-50 pt-3 pb-28" style="-webkit-overflow-scrolling: touch;">
+                    <div class="px-5 mb-6 mt-2 flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-[24px] bg-white shadow-md border border-slate-100 flex items-center justify-center text-3xl font-black text-slate-300 relative">
                             {{ user.username ? user.username.substring(0,1).toUpperCase() : 'U' }}
+                            <div class="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-sm border-2 border-white">{{ user.role || 'User' }}</div>
                         </div>
-                        <div>
-                            <h2 class="text-xl font-bold">{{ user.username }}</h2>
-                            <span class="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-xs font-medium rounded text-gray-600 uppercase">{{ user.role || 'User' }}</span>
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-black text-slate-900">{{ user.username }}</h2>
+                            <p class="text-xs font-bold text-slate-400 mt-1">欢迎使用反诈护航 AI</p>
                         </div>
                     </div>
 
-                    <div class="space-y-1 bg-white rounded-2xl overflow-hidden border border-gray-100">
-                        <button type="button" @click="openProfilePrivacyPage" class="w-full p-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 text-left">
-                            <div>
-                                <div class="text-sm font-medium text-slate-800">隐私资料</div>
-                                <div class="text-xs text-slate-400 mt-1">查看手机号、邮箱、年龄、职业和近期标签</div>
-                            </div>
-                            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
+                    <div class="px-4 space-y-4">
+                        <div class="bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden">
+                            <button type="button" @click="openProfilePrivacyPage" class="w-full p-5 flex justify-between items-center active:bg-slate-50 transition-colors text-left group">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-[15px] font-black text-slate-900">隐私资料</div>
+                                        <div class="text-xs font-medium text-slate-400 mt-0.5">查看与管理您的个人画像数据</div>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
 
-                    <button @click="logout" class="w-full py-3.5 text-center text-red-600 font-bold bg-red-50 rounded-xl active:bg-red-100 transition-colors">退出登录</button>
+                        <button @click="logout" class="w-full py-4 text-center text-rose-600 font-bold bg-white rounded-[24px] shadow-sm border border-slate-100 active:bg-rose-50 transition-colors">退出登录</button>
+                    </div>
                 </div>
 
-                <div v-if="activeTab === 'profile_privacy'" class="p-3 space-y-4">
-                    <div class="flex items-center gap-2 mb-1">
-                        <button @click="closeProfilePrivacyPage" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                        <h2 class="text-xl font-bold">隐私资料</h2>
+                <div v-if="activeTab === 'profile_privacy'" class="fixed inset-0 z-[1000] bg-slate-50 flex flex-col animate-slide-up" style="padding-bottom: env(safe-area-inset-bottom);">
+                    <!-- Native Header -->
+                    <div class="shrink-0 bg-white/80 backdrop-blur-md z-10 px-4 pt-safe pb-3 flex flex-col gap-3 sticky top-0 border-b border-slate-100">
+                        <div class="flex items-center justify-between mt-2">
+                            <button @click="closeProfilePrivacyPage" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center active:scale-90 transition-transform">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <div class="font-bold text-slate-800 text-base">隐私资料</div>
+                            <div class="w-8"></div>
+                        </div>
                     </div>
 
-                    <div class="space-y-3 bg-white rounded-2xl overflow-visible border border-gray-100 p-4">
-                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-                            <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">手机号</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-800">{{ getUserPhoneText(user) || '未设置' }}</div>
-                        </div>
-                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-                            <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">邮箱</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-800 break-all">{{ getUserEmailText(user) || '未设置' }}</div>
-                        </div>
-                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">画像资料</div>
-                                    <div class="mt-1 text-sm font-semibold text-slate-800">年龄 {{ user.age || ageForm.age || '未设置' }}</div>
-                                    <div class="mt-1 text-sm font-semibold text-slate-800">职业 {{ user.occupation || '未设置' }}</div>
-                                    <div class="mt-1 text-sm font-semibold text-slate-800">位置 {{ user.province_name || '未设置' }} / {{ user.city_name || '未设置' }} / {{ user.district_name || '未设置' }}</div>
-                                    <div class="mt-2 flex flex-wrap gap-2" v-if="user.recent_tags && user.recent_tags.length">
-                                        <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600">{{ tag }}</span>
-                                    </div>
-                                    <div v-else class="mt-1 text-xs text-slate-400">近期标签未设置</div>
-                                </div>
-                                <button type="button" @click="toggleAgeEditor" class="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
-                                    {{ ageEditorVisible ? '收起' : '编辑' }}
-                                </button>
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4" style="-webkit-overflow-scrolling: touch;">
+                        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 space-y-5">
+                            <div>
+                                <div class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-1">手机号</div>
+                                <div class="text-[15px] font-black text-slate-800 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">{{ getUserPhoneText(user) || '未设置' }}</div>
                             </div>
-                            <div v-if="ageEditorVisible" class="mt-3 space-y-3">
-                                <input v-model.number="ageForm.age" type="number" min="1" max="150" class="m-input !py-2 !text-sm" placeholder="输入年龄">
-                                <div class="space-y-2">
-                                    <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold">职业</div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-1">邮箱</div>
+                                <div class="text-[15px] font-black text-slate-800 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100 break-all">{{ getUserEmailText(user) || '未设置' }}</div>
+                            </div>
+                            
+                            <div class="pt-2">
+                                <div class="flex items-start justify-between gap-3 mb-3">
+                                    <div class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold">画像资料</div>
+                                    <button type="button" @click="toggleAgeEditor" class="text-[11px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+                                        {{ ageEditorVisible ? '收起编辑' : '编辑资料' }}
+                                    </button>
+                                </div>
+                                
+                                <div v-if="!ageEditorVisible" class="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-slate-500">年龄</span>
+                                        <span class="text-[14px] font-black text-slate-800">{{ user.age || ageForm.age || '未设置' }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-slate-500">职业</span>
+                                        <span class="text-[14px] font-black text-slate-800">{{ user.occupation || '未设置' }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-start">
+                                        <span class="text-xs font-bold text-slate-500">位置</span>
+                                        <span class="text-[14px] font-black text-slate-800 text-right">{{ user.province_name || '未设置' }} <br/> <span class="text-xs text-slate-500 font-medium">{{ user.city_name || '未设置' }} / {{ user.district_name || '未设置' }}</span></span>
+                                    </div>
+                                    <div class="pt-2 border-t border-slate-200/60">
+                                        <span class="text-[10px] font-bold text-slate-400 block mb-2">近期标签</span>
+                                        <div class="flex flex-wrap gap-2" v-if="user.recent_tags && user.recent_tags.length">
+                                            <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-2 py-1 rounded-md bg-white border border-slate-200 text-[10px] font-black text-slate-600">{{ tag }}</span>
+                                        </div>
+                                        <div v-else class="text-xs text-slate-400 font-bold">暂无标签</div>
+                                    </div>
+                                </div>
+                                
+                                <div v-if="ageEditorVisible" class="mt-3 space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                                    <div>
+                                        <label class="text-[10px] uppercase tracking-widest font-bold text-slate-500 block mb-1.5">年龄</label>
+                                        <input v-model.number="ageForm.age" type="number" min="1" max="150" class="w-full h-11 px-3 rounded-xl bg-white border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-emerald-500" placeholder="输入年龄">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] uppercase tracking-widest font-bold text-slate-500 block mb-1.5">职业</label>
                                     <div class="m-dropdown" data-custom-dropdown>
                                         <button
                                             type="button"
@@ -845,68 +942,313 @@
                         </div>
                     </div>
                 </div>
+                </div>
 
             </main>
 
             <!-- Bottom Nav -->
-            <nav class="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-100 flex justify-around items-center h-18 pb-safe" style="z-index: 999; box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);">
-                <button @click="activeTab = 'tasks'" :class="['flex flex-col items-center gap-1 w-16 transition-colors duration-200 active:scale-90', ['tasks','history','risk_trend','chat'].includes(activeTab) ? 'text-emerald-600' : 'text-gray-400']">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                    <span class="text-xs font-medium">概览</span>
+            <nav class="fixed bottom-0 left-0 right-0 w-full bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center h-[72px] pb-safe" style="z-index: 999;">
+                <button @click="activeTab = 'tasks'" class="flex flex-col items-center justify-center w-16 h-full gap-1 transition-all duration-200 active:scale-95 group">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300', ['tasks','history','risk_trend','chat'].includes(activeTab) ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 group-hover:bg-slate-50']">
+                        <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    </div>
+                    <span :class="['text-[10px] font-bold transition-colors', ['tasks','history','risk_trend','chat'].includes(activeTab) ? 'text-emerald-600' : 'text-slate-400']">首页</span>
                 </button>
-                <button @click="activeTab = 'alerts'" :class="['flex flex-col items-center gap-1 w-16 relative transition-colors duration-200 active:scale-90', activeTab === 'alerts' ? 'text-emerald-600' : 'text-gray-400']">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    <span v-if="alertUnreadCount > 0" class="absolute top-0 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
-                    <span class="text-xs font-medium">消息</span>
+                <button @click="activeTab = 'alerts'" class="flex flex-col items-center justify-center w-16 h-full gap-1 transition-all duration-200 active:scale-95 group relative">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300', activeTab === 'alerts' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 group-hover:bg-slate-50']">
+                        <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span v-if="alertUnreadCount > 0" class="absolute top-1 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <span :class="['text-[10px] font-bold transition-colors', activeTab === 'alerts' ? 'text-emerald-600' : 'text-slate-400']">消息</span>
                 </button>
-                <button @click="activeTab = 'submit'" :class="['flex flex-col items-center gap-1 w-16 transition-colors duration-200', activeTab === 'submit' ? 'text-emerald-600' : 'text-gray-400']">
-                    <div :class="['w-12 h-12 rounded-full flex items-center justify-center -mt-3 shadow-lg transition-transform duration-200', activeTab === 'submit' ? 'bg-emerald-600 text-white scale-110 shadow-emerald-500/30' : 'bg-slate-800 text-white']">
+                <button @click="activeTab = 'submit'" class="flex flex-col items-center justify-center w-16 h-full transition-all duration-200 group relative z-10">
+                    <div :class="['w-14 h-14 rounded-full flex items-center justify-center -mt-6 shadow-xl transition-transform duration-300', activeTab === 'submit' ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-105' : 'bg-slate-900 text-white shadow-slate-900/20 group-hover:scale-105 group-active:scale-95']">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     </div>
-                    <span class="text-xs font-medium mt-1">分析</span>
+                    <span :class="['text-[10px] font-bold mt-1 transition-colors', activeTab === 'submit' ? 'text-emerald-600' : 'text-slate-400']">检测</span>
                 </button>
-                <button @click="activeTab = 'family'" :class="['flex flex-col items-center gap-1 w-16 transition-colors duration-200 active:scale-90', ['family','family_invite'].includes(activeTab) ? 'text-emerald-600' : 'text-gray-400']">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    <span class="text-xs font-medium">家庭</span>
+                <button @click="activeTab = 'family'" class="flex flex-col items-center justify-center w-16 h-full gap-1 transition-all duration-200 active:scale-95 group">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300', ['family','family_invite'].includes(activeTab) ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 group-hover:bg-slate-50']">
+                        <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </div>
+                    <span :class="['text-[10px] font-bold transition-colors', ['family','family_invite'].includes(activeTab) ? 'text-emerald-600' : 'text-slate-400']">家庭</span>
                 </button>
-                <button @click="activeTab = 'profile'" :class="['flex flex-col items-center gap-1 w-16 transition-colors duration-200 active:scale-90', ['profile','profile_privacy'].includes(activeTab) ? 'text-emerald-600' : 'text-gray-400']">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    <span class="text-xs font-medium">我的</span>
+                <button @click="activeTab = 'profile'" class="flex flex-col items-center justify-center w-16 h-full gap-1 transition-all duration-200 active:scale-95 group">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300', ['profile','profile_privacy'].includes(activeTab) ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 group-hover:bg-slate-50']">
+                        <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <span :class="['text-[10px] font-bold transition-colors', ['profile','profile_privacy'].includes(activeTab) ? 'text-emerald-600' : 'text-slate-400']">我的</span>
                 </button>
             </nav>
 
             <!-- Submit Task Page -->
-            <div v-if="activeTab === 'submit'" class="p-3 space-y-3 pb-24 h-full overflow-y-auto">
-                <div class="flex items-center gap-2 mb-1 pt-2">
-                    <h2 class="text-xl font-bold">新建分析任务</h2>
+            <div v-if="activeTab === 'submit'" class="h-full overflow-y-auto bg-slate-50 pt-3 pb-28" style="-webkit-overflow-scrolling: touch;">
+                <div class="px-5 mb-4">
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">智能检测</h2>
+                    <p class="text-xs font-bold text-slate-500 mt-1">提交可疑信息，AI 护航实时为您排查风险</p>
                 </div>
-                <div class="m-card p-4 space-y-5">
-                    <textarea v-model="analyzeForm.text" class="w-full h-32 p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-black" placeholder="描述案情或粘贴文本..."></textarea>
-                    
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="relative aspect-square bg-gray-50 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-300" @click="$refs.uploadImg.click()">
-                            <input type="file" ref="uploadImg" multiple accept="image/*" class="hidden" @change="handleFileSelect($event, 'images')">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span class="text-xs text-gray-500 mt-1">图片</span>
-                            <span v-if="analyzeForm.images.length" class="absolute top-1 right-1 bg-black text-white text-[10px] px-1.5 rounded-full">{{ analyzeForm.images.length }}</span>
+                
+                <div class="px-4 space-y-4">
+                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
+                        <div class="mb-3 flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            <span class="text-sm font-bold text-slate-800">可疑内容描述</span>
                         </div>
-                        <div class="relative aspect-square bg-gray-50 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-300" @click="$refs.uploadAud.click()">
-                            <input type="file" ref="uploadAud" multiple accept="audio/*" class="hidden" @change="handleFileSelect($event, 'audios')">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                            <span class="text-xs text-gray-500 mt-1">音频</span>
-                            <span v-if="analyzeForm.audios.length" class="absolute top-1 right-1 bg-black text-white text-[10px] px-1.5 rounded-full">{{ analyzeForm.audios.length }}</span>
-                        </div>
-                        <div class="relative aspect-square bg-gray-50 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-300" @click="$refs.uploadVid.click()">
-                            <input type="file" ref="uploadVid" multiple accept="video/*" class="hidden" @change="handleFileSelect($event, 'videos')">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            <span class="text-xs text-gray-500 mt-1">视频</span>
-                            <span v-if="analyzeForm.videos.length" class="absolute top-1 right-1 bg-black text-white text-[10px] px-1.5 rounded-full">{{ analyzeForm.videos.length }}</span>
+                        <textarea v-model="analyzeForm.text" class="w-full h-32 p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500 text-[15px] leading-relaxed resize-none text-slate-800 placeholder-slate-400 transition-all" placeholder="请粘贴可疑的聊天记录、短信、链接或描述遇到的情况..."></textarea>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-50">
+                            <div class="mb-3 flex items-center gap-2">
+                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                <span class="text-sm font-bold text-slate-800">上传附件 <span class="text-slate-400 font-normal">(选填)</span></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadImg.click()">
+                                    <input type="file" ref="uploadImg" multiple accept="image/*" class="hidden" @change="handleFileSelect($event, 'images')">
+                                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-500">图片</span>
+                                    <span v-if="analyzeForm.images.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ analyzeForm.images.length }}</span>
+                                </div>
+                                <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadAud.click()">
+                                    <input type="file" ref="uploadAud" multiple accept="audio/*" class="hidden" @change="handleFileSelect($event, 'audios')">
+                                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-500">音频</span>
+                                    <span v-if="analyzeForm.audios.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ analyzeForm.audios.length }}</span>
+                                </div>
+                                <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadVid.click()">
+                                    <input type="file" ref="uploadVid" multiple accept="video/*" class="hidden" @change="handleFileSelect($event, 'videos')">
+                                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-500">视频</span>
+                                    <span v-if="analyzeForm.videos.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ analyzeForm.videos.length }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <button @click="submitAnalysis" :disabled="analyzing" class="m-btn-primary">
-                        {{ analyzing ? '分析中...' : '开始分析' }}
+                    <button @click="submitAnalysis" :disabled="analyzing" class="w-full h-14 rounded-2xl bg-slate-900 text-white text-[16px] font-bold shadow-lg shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2">
+                        <svg v-if="analyzing" class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        <span>{{ analyzing ? '正在深度分析中...' : '开始全面检测' }}</span>
                     </button>
+                </div>
+            </div>
+
+            <div v-if="activeTab === 'simulation_quiz' && simulationViewMode === 'overview'" class="fixed inset-x-0 overflow-y-auto overflow-x-hidden bg-slate-50 z-20" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain; top: 0; bottom: calc(4.5rem + env(safe-area-inset-bottom));">
+                <!-- Native Style Header -->
+                <div class="fixed inset-x-0 z-40 bg-white/90 backdrop-blur-lg px-4 pb-3 border-b border-slate-100 shadow-sm" style="top: 0; padding-top: calc(env(safe-area-inset-top) + 0.5rem);">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <button @click="activeTab = 'tasks'" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-transform" aria-label="返回">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <h2 class="text-xl font-black text-slate-900 tracking-tight">实景防骗演练</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 space-y-5" style="margin-top: calc(env(safe-area-inset-top) + 3.5rem);">
+                    
+                    <!-- Create New Simulation Section -->
+                    <section>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-slate-800 ml-1">定制演练场景</h3>
+                        </div>
+                        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-4">
+                            <div class="space-y-3">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </div>
+                                    <input v-model="simulationForm.caseType" type="text" placeholder="场景（如：冒充公检法、更新软件）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-700 placeholder-slate-400" />
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    </div>
+                                    <input v-model="simulationForm.targetPersona" type="text" placeholder="目标身份（如：老人、学生）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-700 placeholder-slate-400" />
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-1 rounded-xl">
+                                <button @click="simulationForm.difficulty='easy'" :class="['h-9 rounded-lg text-xs font-bold transition-all', simulationForm.difficulty==='easy' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500']">简单</button>
+                                <button @click="simulationForm.difficulty='medium'" :class="['h-9 rounded-lg text-xs font-bold transition-all', simulationForm.difficulty==='medium' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500']">中等</button>
+                                <button @click="simulationForm.difficulty='hard'" :class="['h-9 rounded-lg text-xs font-bold transition-all', simulationForm.difficulty==='hard' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500']">困难</button>
+                            </div>
+                            
+                            <button @click="generateSimulationPack" :disabled="simulationGenerating" class="w-full h-12 rounded-xl bg-slate-900 text-white text-[15px] font-bold shadow-md active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2">
+                                <svg v-if="simulationGenerating" class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>{{ simulationGenerating ? '正在智能生成...' : '生成专属演练' }}</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Available Scenarios -->
+                    <section>
+                        <div class="flex items-center justify-between mb-3 px-1">
+                            <h3 class="text-sm font-bold text-slate-800">待挑战题库</h3>
+                            <button @click="fetchSimulationPacks" class="text-xs text-emerald-600 font-bold flex items-center gap-1 active:opacity-50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                刷新
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="item in simulationPackList" :key="`m-pack-${item.pack_id}`" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col gap-3">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">{{ item.case_type }}</span>
+                                        <span :class="['px-2 py-0.5 rounded-md text-[10px] font-bold', item.difficulty === 'hard' ? 'bg-rose-50 text-rose-600' : item.difficulty === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600']">{{ item.difficulty === 'hard' ? '困难' : item.difficulty === 'medium' ? '中等' : '简单' }}</span>
+                                    </div>
+                                    <h4 class="text-[15px] font-bold text-slate-900 leading-snug">{{ item.title }}</h4>
+                                </div>
+                                <button @click="startSimulationSession(item.pack_id)" :disabled="simulationSubmitting" class="w-full h-10 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-bold active:bg-emerald-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
+                                    开始挑战
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </button>
+                            </div>
+                            <div v-if="!simulationPackList.length" class="text-xs text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-100 border-dashed">
+                                暂无待挑战的演练
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- History Reports -->
+                    <section>
+                        <div class="flex items-center justify-between mb-3 px-1">
+                            <h3 class="text-sm font-bold text-slate-800">演练记录</h3>
+                            <button @click="fetchSimulationSessions" class="text-xs text-emerald-600 font-bold active:opacity-50">刷新</button>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="item in simulationSessionList" :key="`m-session-${item.pack_id}`" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-3">
+                                <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-black text-lg"
+                                     :class="item.score >= 80 ? 'bg-emerald-100 text-emerald-600' : item.score >= 60 ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'">
+                                    {{ item.score }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-bold text-slate-900 truncate">{{ item.title || '未知演练' }}</h4>
+                                    <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                        <span>评级: {{ item.level || '未评分' }}</span>
+                                        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                        <span :class="item.status === 'completed' ? 'text-emerald-500' : 'text-amber-500'">{{ item.status === 'completed' ? '已完成' : '未完成' }}</span>
+                                    </div>
+                                </div>
+                                <button v-if="item.status !== 'completed'" @click="startSimulationSession(item.pack_id)" class="w-8 h-8 shrink-0 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center active:scale-90 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </button>
+                                <button v-else @click="deleteSimulationSession(item.pack_id)" class="w-8 h-8 shrink-0 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center active:scale-90 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                            <div v-if="!simulationSessionList.length" class="text-xs text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-100 border-dashed">
+                                暂无演练记录
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <div class="h-6 shrink-0"></div>
+                </div>
+            </div>
+
+            <div v-if="activeTab === 'simulation_quiz' && simulationViewMode === 'exam'" class="fixed inset-0 z-[1000] flex flex-col bg-slate-50 animate-slide-up" style="padding-bottom: env(safe-area-inset-bottom);">
+                <!-- Native App Style Header -->
+                <div class="shrink-0 bg-white/80 backdrop-blur-md z-10 px-4 pt-safe pb-3 flex flex-col gap-3 sticky top-0 border-b border-slate-100">
+                    <div class="flex items-center justify-between mt-2">
+                        <button @click="closeSimulationExamView" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center active:scale-90 transition-transform" aria-label="退出">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                        <div class="font-bold text-slate-800 text-base">模拟演练</div>
+                        <div class="text-sm font-bold text-emerald-600 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            {{ simulationCurrentScore }}
+                        </div>
+                    </div>
+                    <!-- Native Progress Bar -->
+                    <div v-if="simulationPack && simulationPack.steps" class="flex items-center gap-3">
+                        <div class="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                            <div class="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
+                                :style="{ width: `${Math.max(5, (((simulationAnswers?.length || 0) + (simulationStatus === 'completed' ? 1 : 1)) / simulationPack.steps.length) * 100)}%` }"></div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 w-8 text-right">
+                            {{ Math.min((simulationAnswers?.length || 0) + 1, simulationPack.steps.length) }}/{{ simulationPack.steps.length }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto p-4 flex flex-col" style="-webkit-overflow-scrolling: touch;">
+                    <div class="flex-1 flex flex-col justify-center max-w-md mx-auto w-full space-y-6 pb-6">
+                        
+                        <!-- Intro Card (Shown briefly or as header) -->
+                        <div v-if="simulationPack && (simulationAnswers?.length || 0) === 0 && simulationStatus === 'in_progress'" class="text-center space-y-2 mb-4 animate-fade-in">
+                            <div class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full mb-2">任务目标</div>
+                            <h2 class="text-2xl font-black text-slate-900 leading-tight">{{ simulationPack.title }}</h2>
+                            <p class="text-sm text-slate-500 leading-relaxed">{{ simulationPack.intro }}</p>
+                        </div>
+
+                        <!-- Active Step -->
+                        <div v-if="simulationCurrentStep && simulationStatus === 'in_progress'" class="space-y-6 animate-slide-up" :key="simulationCurrentStep.step_id">
+                            
+                            <!-- Context/Narrative Bubble (Native Message Style) -->
+                            <div class="flex flex-col items-start gap-1">
+                                <div class="text-[11px] font-bold text-slate-400 ml-1">场景提示 · {{ simulationCurrentStep.step_type }}</div>
+                                <div class="bg-white border border-slate-100 shadow-sm rounded-2xl rounded-tl-sm p-4 text-slate-700 text-[15px] leading-relaxed relative">
+                                    {{ simulationCurrentStep.narrative }}
+                                </div>
+                            </div>
+
+                            <!-- Question -->
+                            <div class="text-[19px] font-black leading-snug text-slate-900 px-1">
+                                {{ simulationCurrentStep.question }}
+                            </div>
+
+                            <!-- Options (Native Button Style) -->
+                            <div class="space-y-3 pt-2">
+                                <button
+                                    v-for="option in simulationCurrentStep.options"
+                                    :key="`m-exam-${simulationCurrentStep.step_id}-${option.key}`"
+                                    @click="submitSimulationAnswer(option.key)"
+                                    :disabled="simulationSubmitting || simulationStatus !== 'in_progress'"
+                                    class="w-full text-left rounded-2xl border-2 border-slate-100 bg-white p-4 active:scale-[0.98] disabled:opacity-50 transition-all duration-200 flex items-center gap-4 hover:border-emerald-500 hover:bg-emerald-50/30 group">
+                                    <div class="w-10 h-10 shrink-0 rounded-full border-2 border-slate-100 text-slate-400 flex items-center justify-center text-sm font-black group-hover:border-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                        {{ option.key }}
+                                    </div>
+                                    <div class="flex-1 text-[15px] font-bold text-slate-700 group-hover:text-slate-900 leading-snug">
+                                        {{ option.text }}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Completion View -->
+                        <div v-if="simulationStatus === 'completed' && simulationResult" class="flex flex-col items-center justify-center h-full space-y-6 animate-fade-in text-center mt-8">
+                            <div class="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mb-2">
+                                <svg class="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-3xl font-black text-slate-900 mb-2">完成挑战</h2>
+                                <div class="text-lg font-bold text-emerald-600">评级：{{ simulationResult.level }} · 得分：{{ simulationResult.total_score }}</div>
+                            </div>
+                            
+                            <div class="w-full bg-white rounded-3xl border border-slate-100 shadow-sm p-5 text-left mt-4 space-y-3">
+                                <div class="text-sm font-black text-slate-900 border-b border-slate-100 pb-2">防骗建议</div>
+                                <div v-for="(advice, idx) in simulationResult.advice" :key="`m-sim-advice-${idx}`" class="flex gap-3 text-[14px] text-slate-600 leading-relaxed">
+                                    <span class="text-emerald-500 font-black">{{ idx + 1 }}.</span>
+                                    <span>{{ advice }}</span>
+                                </div>
+                            </div>
+
+                            <div class="w-full pt-4">
+                                <button @click="closeSimulationExamView" class="w-full h-14 rounded-2xl bg-slate-900 text-white text-[16px] font-bold shadow-lg active:scale-95 transition-transform">
+                                    返回题包列表
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 

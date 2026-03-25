@@ -28,5 +28,11 @@ export const createDesktopTabChangeHandler = (deps) => {
     if (newTab === 'admin_stats') deps.fetchAdminStats();
     if (newTab === 'geo_risk_map') deps.fetchGeoRiskMap();
     if (newTab === 'geo_risk_map_full') deps.fetchGeoRiskMap();
+    if (newTab === 'simulation_quiz') {
+      deps.resetSimulation();
+      deps.fetchSimulationPacks();
+      deps.fetchSimulationSessions();
+      deps.resumeOngoingSimulationSession();
+    }
   };
 };

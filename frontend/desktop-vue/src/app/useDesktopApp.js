@@ -32,6 +32,23 @@ export function useDesktopApp() {
   const selectedTask = ref(null);
   const userSearch = ref('');
   const deletingHistory = reactive({});
+  const simulationGenerating = ref(false);
+  const simulationSubmitting = ref(false);
+  const simulationForm = reactive({
+    caseType: '冒充客服',
+    targetPersona: '普通居民',
+    difficulty: 'medium',
+    locale: 'zh-CN'
+  });
+  const simulationPackId = ref('');
+  const simulationPack = ref(null);
+  const simulationCurrentStep = ref(null);
+  const simulationCurrentScore = ref(60);
+  const simulationStatus = ref('idle');
+  const simulationAnswers = ref([]);
+  const simulationResult = ref(null);
+  const simulationPackList = ref([]);
+  const simulationSessionList = ref([]);
 
   const analyzeForm = reactive({
     text: '',
@@ -591,6 +608,177 @@ export function useDesktopApp() {
     }
   };
 
+  const resetSimulation = () => {
+    simulationPackId.value = '';
+    simulationPack.value = null;
+    simulationCurrentStep.value = null;
+    simulationCurrentScore.value = 60;
+    simulationStatus.value = 'idle';
+    simulationAnswers.value = [];
+    simulationResult.value = null;
+  };
+
+  const fetchSimulationPacks = async () => {
+    const res = await request('/scam/simulation/packs?limit=50', 'GET', null, { silent: true });
+    simulationPackList.value = Array.isArray(res?.packs) ? res.packs : [];
+  };
+
+  const fetchSimulationSessions = async () => {
+    const res = await request('/scam/simulation/sessions?limit=50', 'GET', null, { silent: true });
+    simulationSessionList.value = Array.isArray(res?.sessions) ? res.sessions : [];
+  };
+
+  const deleteSimulationSession = async (sessionID) => {
+    const id = String(sessionID || '').trim();
+    if (!id) return;
+    if (!confirm('确定删除该模拟报告吗？')) return;
+    const res = await request(`/scam/simulation/sessions/${encodeURIComponent(id)}`, 'DELETE');
+    if (!res) return;
+    showToast(res.message || '报告删除成功');
+    await fetchSimulationSessions();
+    await fetchSimulationPacks();
+  };
+
+  const generateSimulationPack = async () => {
+    simulationGenerating.value = true;
+    try {
+      const res = await request('/scam/simulation/packs/generate', 'POST', {
+        case_type: simulationForm.caseType,
+        target_persona: simulationForm.targetPersona,
+        difficulty: simulationForm.difficulty,
+        locale: simulationForm.locale
+      });
+
+      if (!res) return;
+      showToast(res.message || '题目生成任务已提交，请稍候查看题目列表');
+
+      const maxPoll = 30;
+      let picked = false;
+      for (let i = 0; i < maxPoll; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+        await fetchSimulationPacks();
+        const firstPack = simulationPackList.value[0] || null;
+        if (firstPack) {
+          simulationPack.value = firstPack;
+          simulationPackId.value = String(firstPack.pack_id || '').trim();
+          simulationStatus.value = 'pack_ready';
+          simulationCurrentScore.value = 60;
+          simulationAnswers.value = [];
+          simulationResult.value = null;
+          picked = true;
+          break;
+        }
+      }
+      await fetchSimulationSessions();
+      if (picked) {
+        showToast('模拟题包生成完成');
+      } else {
+        showToast('题目仍在生成，请稍后刷新题目列表', 'warning');
+      }
+    } finally {
+      simulationGenerating.value = false;
+    }
+  };
+
+  const startSimulationSession = async (packIDOverride = '') => {
+    const packID = String(packIDOverride || simulationPackId.value || simulationPack.value?.pack_id || '').trim();
+    if (!packID) {
+      showToast('请先生成题包', 'warning');
+      return;
+    }
+    simulationSubmitting.value = true;
+    try {
+      const res = await request('/scam/simulation/sessions/answer', 'POST', {
+        pack_id: packID
+      });
+
+      if (!res) {
+        const statusRes = await request(`/scam/simulation/packs/${encodeURIComponent(packID)}/ongoing`, 'GET', null, { silent: true });
+        if (statusRes && String(statusRes.status || '').trim() === 'in_progress') {
+          simulationPackId.value = String(statusRes.pack_id || packID).trim();
+          simulationPack.value = statusRes.pack || simulationPack.value;
+          simulationCurrentStep.value = statusRes.next_step || null;
+          simulationCurrentScore.value = Number(statusRes.current_score) || simulationCurrentScore.value;
+          simulationStatus.value = 'in_progress';
+          await fetchSimulationSessions();
+        }
+        return;
+      }
+      simulationPackId.value = packID;
+      simulationStatus.value = String(res?.status || '').trim() || 'in_progress';
+      simulationPack.value = res?.pack || simulationPack.value;
+      simulationCurrentScore.value = Number(res?.current_score) || 60;
+      const steps = Array.isArray(simulationPack.value?.steps) ? simulationPack.value.steps : [];
+      simulationCurrentStep.value = steps.length > 0 ? steps[0] : null;
+      simulationAnswers.value = [];
+      simulationResult.value = null;
+      await fetchSimulationSessions();
+      showToast('答题会话已开始');
+    } finally {
+      simulationSubmitting.value = false;
+    }
+  };
+
+  const submitSimulationAnswer = async (optionKey) => {
+    if (!simulationPackId.value || !simulationCurrentStep.value || simulationStatus.value !== 'in_progress') return;
+    simulationSubmitting.value = true;
+    try {
+      const res = await request('/scam/simulation/sessions/answer', 'POST', {
+        pack_id: simulationPackId.value,
+        step_id: simulationCurrentStep.value.step_id,
+        option_key: optionKey
+      });
+
+      if (!res) return;
+      simulationStatus.value = String(res.status || '').trim() || simulationStatus.value;
+      simulationCurrentScore.value = Number(res?.current_score) || simulationCurrentScore.value;
+      simulationCurrentStep.value = res?.next_step || null;
+      simulationResult.value = res?.result || simulationResult.value;
+
+      if (simulationStatus.value === 'completed') {
+        await fetchSimulationSessions();
+      const doneSession = simulationSessionList.value.find((item) => String(item.pack_id || '').trim() === simulationPackId.value);
+      if (doneSession) {
+        simulationAnswers.value = Array.isArray(doneSession.answers) ? doneSession.answers : simulationAnswers.value;
+        simulationResult.value = doneSession.result || simulationResult.value;
+        simulationPack.value = doneSession.pack || simulationPack.value;
+      }
+        await fetchSimulationPacks();
+        showToast('模拟答题完成');
+        return;
+      }
+
+      await fetchSimulationSessions();
+      const progressingSession = simulationSessionList.value.find((item) => String(item.pack_id || '').trim() === simulationPackId.value);
+      if (progressingSession && Array.isArray(progressingSession.answers)) {
+        simulationAnswers.value = progressingSession.answers;
+      }
+    } finally {
+      simulationSubmitting.value = false;
+    }
+  };
+
+  const resumeOngoingSimulationSession = async () => {
+    const packID = String(simulationPackId.value || simulationPack.value?.pack_id || '').trim();
+    if (!packID) return false;
+    const res = await request(`/scam/simulation/packs/${encodeURIComponent(packID)}/ongoing`, 'GET', null, { silent: true });
+    if (!res) return false;
+    simulationPackId.value = String(res.pack_id || '').trim();
+    simulationPack.value = res.pack || simulationPack.value;
+    simulationStatus.value = String(res.status || 'in_progress').trim();
+    simulationCurrentScore.value = Number(res.current_score) || simulationCurrentScore.value;
+    simulationCurrentStep.value = res.next_step || null;
+    simulationResult.value = res.result || simulationResult.value;
+    await fetchSimulationSessions();
+    const ongoingSession = simulationSessionList.value.find((item) => String(item.pack_id || '').trim() === simulationPackId.value);
+    if (ongoingSession && Array.isArray(ongoingSession.answers)) {
+      simulationAnswers.value = ongoingSession.answers;
+      simulationResult.value = ongoingSession.result || simulationResult.value;
+      simulationPack.value = ongoingSession.pack || simulationPack.value;
+    }
+    return true;
+  };
+
   const fetchUsers = async () => {
     if (!isAuthenticated.value || user.value.role !== 'admin') return;
     const res = await request('/users');
@@ -618,7 +806,11 @@ export function useDesktopApp() {
     fetchRiskTrend: chartsModule.fetchRiskTrend,
     fetchCurrentRegionCaseStats: chartsModule.fetchCurrentRegionCaseStats,
     fetchAdminStats,
-    fetchGeoRiskMap: geoRiskMapModule.fetchGeoRiskMap
+    fetchGeoRiskMap: geoRiskMapModule.fetchGeoRiskMap,
+    resetSimulation,
+    fetchSimulationPacks,
+    fetchSimulationSessions,
+    resumeOngoingSimulationSession
   });
   watch(activeTab, handleActiveTabChange);
 
@@ -712,6 +904,7 @@ export function useDesktopApp() {
       await getUserInfo();
       await hydrateRegionOptionsFromProfile();
       await chartsModule.fetchCurrentRegionCaseStats();
+      await resumeOngoingSimulationSession();
     } else {
       reconcileRouteState({ replace: true });
     }
@@ -787,6 +980,17 @@ export function useDesktopApp() {
     logout,
     loading,
     activeTab,
+    simulationGenerating,
+    simulationSubmitting,
+    simulationForm,
+    simulationPack,
+    simulationCurrentStep,
+    simulationCurrentScore,
+    simulationStatus,
+    simulationAnswers,
+    simulationResult,
+    simulationPackList,
+    simulationSessionList,
     tasks,
     history,
     users,
@@ -816,6 +1020,14 @@ export function useDesktopApp() {
     upgradeAccount,
     inviteCode,
     openImage,
+    generateSimulationPack,
+    startSimulationSession,
+    submitSimulationAnswer,
+    resetSimulation,
+    fetchSimulationPacks,
+    fetchSimulationSessions,
+    resumeOngoingSimulationSession,
+    deleteSimulationSession,
     getUserDisplayName,
     getUserEmailText,
     getUserPhoneText,
