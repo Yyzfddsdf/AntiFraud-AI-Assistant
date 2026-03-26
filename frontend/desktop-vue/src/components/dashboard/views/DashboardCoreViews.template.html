@@ -1,5 +1,51 @@
+                <!-- Task Center View -->
+                <div v-if="isTaskCenterTab(activeTab)" class="w-full h-full min-w-0 animate-fade-in">
+                    <div class="rounded-sm border border-slate-200 bg-white shadow-sm overflow-hidden h-full">
+                        <div class="flex flex-col lg:flex-row h-full">
+                            <aside class="w-full lg:w-56 lg:h-full shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white overflow-hidden">
+                                <div class="p-4 border-b border-slate-200">
+                                    <div class="flex items-center gap-2 text-brand-700">
+                                        <span class="w-1.5 h-7 bg-brand-500 rounded-sm"></span>
+                                        <div>
+                                            <div class="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Task Center</div>
+                                            <h1 class="text-lg font-extrabold tracking-tight text-slate-900 mt-1">任务中心</h1>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <nav class="p-2.5 space-y-1">
+                                    <button @click="setTaskCenterSection('submit')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'submit' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'submit' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">新建任务</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('tasks')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'tasks' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'tasks' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">任务监控</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('history')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'history' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'history' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">历史档案</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('risk_trend')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'risk_trend' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'risk_trend' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">风险趋势</span>
+                                    </button>
+                                </nav>
+                            </aside>
+
+                            <div class="min-w-0 flex-1 bg-slate-100/60 p-4 lg:h-full lg:overflow-y-auto flex flex-col gap-4">
+                                <div class="bg-white rounded-sm border border-slate-200 shadow-sm p-4">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-[0.2em]">任务中心</span>
+                                        <span v-if="taskCenterSection === 'submit'" class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">新建任务</span>
+                                        <span v-else-if="taskCenterSection === 'tasks'" class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">任务监控</span>
+                                        <span v-else-if="taskCenterSection === 'history'" class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">历史档案</span>
+                                        <span v-else class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">风险趋势</span>
+                                    </div>
+                                </div>
+
                 <!-- Submit Task View -->
-                <div v-if="activeTab === 'submit'" class="max-w-4xl mx-auto animate-fade-in">
+                <div v-if="taskCenterSection === 'submit'" class="w-full animate-fade-in">
                     <div class="mb-10">
                         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">新建分析任务</h1>
                         <p class="text-slate-500 mt-2 text-lg">上传文本、音频、视频或图片，AI 将为您进行多维度反诈分析。</p>
@@ -89,7 +135,7 @@
                 </div>
 
                 <!-- Task List View -->
-                <div v-if="activeTab === 'tasks'" class="max-w-6xl mx-auto animate-fade-in">
+                <div v-if="taskCenterSection === 'tasks'" class="w-full animate-fade-in">
                     <div class="flex justify-between items-end mb-8">
                         <div>
                             <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">任务监控</h1>
@@ -303,7 +349,7 @@
         </teleport>
 
                 <!-- History View -->
-                <div v-if="activeTab === 'history'" class="max-w-6xl mx-auto animate-fade-in">
+                <div v-if="taskCenterSection === 'history'" class="max-w-6xl mx-auto animate-fade-in">
                     <h1 class="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">历史档案</h1>
                     
                     <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
@@ -507,7 +553,7 @@
                     </div>
                 </div>
 
-                <div v-if="activeTab === 'risk_trend'" class="max-w-6xl mx-auto animate-fade-in">
+                <div v-if="taskCenterSection === 'risk_trend'" class="max-w-6xl mx-auto animate-fade-in">
                     <div class="flex justify-between items-end mb-8">
                         <div>
                             <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">风险趋势分析</h1>
@@ -623,6 +669,10 @@
                             <div class="text-sm font-bold">{{ getRegionStatsSignal(regionCaseStats).title }}</div>
                             <div class="text-sm mt-1 opacity-90">{{ getRegionStatsSignal(regionCaseStats).detail }}</div>
                             <div class="text-xs mt-2 font-medium">{{ getRegionTopScamHint(regionCaseStats) }}</div>
+                        </div>
+                    </div>
+                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

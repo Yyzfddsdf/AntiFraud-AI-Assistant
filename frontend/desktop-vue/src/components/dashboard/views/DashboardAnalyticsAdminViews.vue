@@ -1,4 +1,4 @@
-<template src="./DashboardAnalyticsAdminViews.template.html"></template>
+<template src="../../../../DashboardAnalyticsAdminViews.template.html"></template>
 
 <script>
 export default {

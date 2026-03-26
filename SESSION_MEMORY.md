@@ -33,3 +33,40 @@
 ## 下一步打算做什么
 1. 如用户需要，继续把“反诈模拟”同步补到其他比赛材料，优先是 `competition_docs/项目概要介绍_获奖导向版.md` 和答辩文案。
 2. 如用户切回前端问题处理，再继续修复移动端 `simulation_quiz` 页的遮挡、空白和滚动问题。
+
+## 2026-03-26 桌面端导航结构判断
+- 本次已完成：
+  - 已复核桌面端当前导航结构，确认实际运行中的一级导航是顶部栏，入口位于 `frontend/desktop-vue/src/components/dashboard/DashboardTopNav.vue`。
+  - 已确认旧侧边栏实现仍保留在 `frontend/desktop-vue/src/components/dashboard/DashboardSidebar.template.html`，且 `useDesktopApp.js` 中仍保留 `isSidebarCollapsed` / `toggleSidebar` 状态，说明恢复侧边栏的实现成本低于从零重做。
+  - 已复核“全景分析”页面内部结构，当前页面本身已经存在多组横向切换控件：时间粒度切换、人群筛选、诈骗类型标签切换，因此如果再叠加“子顶部栏”，横向导航层级会偏多。
+- 当前判断结论：
+  - 不建议继续把“全景分析”的二级模块做成子顶部栏。
+  - 更合适的方向是保留现有全站一级顶部栏，但在“全景分析”页内部改为左侧子侧边栏或左侧模块目录；如果只能在“全站回侧边栏”和“保持顶部栏+子顶部栏”二选一，则更偏向前者。
+- 下一步建议：
+1. 若继续改桌面端导航，优先采用“一级顶部栏 + 全景分析页内子侧边栏”的混合方案，避免把全站其他普通功能也一起回退到旧侧边栏。
+2. 若用户明确要求整体回到侧边栏，再基于现有 `DashboardSidebar` 遗留实现做低风险恢复，并把“全景分析”子模块从一开始就拆成独立二级导航，避免后续再次改结构。
+
+## 2026-03-26 桌面端导航二次调整
+- 本次已完成：
+  - 已按用户最新要求，把桌面端主导航恢复为一级顶部栏，文件：`frontend/desktop-vue/src/components/dashboard/DashboardWorkspace.vue`
+  - 已把“全景分析”页纠正为真正的页内子侧边栏结构：左侧固定模块导航列，右侧为模块内容区，不再是漂浮式左列卡片。
+  - 已保留现有配色体系，没有再额外改全站主配色；仅调整布局层级与容器结构。
+  - 已修正 `DashboardAnalyticsAdminViews` 外部模板路径，当前模板文件位于：`frontend/desktop-vue/DashboardAnalyticsAdminViews.template.html`
+- 已完成最小验证：
+  - 已执行 `frontend/desktop-vue` 的 `npm run build`，构建通过。
+- 下一步建议：
+  1. 若用户继续挑桌面端交互细节，优先检查全景分析子侧边栏在 1440px、1280px 下的占宽与滚动体验。
+  2. 若用户切回移动端问题，再继续处理 `simulation_quiz` 页的遮挡、空白和滚动问题。
+
+## 2026-03-26 家庭中心结构调整
+- 本次已完成：
+  - 已将桌面端 `家庭中心` 改成与全景分析一致的页内子侧边栏结构，左侧为固定模块导航，右侧为按模块切换的内容区。
+  - 未加入家庭时，已拆为：`收到邀请 / 创建家庭 / 接受邀请`。
+  - 已加入家庭时，已拆为：`家庭信息 / 邀请成员 / 守护配置 / 家庭成员 / 记录关系 / 风险通知`。
+  - 已为家庭中心新增页内模块状态，文件：`frontend/desktop-vue/src/app/useDesktopApp.js`
+  - 已重构家庭中心模板，文件：`frontend/desktop-vue/src/components/dashboard/views/DashboardAccountFamilyViews.template.html`
+- 已完成最小验证：
+  - 已执行 `frontend/desktop-vue` 的 `npm run build`，构建通过。
+- 下一步建议：
+  1. 若用户继续微调家庭中心，优先检查是否还需要像全景分析一样进一步压缩模块头部和卡片密度。
+  2. 若用户要求家庭通知点击后直接进入“风险通知”子模块，可再把弹窗跳转逻辑接到 `familyCenterSection = 'notifications'`。

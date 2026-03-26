@@ -10,6 +10,10 @@ import { useGeoRiskMapModule } from '../modules/geo/useGeoRiskMapModule';
 import { useChatModule } from '../modules/chat/useChatModule';
 
 export function useDesktopApp() {
+  const adminAnalyticsSectionKeys = new Set(['overview', 'graph', 'target_groups', 'profiles']);
+  const familySectionKeysWithoutGroup = new Set(['received', 'create', 'join']);
+  const familySectionKeysWithGroup = new Set(['overview', 'invite', 'guardian', 'members', 'records', 'notifications']);
+  const taskCenterTabKeys = new Set(['submit', 'tasks', 'history', 'risk_trend']);
   const isAuthenticated = ref(false);
   const authReady = ref(false);
   const token = ref(localStorage.getItem('token') || '');
@@ -94,7 +98,33 @@ export function useDesktopApp() {
   const isDragging = ref(false);
   const hasMoved = ref(false);
   const isSidebarCollapsed = ref(false);
+  const adminAnalyticsSection = ref('overview');
+  const familyCenterSection = ref('received');
   const toggleSidebar = () => { isSidebarCollapsed.value = !isSidebarCollapsed.value; };
+  const setAdminAnalyticsSection = (nextSection) => {
+    const normalized = String(nextSection || '').trim().toLowerCase();
+    adminAnalyticsSection.value = adminAnalyticsSectionKeys.has(normalized) ? normalized : 'overview';
+  };
+  const resolveFamilyCenterSection = (nextSection, hasGroup) => {
+    const normalized = String(nextSection || '').trim().toLowerCase();
+    if (hasGroup) {
+      return familySectionKeysWithGroup.has(normalized) ? normalized : 'overview';
+    }
+    return familySectionKeysWithoutGroup.has(normalized) ? normalized : 'received';
+  };
+  const setFamilyCenterSection = (nextSection) => {
+    familyCenterSection.value = resolveFamilyCenterSection(nextSection, familyModule?.familyHasGroup?.value);
+  };
+  const isTaskCenterTab = (tab) => taskCenterTabKeys.has(String(tab || '').trim());
+  const openTaskCenter = () => {
+    if (isTaskCenterTab(activeTab.value)) return;
+    activeTab.value = 'tasks';
+  };
+  const setTaskCenterSection = (nextSection) => {
+    const normalized = String(nextSection || '').trim().toLowerCase();
+    activeTab.value = taskCenterTabKeys.has(normalized) ? normalized : 'tasks';
+  };
+  const taskCenterSection = computed(() => isTaskCenterTab(activeTab.value) ? activeTab.value : 'tasks');
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -791,6 +821,19 @@ export function useDesktopApp() {
     fetchUsers();
   };
 
+  const focusAdminTargetGroup = async (targetGroup) => {
+    setAdminAnalyticsSection('target_groups');
+    await chartsModule.fetchAdminTargetGroupChart(targetGroup);
+  };
+
+  const focusAdminProfile = (scamType) => {
+    const normalized = String(scamType || '').trim();
+    if (!normalized) return;
+    setAdminAnalyticsSection('profiles');
+    chartsModule.selectedGraphProfile.value = normalized;
+    chartsModule.refreshVisibleAdminCharts();
+  };
+
   const handleActiveTabChange = createDesktopTabChangeHandler({
     syncRouteFromActiveTab,
     fetchPendingReviews: caseLibraryModule.fetchPendingReviews,
@@ -813,6 +856,13 @@ export function useDesktopApp() {
     resumeOngoingSimulationSession
   });
   watch(activeTab, handleActiveTabChange);
+  watch([activeTab, adminAnalyticsSection], ([currentTab]) => {
+    if (currentTab !== 'admin_stats') return;
+    chartsModule.refreshVisibleAdminCharts();
+  });
+  watch(() => familyModule.familyHasGroup.value, (hasGroup) => {
+    familyCenterSection.value = resolveFamilyCenterSection(familyCenterSection.value, hasGroup);
+  }, { immediate: true });
 
   let pollInterval = null;
   startPolling = () => {
@@ -1036,6 +1086,16 @@ export function useDesktopApp() {
     startDrag,
     isSidebarCollapsed,
     toggleSidebar,
+    adminAnalyticsSection,
+    setAdminAnalyticsSection,
+    taskCenterSection,
+    isTaskCenterTab,
+    openTaskCenter,
+    setTaskCenterSection,
+    familyCenterSection,
+    setFamilyCenterSection,
+    focusAdminTargetGroup,
+    focusAdminProfile,
     ...alertsModule,
     ...familyModule,
     ...caseLibraryModule,

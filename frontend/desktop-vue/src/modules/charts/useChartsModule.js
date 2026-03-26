@@ -316,7 +316,14 @@ export function useChartsModule(deps) {
           }
         }
       }
-      if (selectedGraphTargetGroup.value) {
+      if (!selectedGraphTargetGroup.value && !adminTargetGroupChartData.value) {
+        const defaultTargetGroup = Array.isArray(adminGraphData.value?.target_group_top_scam_types)
+          ? String(adminGraphData.value.target_group_top_scam_types[0]?.target_group || '').trim()
+          : '';
+        if (defaultTargetGroup) {
+          await fetchAdminTargetGroupChart(defaultTargetGroup, forceRefresh);
+        }
+      } else if (selectedGraphTargetGroup.value) {
         await fetchAdminTargetGroupChart(selectedGraphTargetGroup.value, forceRefresh);
       }
     } catch (e) {
@@ -504,37 +511,44 @@ export function useChartsModule(deps) {
           return `<div class="font-bold mb-1">${data.name}</div><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:${data.color}"></span><span>占比: ${data.value}%</span></div>`;
         }
       },
-      grid: { left: '3%', right: '15%', bottom: '3%', top: '3%', containLabel: true },
-      xAxis: { type: 'value', max: displayMax, axisLabel: { formatter: '{value}%', color: '#64748b', fontWeight: 'bold' }, splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.1)' } } },
-      yAxis: { type: 'category', data: items.map(item => item.scam_type).reverse(), axisLabel: { color: '#334155', fontWeight: 'bold', fontSize: 12 }, axisLine: { show: false }, axisTick: { show: false } },
+      grid: { left: '4%', right: '10%', bottom: '2%', top: '2%', containLabel: true },
+      xAxis: {
+        type: 'value',
+        max: displayMax,
+        axisLabel: { formatter: '{value}%', color: '#64748b', fontWeight: 'bold', fontSize: 11 },
+        splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.12)', type: 'dashed' } }
+      },
+      yAxis: {
+        type: 'category',
+        data: items.map(item => item.scam_type).reverse(),
+        axisLabel: { color: '#334155', fontWeight: 'bold', fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false }
+      },
       series: [
-        { name: 'placeholder', type: 'bar', itemStyle: { color: 'rgba(148, 163, 184, 0.05)', borderRadius: [0, 20, 20, 0] }, barGap: '-100%', barWidth: 32, data: items.map(() => displayMax), animation: false, tooltip: { show: false } },
+        {
+          name: '背景',
+          type: 'bar',
+          itemStyle: { color: 'rgba(148, 163, 184, 0.08)', borderRadius: [0, 8, 8, 0] },
+          barGap: '-100%',
+          barWidth: 24,
+          data: items.map(() => displayMax),
+          animation: false,
+          tooltip: { show: false },
+          silent: true
+        },
         {
           name: '案件占比',
           type: 'bar',
-          data: items.map((item, index) => {
-            const gradients = [
-              ['#3b82f6', '#6366f1', '#d946ef'],
-              ['#10b981', '#3b82f6', '#6366f1'],
-              ['#f59e0b', '#ef4444', '#d946ef'],
-              ['#6366f1', '#a855f7', '#ec4899'],
-              ['#0ea5e9', '#2dd4bf', '#10b981']
-            ];
-            const colors = gradients[index % gradients.length];
-            return {
-              value: Number((Number(item.score || 0) * 100).toFixed(2)),
-              itemStyle: {
-                borderRadius: [0, 20, 20, 0],
-                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                  { offset: 0, color: colors[0] },
-                  { offset: 0.5, color: colors[1] },
-                  { offset: 1, color: colors[2] }
-                ])
-              }
-            };
-          }).reverse(),
-          barWidth: 32,
-          label: { show: true, position: 'right', formatter: '{c}%', color: '#475569', fontWeight: 'bold', distance: 10 }
+          data: items.map((item) => ({
+            value: Number((Number(item.score || 0) * 100).toFixed(2)),
+            itemStyle: {
+              borderRadius: [0, 8, 8, 0],
+              color: '#475569'
+            }
+          })).reverse(),
+          barWidth: 24,
+          label: { show: true, position: 'right', formatter: '{c}%', color: '#475569', fontWeight: 'bold', fontSize: 11, distance: 8 }
         }
       ]
     });
@@ -601,6 +615,13 @@ export function useChartsModule(deps) {
     if (lineChartInstance?.resize) lineChartInstance.resize();
   };
 
+  const refreshVisibleAdminCharts = () => {
+    setTimeout(() => {
+      renderAdminCharts();
+      renderAdminTargetGroupBarChart();
+    }, 0);
+  };
+
   const disposeCharts = () => {
     if (adminNetworkInstance) {
       adminNetworkInstance.destroy();
@@ -640,6 +661,7 @@ export function useChartsModule(deps) {
     resetGraphZoom,
     fetchAdminTargetGroupChart,
     clearAdminTargetGroupFocus,
+    refreshVisibleAdminCharts,
     resizeCharts,
     disposeCharts
   };

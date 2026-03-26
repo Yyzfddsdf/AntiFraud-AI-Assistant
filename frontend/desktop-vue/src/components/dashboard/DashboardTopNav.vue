@@ -9,11 +9,8 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <button @click="activeTab = 'submit'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'submit' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">新建任务</button>
-        <button @click="activeTab = 'tasks'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'tasks' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">任务监控</button>
-        <button @click="activeTab = 'risk_trend'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'risk_trend' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">风险趋势</button>
+        <button @click="openTaskCenter" :class="['px-3 py-1 text-xs font-bold transition-colors', isTaskCenterTab(activeTab) ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">任务中心</button>
         <button @click="activeTab = 'simulation_quiz'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'simulation_quiz' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">反诈模拟</button>
-        <button @click="activeTab = 'history'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'history' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">历史档案</button>
         <button @click="activeTab = 'family'" :class="['px-3 py-1 text-xs font-bold transition-colors relative', activeTab === 'family' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">
           家庭中心
           <span v-if="familyUnreadCount > 0" class="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 bg-rose-500 text-white text-[8px] font-black leading-[14px] text-center">{{ familyUnreadCount }}</span>
