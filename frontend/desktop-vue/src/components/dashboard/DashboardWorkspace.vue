@@ -2,10 +2,10 @@
   <div class="flex-1 flex flex-col h-full overflow-hidden bg-slate-100">
     <DashboardTopNav :app="app" />
 
-    <main :class="['flex-1 custom-scrollbar', activeTab === 'admin_stats' || isTaskCenterTab(activeTab) ? 'overflow-hidden' : 'overflow-y-auto']">
+    <main :class="['flex-1 custom-scrollbar', activeTab === 'admin_stats' || activeTab === 'family' || isTaskCenterTab(activeTab) ? 'overflow-hidden' : 'overflow-y-auto']">
       <div :class="[
-        activeTab === 'admin_stats' || isTaskCenterTab(activeTab) ? 'w-full max-w-[1600px] mx-auto p-4 min-w-0' : 'max-w-[1600px] mx-auto p-4',
-        activeTab === 'admin_stats' || isTaskCenterTab(activeTab) ? 'h-full' : 'min-h-full'
+        activeTab === 'admin_stats' || activeTab === 'family' || isTaskCenterTab(activeTab) ? 'w-full max-w-[1600px] mx-auto p-4 min-w-0' : 'max-w-[1600px] mx-auto p-4',
+        activeTab === 'admin_stats' || activeTab === 'family' || isTaskCenterTab(activeTab) ? 'h-full' : 'min-h-full'
       ]">
         <DashboardCoreViews :app="app" />
         <DashboardAnalyticsAdminViews :app="app" />

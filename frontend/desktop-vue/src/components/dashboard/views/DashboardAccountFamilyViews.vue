@@ -2,11 +2,13 @@
 
 <script>
 import CustomSelect from '../../common/CustomSelect.vue';
+import DashboardSectionShell from '../DashboardSectionShell.vue';
 
 export default {
   name: 'DashboardAccountFamilyViews',
   components: {
-    CustomSelect
+    CustomSelect,
+    DashboardSectionShell
   },
   props: {
     app: {
