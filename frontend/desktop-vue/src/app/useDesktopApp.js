@@ -638,7 +638,7 @@ export function useDesktopApp() {
     }
   };
 
-  const resetSimulation = () => {
+  const resetSimulationState = () => {
     simulationPackId.value = '';
     simulationPack.value = null;
     simulationCurrentStep.value = null;
@@ -656,6 +656,36 @@ export function useDesktopApp() {
   const fetchSimulationSessions = async () => {
     const res = await request('/scam/simulation/sessions?limit=50', 'GET', null, { silent: true });
     simulationSessionList.value = Array.isArray(res?.sessions) ? res.sessions : [];
+  };
+
+  const restoreUnfinishedSimulationToCurrentPack = async () => {
+    await fetchSimulationSessions();
+    const unfinishedSession = simulationSessionList.value.find((item) => String(item?.status || '').trim() !== 'completed');
+    if (!unfinishedSession) return false;
+
+    simulationPackId.value = String(unfinishedSession.pack_id || '').trim();
+    simulationPack.value = unfinishedSession.pack || null;
+    simulationStatus.value = String(unfinishedSession.status || 'in_progress').trim() || 'in_progress';
+    simulationCurrentScore.value = Number(unfinishedSession.score) || 60;
+    simulationAnswers.value = Array.isArray(unfinishedSession.answers) ? unfinishedSession.answers : [];
+    simulationResult.value = unfinishedSession.result || null;
+
+    if (!simulationPackId.value) return true;
+
+    try {
+      await resumeOngoingSimulationSession();
+    } catch (error) {
+      console.warn('restore unfinished simulation failed', error);
+    }
+    return true;
+  };
+
+  const resetSimulation = async () => {
+    resetSimulationState();
+    const restored = await restoreUnfinishedSimulationToCurrentPack();
+    if (restored) {
+      showToast('已恢复未完成题目');
+    }
   };
 
   const deleteSimulationSession = async (sessionID) => {
