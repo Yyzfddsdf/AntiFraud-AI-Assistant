@@ -127,8 +127,7 @@
                 </div>
 
                 <!-- Family View -->
-                <div v-if="activeTab === 'family'" class="w-full h-full min-w-0 animate-fade-in">
-                    <DashboardSectionShell eyebrow="Family Center" title="家庭中心" heading="家庭协同与守护" description="查看家庭协同信息。">
+                <DashboardSectionShell v-if="activeTab === 'family'" eyebrow="Family Center" title="家庭中心" heading="家庭协同与守护" description="查看家庭协同信息。">
                         <template #nav>
                             <template v-if="!familyHasGroup">
                                 <button @click="setFamilyCenterSection('received')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', familyCenterSection === 'received' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
@@ -530,5 +529,4 @@
                                         </div>
                                     </section>
                                 </template>
-                    </DashboardSectionShell>
-                </div>
+                </DashboardSectionShell>
