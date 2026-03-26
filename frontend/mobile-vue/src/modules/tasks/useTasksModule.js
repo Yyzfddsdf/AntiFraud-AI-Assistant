@@ -67,13 +67,31 @@ export function useTasksModule(deps) {
   const viewTaskDetail = async (taskId) => {
     const res = await deps.request(`/scam/multimodal/tasks/${taskId}`);
     if (res && res.task) {
+      if (!res.task.risk_level && res.task.risk_summary) {
+        try {
+          const parsed = JSON.parse(res.task.risk_summary);
+          if (parsed && parsed.risk_level) {
+            res.task.risk_level = parsed.risk_level;
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+      }
       selectedTask.value = res.task;
     }
   };
 
-  const viewHistoryDetail = (item) => {
+  const viewHistoryDetail = async (item) => {
     if (!item || !item.record_id) return;
-    viewTaskDetail(item.record_id);
+    await viewTaskDetail(item.record_id);
+    if (selectedTask.value) {
+      if (!selectedTask.value.risk_level && item.risk_level) {
+        selectedTask.value.risk_level = item.risk_level;
+      }
+      if (!selectedTask.value.scam_type && item.scam_type) {
+        selectedTask.value.scam_type = item.scam_type;
+      }
+    }
   };
 
   const deleteHistoryCase = async (item) => {
@@ -118,17 +136,22 @@ export function useTasksModule(deps) {
   };
 
   const normalizeRiskLevelText = (level) => {
-    const value = String(level || '').trim();
-    if (value === '高') return '高';
-    if (value === '低') return '低';
-    return '中';
+    if (!level) return '';
+    return String(level).trim();
   };
 
   const getRiskClass = (level) => {
-    const normalized = normalizeRiskLevelText(level);
-    if (normalized === '高') return 'bg-red-100 text-red-800';
-    if (normalized === '中') return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
+    const rawValue = String(level || '').trim().toLowerCase();
+    
+    // 如果是高风险相关的词，就标红
+    if (['高', 'high', 'severe', 'critical'].includes(rawValue) || rawValue.includes('高')) return 'bg-red-100 text-red-800 border-red-200';
+    // 中风险标黄
+    if (['中', 'medium', 'warning'].includes(rawValue) || rawValue.includes('中')) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    // 低风险/安全标绿
+    if (['低', 'low', 'safe', 'none', '安全'].includes(rawValue) || rawValue.includes('低')) return 'bg-green-100 text-green-800 border-green-200';
+    
+    // 默认样式，对于一些自定义文本保持中性样式
+    return 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   const openImage = (src) => {

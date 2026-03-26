@@ -200,6 +200,124 @@
                     </div>
                 </div>
 
+                <!-- Case Detail Modal -->
+                <teleport to="body">
+                <div v-if="selectedCase" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedCase = null">
+                    <div class="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                            <div>
+                                <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
+                                <div class="flex items-center gap-3 mt-1">
+                                     <span :class="['px-2 py-0.5 rounded-sm text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
+                                        {{ normalizeRiskLevelText(selectedCase.risk_level) }}风险
+                                    </span>
+                                    <span class="text-xs text-slate-400 font-mono">ID: {{ selectedCase.case_id }}</span>
+                                </div>
+                            </div>
+                            <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 custom-scrollbar transform-gpu">
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
+                                    <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">诈骗类型</h4>
+                                    <p class="text-slate-800 font-semibold">{{ selectedCase.scam_type || '-' }}</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
+                                    <p class="text-slate-800 font-semibold">{{ formatTime(selectedCase.created_at) }}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                    <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    案件描述
+                                </h4>
+                                <div class="bg-white p-5 rounded-sm border border-slate-200 text-slate-600 text-sm leading-relaxed">
+                                    {{ selectedCase.case_description }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                    典型话术
+                                </h4>
+                                <div class="space-y-2">
+                                    <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-sm border border-indigo-100 text-indigo-900 text-sm flex gap-3">
+                                        <span class="text-indigo-400 font-bold text-xs mt-0.5">0{{ idx + 1 }}</span>
+                                        {{ script }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                        违反法律
+                                    </h4>
+                                    <div class="bg-rose-50/50 p-4 rounded-sm border border-rose-100 text-rose-800 text-sm leading-relaxed">
+                                        {{ selectedCase.violated_law }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        处置建议
+                                    </h4>
+                                    <div class="bg-emerald-50/50 p-4 rounded-sm border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
+                                        {{ selectedCase.suggestion }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                 <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">关键词提取</h4>
+                                 <div class="flex flex-wrap gap-2">
+                                     <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-sm text-xs font-bold border border-slate-200">
+                                         # {{ kw }}
+                                     </span>
+                                 </div>
+                            </div>
+
+                            <div class="border-t border-slate-100 pt-6 mt-2">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                    技术调试信息
+                                </h4>
+                                <div class="bg-slate-900 rounded-sm p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
+                                    <div class="flex justify-between border-b border-slate-700 pb-2">
+                                        <span class="text-slate-500">Model:</span>
+                                        <span class="text-emerald-400">{{ selectedCase.embedding_model }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-700 pb-2">
+                                        <span class="text-slate-500">Dimension:</span>
+                                        <span class="text-brand-400">{{ selectedCase.embedding_dimension }}</span>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-slate-500">Vector (First 10 dims):</span>
+                                            <span class="text-[10px] text-slate-600">Total {{ selectedCase.embedding_vector ? selectedCase.embedding_vector.length : 0 }} dims</span>
+                                        </div>
+                                        <div class="bg-slate-950 p-3 rounded-sm overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
+                                            [{{ selectedCase.embedding_vector ? selectedCase.embedding_vector.join(', ') : 'null' }}]
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </teleport>
+
         <!-- Task Detail Modal -->
         <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedTask = null">
             <div class="bg-white rounded-sm shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">

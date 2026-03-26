@@ -6,12 +6,12 @@
     description=""
   >
         <template #nav>
-          <button @click="setSimulationSidebarSection('quiz')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'quiz' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+          <button @click="setSimulationSidebarSection('quiz')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'quiz' ? 'bg-white text-brand-700 border-slate-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:text-brand-700 hover:bg-slate-50']">
             <span :class="simulationSidebarSection === 'quiz' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
             <span class="min-w-0 truncate">题目</span>
           </button>
-          <button @click="openAssistantPanel" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'assistant' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
-            <span :class="simulationSidebarSection === 'assistant' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+          <button @click="openAssistantPanel" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'assistant' ? 'bg-white text-brand-700 border-slate-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:text-brand-700 hover:bg-slate-50']">
+            <span :class="simulationSidebarSection === 'assistant' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
             <span class="min-w-0 truncate">助手</span>
           </button>
         </template>

@@ -9,19 +9,19 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <button @click="openTaskCenter" :class="['px-3 py-1 text-xs font-bold transition-colors', isTaskCenterTab(activeTab) ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">任务中心</button>
-        <button @click="activeTab = 'simulation_quiz'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'simulation_quiz' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">反诈模拟</button>
-        <button @click="activeTab = 'family'" :class="['px-3 py-1 text-xs font-bold transition-colors relative', activeTab === 'family' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">
+        <button @click="openTaskCenter" :class="['px-3 py-1 text-xs font-bold transition-colors', isTaskCenterTab(activeTab) ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">任务中心</button>
+        <button @click="activeTab = 'simulation_quiz'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'simulation_quiz' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">反诈模拟</button>
+        <button @click="activeTab = 'family'" :class="['px-3 py-1 text-xs font-bold transition-colors relative', activeTab === 'family' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">
           家庭中心
           <span v-if="familyUnreadCount > 0" class="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 bg-rose-500 text-white text-[8px] font-black leading-[14px] text-center">{{ familyUnreadCount }}</span>
         </button>
 
         <div v-if="user.role === 'admin'" class="flex items-center gap-1 ml-2 pl-2 border-l border-slate-300">
-          <button @click="activeTab = 'admin_stats'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'admin_stats' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">全景分析</button>
-          <button @click="activeTab = 'geo_risk_map_full'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'geo_risk_map_full' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">地理态势</button>
-          <button @click="activeTab = 'users'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'users' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">用户管理</button>
-          <button @click="activeTab = 'case_review'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_review' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">案件审核</button>
-          <button @click="activeTab = 'case_library'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_library' ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-100']">案件库</button>
+          <button @click="activeTab = 'admin_stats'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'admin_stats' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">全景分析</button>
+          <button @click="activeTab = 'geo_risk_map_full'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'geo_risk_map_full' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">地理态势</button>
+          <button @click="activeTab = 'users'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'users' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">用户管理</button>
+          <button @click="activeTab = 'case_review'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_review' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">案件审核</button>
+          <button @click="activeTab = 'case_library'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_library' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">案件库</button>
         </div>
       </div>
     </div>

@@ -686,7 +686,7 @@ export function useMobileApp() {
     if (res && res.user) {
       user.value = res.user;
       syncProfileForm(res.user);
-      await chartsModule.fetchCurrentRegionCaseStats();
+      fetchRegionCaseStatsIfConfigured();
       ageEditorVisible.value = false;
       showToast(res.message || '用户画像更新成功');
     }
@@ -779,6 +779,12 @@ export function useMobileApp() {
     }
   };
 
+  const fetchRegionCaseStatsIfConfigured = () => {
+    if (user.value && user.value.province_code) {
+      chartsModule.fetchCurrentRegionCaseStats();
+    }
+  };
+
   const handleActiveTabChange = createMobileTabChangeHandler({
     syncRouteFromActiveTab,
     closeDropdown,
@@ -792,8 +798,8 @@ export function useMobileApp() {
     scrollToBottom: () => chatModule.scrollToBottom(),
     fetchHistory: () => tasksModule.fetchHistory(),
     fetchTasks: () => tasksModule.fetchTasks(),
-	    fetchRiskTrend: () => chartsModule.fetchRiskTrend(),
-    fetchCurrentRegionCaseStats: () => chartsModule.fetchCurrentRegionCaseStats(),
+    fetchRiskTrend: () => chartsModule.fetchRiskTrend(),
+    fetchCurrentRegionCaseStats: () => fetchRegionCaseStatsIfConfigured(),
     resetSimulation,
     fetchSimulationPacks,
     fetchSimulationSessions,
@@ -815,7 +821,7 @@ export function useMobileApp() {
     tasksModule.fetchHistory({ silent: true });
     familyModule.fetchFamilyOverview({ silent: true });
     chartsModule.fetchRiskTrend();
-    chartsModule.fetchCurrentRegionCaseStats();
+    fetchRegionCaseStatsIfConfigured();
     alertsModule.connectAlertWebSocket();
     familyModule.connectFamilyNotificationWebSocket();
 
@@ -824,7 +830,7 @@ export function useMobileApp() {
       if (isAuthenticated.value && activeTab.value === 'tasks') {
         tasksModule.fetchTasks({ silent: true });
         chartsModule.fetchRiskTrend();
-        chartsModule.fetchCurrentRegionCaseStats();
+        fetchRegionCaseStatsIfConfigured();
       }
 
       if (isAuthenticated.value && activeTab.value === 'family') {
@@ -870,7 +876,7 @@ export function useMobileApp() {
     if (token.value) {
       await getUserInfo();
       await hydrateRegionOptionsFromProfile();
-      await chartsModule.fetchCurrentRegionCaseStats();
+      fetchRegionCaseStatsIfConfigured();
       await resumeOngoingSimulationSession();
     } else {
       reconcileRouteState({ replace: true });

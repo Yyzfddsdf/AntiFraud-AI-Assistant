@@ -169,6 +169,8 @@ export function useFamilyModule(deps) {
       event_type: String(payload.event_type || '').trim() || 'high_risk_case',
       record_id: String(payload.record_id || '').trim(),
       title: String(payload.title || '').trim() || '家庭高风险通知',
+      case_summary: String(payload.case_summary || '').trim(),
+      scam_type: String(payload.scam_type || '').trim(),
       summary: String(payload.summary || '').trim() || '家庭成员触发高风险案件，请及时核查。',
       risk_level: String(payload.risk_level || '').trim() || '高',
       event_at: String(payload.event_at || '').trim(),

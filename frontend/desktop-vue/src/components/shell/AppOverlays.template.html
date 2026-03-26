@@ -24,14 +24,19 @@
 
         <!-- Alert Side Button -->
         <div v-if="isAuthenticated && alertEntryVisible" class="fixed right-5 top-1/2 -translate-y-1/2 z-[60] pointer-events-auto">
-            <button @click="toggleAlertDrawer" class="group relative rounded-full border border-red-200 bg-white/95 shadow-xl px-3.5 py-3 text-left backdrop-blur-none hover:shadow-2xl transition-all">
-                <div class="flex items-center gap-2.5">
-                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-100">
+            <button @click="toggleAlertDrawer" class="group relative rounded-[28px] border border-red-200/80 bg-white px-4 py-4 text-left shadow-2xl shadow-red-950/10 transition-all hover:-translate-y-0.5 hover:shadow-red-950/20">
+                <div class="absolute inset-x-0 top-0 h-1 rounded-t-[28px] bg-gradient-to-r from-red-500 via-rose-500 to-amber-400"></div>
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-red-50 text-red-600 border border-red-100 shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </span>
-                    <span class="text-sm font-semibold text-slate-700 whitespace-nowrap">风险预警</span>
+                    <div class="min-w-0">
+                        <div class="text-[11px] font-black uppercase tracking-[0.22em] text-red-500">Risk Alert</div>
+                        <div class="mt-1 text-sm font-bold text-slate-800 whitespace-nowrap">高风险提醒</div>
+                        <div class="mt-1 text-xs text-slate-500 whitespace-nowrap">个人与家庭风险入口</div>
+                    </div>
                 </div>
                 <span v-if="alertUnreadCount > 0" class="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-600 text-white text-xs font-bold leading-[22px] text-center shadow-lg">{{ alertUnreadCount }}</span>
             </button>
@@ -61,12 +66,13 @@
         <!-- Alert Drawer -->
         <aside v-if="isAuthenticated"
                :class="['fixed inset-y-0 right-0 z-[65] w-full max-w-sm bg-white border-l border-slate-200 shadow-2xl transition-transform duration-300 flex flex-col', alertDrawerVisible ? 'translate-x-0' : 'translate-x-full']">
-            <div class="px-5 py-4 border-b border-slate-200 bg-slate-50/80">
+            <div class="px-5 py-5 border-b border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(248,250,252,0.96),rgba(254,242,242,0.92))]">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">近期风险预警</h3>
-                        <div class="mt-1 flex items-center gap-2">
-                            <span :class="['inline-block w-2.5 h-2.5 rounded-sm', alertConnectionStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500']"></span>
+                        <div class="text-[11px] font-black uppercase tracking-[0.22em] text-red-500">Sentinel Guard</div>
+                        <h3 class="mt-2 text-lg font-black text-slate-900">近期风险预警</h3>
+                        <div class="mt-2 flex items-center gap-2">
+                            <span :class="['inline-block w-2.5 h-2.5 rounded-full', alertConnectionStatus === 'connected' ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.12)]']"></span>
                             <span class="text-xs font-medium text-slate-500">{{ alertConnectionLabel }}</span>
                         </div>
                     </div>
@@ -74,23 +80,23 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-slate-50/70">
                 <button v-for="item in recentRiskAlerts"
                         :key="item.record_id"
                         @click="openAlertCaseDetail(item)"
-                        :class="['w-full text-left rounded-sm border border-slate-200 bg-white px-3.5 py-3 transition-colors', getAlertSeverityTheme(item.risk_level).hoverClass]">
+                        :class="['group w-full text-left rounded-2xl border bg-white px-4 py-4 transition-all shadow-sm hover:-translate-y-0.5', getAlertSeverityTheme(item.risk_level).hoverClass, getAlertSeverityTheme(item.risk_level).modalBorderClass]">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <span v-if="item.unread" :class="['inline-block w-1.5 h-1.5 rounded-sm', getAlertSeverityTheme(item.risk_level).unreadClass]"></span>
-                                <h4 class="text-sm font-semibold text-slate-800 truncate">{{ item.title }}</h4>
+                            <div class="flex items-center gap-2">
+                                <span v-if="item.unread" :class="['inline-block w-2 h-2 rounded-full', getAlertSeverityTheme(item.risk_level).unreadClass]"></span>
+                                <h4 class="text-sm font-bold text-slate-900 truncate">{{ item.title }}</h4>
                             </div>
-                            <p class="mt-1 text-xs text-slate-600 leading-relaxed max-h-10 overflow-hidden">{{ item.case_summary }}</p>
+                            <p class="mt-2 text-xs text-slate-600 leading-5 max-h-12 overflow-hidden">{{ item.case_summary }}</p>
                         </div>
-                        <span :class="['shrink-0 text-[10px] font-bold uppercase tracking-wide border rounded-sm px-2 py-0.5', getAlertSeverityTheme(item.risk_level).pillClass]">{{ item.risk_level || '中' }}</span>
+                        <span :class="['shrink-0 text-[10px] font-black uppercase tracking-[0.18em] border rounded-full px-2.5 py-1', getAlertSeverityTheme(item.risk_level).pillClass]">{{ item.risk_level || '中' }}</span>
                     </div>
-                    <div class="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                        <span class="truncate">{{ item.scam_type || '未知类型' }}</span>
+                    <div class="mt-3 flex items-center justify-between gap-2 text-[11px] text-slate-500">
+                        <span class="truncate rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">{{ item.scam_type || '未知类型' }}</span>
                         <span class="shrink-0">{{ formatTime(item.created_at || item.sent_at) }}</span>
                     </div>
                 </button>
@@ -109,31 +115,32 @@
 
         <!-- Risk Alert Modal -->
         <div v-if="alertModalVisible && activeAlertEvent" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in" @click.self="acknowledgeActiveAlert">
-            <div :class="['w-full max-w-lg bg-white rounded-2xl shadow-2xl border overflow-hidden animate-slide-up', getAlertSeverityTheme(activeAlertEvent.risk_level).modalBorderClass]">
-                <div :class="['px-6 py-4 bg-slate-900 text-white', getAlertSeverityTheme(activeAlertEvent.risk_level).modalHeaderClass]">
+            <div :class="['w-full max-w-xl bg-white rounded-[28px] shadow-2xl border overflow-hidden animate-slide-up', getAlertSeverityTheme(activeAlertEvent.risk_level).modalBorderClass]">
+                <div :class="['relative overflow-hidden bg-gradient-to-r px-6 py-5 text-white', getAlertSeverityTheme(activeAlertEvent.risk_level).modalHeaderClass]">
+                    <div class="absolute inset-y-0 right-0 w-40 bg-white/10 blur-3xl"></div>
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="inline-block w-2.5 h-2.5 rounded-sm bg-white animate-pulse"></span>
-                            <span class="text-xs font-bold uppercase tracking-wider">{{ activeAlertEvent.risk_level }}风险预警</span>
+                        <div class="relative flex items-center gap-2">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+                            <span class="text-xs font-black uppercase tracking-[0.24em]">{{ activeAlertEvent.risk_level }}风险预警</span>
                         </div>
-                        <span class="text-xs font-semibold opacity-90">{{ activeAlertEvent.risk_level }}风险</span>
+                        <span class="relative rounded-full border border-white/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.16em] bg-white/10">{{ activeAlertEvent.risk_level }}风险</span>
                     </div>
-                    <h3 class="mt-2 text-lg font-extrabold leading-snug">{{ activeAlertEvent.title }}</h3>
+                    <h3 class="relative mt-3 text-xl font-extrabold leading-snug text-white">{{ activeAlertEvent.title }}</h3>
                 </div>
-                <div class="px-6 py-5 space-y-4">
-                    <div :class="['rounded-sm border p-4', getAlertSeverityTheme(activeAlertEvent.risk_level).modalPanelClass]">
+                <div class="px-6 py-6 space-y-4 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(248,250,252,0.96))]">
+                    <div :class="['rounded-2xl border p-4 shadow-sm', getAlertSeverityTheme(activeAlertEvent.risk_level).modalPanelClass]">
                         <p class="text-sm text-slate-700 leading-relaxed">{{ activeAlertEvent.case_summary }}</p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
                             <div class="text-slate-500">案件ID</div>
                             <div class="text-slate-800 font-semibold mt-1 break-all">{{ activeAlertEvent.record_id }}</div>
                         </div>
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
                             <div class="text-slate-500">诈骗类型</div>
                             <div class="text-slate-800 font-semibold mt-1">{{ activeAlertEvent.scam_type }}</div>
                         </div>
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100 sm:col-span-2">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100 sm:col-span-2">
                             <div class="text-slate-500">发生时间</div>
                             <div class="text-slate-800 font-semibold mt-1">{{ formatTime(activeAlertEvent.created_at || activeAlertEvent.sent_at) }}</div>
                         </div>
@@ -148,35 +155,35 @@
 
         <!-- Family Risk Alert Modal -->
         <div v-if="familyAlertModalVisible && activeFamilyNotification" class="fixed inset-0 z-[71] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in" @click.self="acknowledgeFamilyAlert">
-            <div class="w-full max-w-lg bg-white rounded-sm shadow-2xl border border-rose-100 overflow-hidden animate-slide-up">
-                <div class="px-6 py-4 bg-rose-600 text-white">
+            <div class="w-full max-w-xl bg-white rounded-[28px] shadow-2xl border border-rose-100 overflow-hidden animate-slide-up">
+                <div class="px-6 py-5 bg-gradient-to-r from-rose-600 via-red-600 to-orange-500 text-white">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="inline-block w-2.5 h-2.5 rounded-sm bg-white animate-pulse"></span>
-                            <span class="text-xs font-bold uppercase tracking-wider">家庭联防通知</span>
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+                            <span class="text-xs font-black uppercase tracking-[0.24em]">家庭联防通知</span>
                         </div>
-                        <span class="text-xs font-semibold opacity-90">{{ activeFamilyNotification.risk_level }}风险</span>
+                        <span class="rounded-full border border-white/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.16em] bg-white/10">{{ activeFamilyNotification.risk_level }}风险</span>
                     </div>
-                    <h3 class="mt-2 text-lg font-extrabold leading-snug">{{ activeFamilyNotification.title }}</h3>
+                    <h3 class="mt-3 text-xl font-extrabold leading-snug">{{ activeFamilyNotification.title }}</h3>
                 </div>
-                <div class="px-6 py-5 space-y-4">
-                    <div class="rounded-sm border border-rose-100 bg-rose-50/70 p-4">
+                <div class="px-6 py-6 space-y-4 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,241,242,0.55))]">
+                    <div class="rounded-2xl border border-rose-100 bg-rose-50/80 p-4 shadow-sm">
                         <p class="text-sm text-slate-700 leading-relaxed">{{ activeFamilyNotification.summary }}</p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
                             <div class="text-slate-500">家庭成员</div>
                             <div class="text-slate-800 font-semibold mt-1">{{ activeFamilyNotification.target_name }}</div>
                         </div>
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
                             <div class="text-slate-500">案件ID</div>
                             <div class="text-slate-800 font-semibold mt-1 break-all">{{ activeFamilyNotification.record_id }}</div>
                         </div>
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100 sm:col-span-2">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100 sm:col-span-2">
                             <div class="text-slate-500">诈骗类型</div>
                             <div class="text-slate-800 font-semibold mt-1">{{ activeFamilyNotification.scam_type || '未知类型' }}</div>
                         </div>
-                        <div class="rounded-sm bg-slate-50 p-3 border border-slate-100 sm:col-span-2">
+                        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100 sm:col-span-2">
                             <div class="text-slate-500">触发时间</div>
                             <div class="text-slate-800 font-semibold mt-1">{{ formatTime(activeFamilyNotification.event_at) }}</div>
                         </div>

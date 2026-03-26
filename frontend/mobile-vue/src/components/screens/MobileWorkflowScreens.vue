@@ -1,5 +1,5 @@
 <template>
-  <div v-if="state.activeTab === 'submit'" data-mobile-scroll="submit-page" class="h-full overflow-y-auto bg-slate-50 pt-3 pb-28" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+  <div v-if="state.activeTab === 'submit'" data-mobile-scroll="submit-page" class="bg-slate-50 pt-3 pb-28">
     <div class="px-5 mb-4">
       <h2 class="text-2xl font-black text-slate-900 tracking-tight">智能检测</h2>
       <p class="text-xs font-bold text-slate-500 mt-1">提交可疑信息，AI 护航实时为您排查风险</p>

@@ -1,9 +1,9 @@
 ﻿{
     "agents":  {
                    "main":  {
-                                "model":  "deepseek-chat",
-                                "api_key":  "sk-638f92b7be33468782cd345c53a69b62",
-                                "base_url":  "https://api.deepseek.com",
+                                "model":  "gpt-5.4",
+                                "api_key":  "sk-28b1d19d210ce836717a2ee225cb0daa9bce75215ee33cfe710c9b4a4dc6bbd6",
+                                "base_url":  "https://gmn.chuangzuoli.com/v1",
                                 "max_tokens":  4096,
                                 "top_p":  1,
                                 "temperature":  0.3
