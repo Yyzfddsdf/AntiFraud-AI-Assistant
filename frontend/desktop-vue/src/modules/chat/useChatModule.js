@@ -15,10 +15,14 @@ export function useChatModule(deps) {
     if (container) container.scrollTop = container.scrollHeight;
   };
 
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = async (force = false) => {
     if (!deps.isAuthenticated.value) return;
+    if (chatHistoryLoaded.value && !force) return;
     try {
       const data = await deps.request('/chat/context');
+      chatMessages.value = [
+        { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
+      ];
       if (data.messages && Array.isArray(data.messages)) {
         const history = [];
         for (const msg of data.messages) {
@@ -340,6 +344,7 @@ export function useChatModule(deps) {
     chatInput,
     chatImages,
     isChatting,
+    chatHistoryLoaded,
     fetchChatHistory,
     toggleChat,
     parseReport,

@@ -42,7 +42,7 @@
                         <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">反诈模拟</span>
                         <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">反诈模拟</div>
                     </button>
-                    
+
                     <button @click="activeTab = 'history'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'history' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '历史案件档案' : ''">
                         <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'history' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">历史案件档案</span>

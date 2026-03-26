@@ -1,12 +1,32 @@
 <template>
-  <div class="mx-auto max-w-7xl animate-fade-in">
-    <div v-if="!examViewMode" class="space-y-4">
+  <DashboardSectionShell
+    eyebrow="Simulation"
+    title="反诈模拟"
+    :heading="simulationSidebarSection === 'assistant' ? '' : examViewMode ? '答题界面' : '模拟题目'"
+    description=""
+  >
+        <template #nav>
+          <button @click="setSimulationSidebarSection('quiz')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'quiz' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+            <span :class="simulationSidebarSection === 'quiz' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+            <span class="min-w-0 truncate">题目</span>
+          </button>
+          <button @click="openAssistantPanel" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', simulationSidebarSection === 'assistant' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+            <span :class="simulationSidebarSection === 'assistant' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+            <span class="min-w-0 truncate">助手</span>
+          </button>
+        </template>
+
+        <template #badges>
+          <span class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">{{ simulationSidebarSection === 'assistant' ? '助手' : '题目' }}</span>
+          <span class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">{{ statusLabel }}</span>
+        </template>
+
+    <div v-if="simulationSidebarSection === 'quiz' && !examViewMode" class="space-y-4">
       <div class="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <div class="text-[11px] font-black uppercase tracking-[0.32em] text-brand-600">Sentinel AI</div>
             <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">反诈模拟答题</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">概览页只处理题包生成、开始答题和报告管理。正式答题会进入独立界面，不再把题干和管理区挤在一起。</p>
           </div>
 
           <div class="grid grid-cols-2 gap-3 xl:w-[280px]">
@@ -135,7 +155,7 @@
       </div>
     </div>
 
-    <div v-else class="rounded-sm border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div v-else-if="simulationSidebarSection === 'quiz'" class="rounded-sm border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div class="min-w-0">
@@ -143,7 +163,6 @@
               返回概览
             </button>
             <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950">{{ activePackTitle }}</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ activePackIntro }}</p>
           </div>
 
           <div class="grid grid-cols-3 gap-3 xl:w-[460px]">
@@ -234,11 +253,15 @@
         </div>
       </div>
     </div>
-  </div>
+
+    <DesktopChatView v-else :app="app" embedded @back="setSimulationSidebarSection('quiz')" />
+  </DashboardSectionShell>
 </template>
 
 <script>
 import { computed, ref, unref } from 'vue';
+import DesktopChatView from './DesktopChatView.vue';
+import DashboardSectionShell from '../DashboardSectionShell.vue';
 
 const STATUS_LABELS = {
   idle: '待生成',
@@ -255,6 +278,10 @@ const DIFFICULTY_LABELS = {
 
 export default {
   name: 'DesktopSimulationQuizView',
+  components: {
+    DesktopChatView,
+    DashboardSectionShell
+  },
   props: {
     app: {
       type: Object,
@@ -281,6 +308,7 @@ export default {
     const simulationCurrentScoreValue = computed(() => Number(unref(props.app.simulationCurrentScore)) || 0);
     const defaultStepCount = 10;
     const examViewMode = ref(false);
+    const simulationSidebarSection = ref('quiz');
 
     const totalSteps = computed(() => {
       const steps = simulationPackValue.value?.steps;
@@ -363,11 +391,20 @@ export default {
     };
     const startExamSession = async (packID) => {
       await props.app.startSimulationSession(packID);
+      simulationSidebarSection.value = 'quiz';
       examViewMode.value = true;
     };
     const startExamFromCurrentPack = async () => {
       await props.app.startSimulationSession();
+      simulationSidebarSection.value = 'quiz';
       examViewMode.value = true;
+    };
+    const setSimulationSidebarSection = (nextSection) => {
+      simulationSidebarSection.value = nextSection === 'assistant' ? 'assistant' : 'quiz';
+    };
+    const openAssistantPanel = async () => {
+      simulationSidebarSection.value = 'assistant';
+      await props.app.fetchChatHistory();
     };
 
     return {
@@ -382,6 +419,7 @@ export default {
       simulationCurrentScore: simulationCurrentScoreValue,
       defaultStepCount,
       examViewMode,
+      simulationSidebarSection,
       progressMeta,
       statusLabel,
       difficultyLabel,
@@ -398,6 +436,8 @@ export default {
       scoreClass,
       openExamView,
       closeExamView,
+      setSimulationSidebarSection,
+      openAssistantPanel,
       startExamSession,
       startExamFromCurrentPack
     };

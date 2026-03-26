@@ -1,130 +1,148 @@
-                <div v-if="activeTab === 'profile'" class="max-w-2xl mx-auto animate-fade-in">
-                    <h1 class="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">个人资料</h1>
-                    
-                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 p-8 space-y-8">
-                        <div class="flex items-center gap-6">
-                            <div class="w-20 h-20 bg-brand-100 text-brand-600 rounded-sm flex items-center justify-center text-3xl font-extrabold shadow-inner">
-                                {{ getUserAvatarText(user) }}
-                            </div>
-                            <div>
-                                <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                    {{ getUserDisplayName(user) }}
-                                    <span v-if="user.role" :class="['text-xs font-bold px-2.5 py-1 rounded-sm uppercase tracking-wide border', user.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100']">{{ user.role }}</span>
-                                </h2>
-                                <p v-if="getUserEmailText(user)" class="text-slate-500 mt-1 font-medium">{{ getUserEmailText(user) }}</p>
-                                <p v-if="getUserPhoneText(user)" class="text-slate-400 mt-1 text-sm font-mono">{{ getUserPhoneText(user) }}</p>
-                            </div>
-                        </div>
+                <DashboardSectionShell v-if="activeTab === 'profile'" eyebrow="Settings" title="账户设置" :heading="profileHeading" :description="profileDescription">
+                        <template #nav>
+                            <button @click="setProfileCenterSection('basic')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', profileCenterSection === 'basic' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                <span :class="profileCenterSection === 'basic' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                <span class="min-w-0 truncate">基本资料</span>
+                            </button>
+                            <button v-if="user.role !== 'admin'" @click="setProfileCenterSection('account')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', profileCenterSection === 'account' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                <span :class="profileCenterSection === 'account' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                <span class="min-w-0 truncate">账户升级</span>
+                            </button>
+                            <button @click="setProfileCenterSection('danger')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', profileCenterSection === 'danger' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                <span :class="profileCenterSection === 'danger' ? 'bg-rose-500' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                <span class="min-w-0 truncate">安全操作</span>
+                            </button>
+                        </template>
 
-                        <div class="border-t border-slate-100 pt-8">
-                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-5">基本信息</h3>
-                            <div class="grid gap-5">
-                                <div class="grid grid-cols-3 items-center">
-                                    <label class="text-sm font-medium text-slate-500">当前年龄</label>
-                                    <div class="col-span-2">
-                                        <input v-model.number="ageForm.age" type="number" min="1" max="150" class="w-24 px-4 py-2.5 bg-white border border-slate-300 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
+                        <template #badges>
+                            <span class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">个人资料</span>
+                            <span v-if="user.role" :class="['px-2 py-0.5 rounded-sm border text-[11px] font-bold uppercase tracking-wide', user.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100']">{{ user.role }}</span>
+                        </template>
+
+                        <div class="space-y-6">
+                            <section class="bg-white rounded-sm border border-slate-200 shadow-sm p-6">
+                                <div class="flex flex-col gap-5 md:flex-row md:items-center">
+                                    <div class="w-20 h-20 bg-brand-100 text-brand-600 rounded-sm flex items-center justify-center text-3xl font-extrabold shadow-inner">
+                                        {{ getUserAvatarText(user) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="text-2xl font-bold text-slate-900">{{ getUserDisplayName(user) }}</h2>
+                                        <p v-if="getUserEmailText(user)" class="text-slate-500 mt-1 font-medium">{{ getUserEmailText(user) }}</p>
+                                        <p v-if="getUserPhoneText(user)" class="text-slate-400 mt-1 text-sm font-mono">{{ getUserPhoneText(user) }}</p>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3 items-center">
-                                    <label class="text-sm font-medium text-slate-500">职业</label>
-                                    <div class="col-span-2">
-                                        <CustomSelect
-                                            v-model="profileForm.occupation"
-                                            :options="[{ label: '未设置', value: '' }, ...occupationOptions.map(item => ({ label: item, value: item }))]"
-                                            placeholder="未设置"
-                                            wrapper-class="w-full max-w-sm relative"
-                                            trigger-class="py-2.5 rounded-sm border-slate-300"
-                                            menu-class="max-h-64 overflow-y-auto rounded-sm"
-                                        />
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3 items-start">
-                                    <label class="text-sm font-medium text-slate-500 pt-1">近期标签</label>
-                                    <div class="col-span-2">
-                                        <div v-if="user.recent_tags && user.recent_tags.length" class="flex flex-wrap gap-2">
-                                            <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-3 py-1.5 rounded-sm bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700">{{ tag }}</span>
+                            </section>
+
+                            <section v-if="profileCenterSection === 'basic'" class="bg-white rounded-sm border border-slate-200 shadow-sm p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Basic Profile</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">基础资料与地区信息</h2>
+                                <div class="mt-5 grid gap-5">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 items-start gap-3">
+                                        <label class="text-sm font-medium text-slate-500 md:pt-2">当前年龄</label>
+                                        <div class="md:col-span-2">
+                                            <input v-model.number="ageForm.age" type="number" min="1" max="150" class="w-28 px-4 py-2.5 bg-white border border-slate-300 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium">
                                         </div>
-                                        <p v-else class="text-sm text-slate-400">暂无近期标签</p>
-                                        <p class="text-xs text-slate-400 mt-2">近期标签仅用于展示当前用户状态，不支持用户侧直接修改。</p>
                                     </div>
-                                </div>
-                                <div class="grid grid-cols-3 items-start">
-                                    <label class="text-sm font-medium text-slate-500 pt-1">地理位置</label>
-                                    <div class="col-span-2 space-y-3">
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 items-start gap-3">
+                                        <label class="text-sm font-medium text-slate-500 md:pt-2">职业</label>
+                                        <div class="md:col-span-2">
                                             <CustomSelect
-                                                :model-value="profileForm.provinceCode"
-                                                @update:modelValue="(value) => { profileForm.provinceCode = value; handleProvinceChange(); }"
-                                                :options="provinceOptions.map(item => ({ label: item.name, value: item.code }))"
-                                                placeholder="选择省"
-                                                wrapper-class="w-full relative"
-                                                trigger-class="py-2.5 rounded-sm border-slate-300"
-                                                menu-class="max-h-64 overflow-y-auto rounded-sm"
-                                            />
-                                            <CustomSelect
-                                                :model-value="profileForm.cityCode"
-                                                @update:modelValue="(value) => { profileForm.cityCode = value; handleCityChange(); }"
-                                                :options="cityOptions.map(item => ({ label: item.name, value: item.code }))"
-                                                placeholder="选择市"
-                                                :disabled="!profileForm.provinceCode"
-                                                wrapper-class="w-full relative"
-                                                trigger-class="py-2.5 rounded-sm border-slate-300"
-                                                menu-class="max-h-64 overflow-y-auto rounded-sm"
-                                            />
-                                            <CustomSelect
-                                                :model-value="profileForm.districtCode"
-                                                @update:modelValue="(value) => { profileForm.districtCode = value; handleDistrictChange(); }"
-                                                :options="districtOptions.map(item => ({ label: item.name, value: item.code }))"
-                                                placeholder="选择末级行政区"
-                                                :disabled="!profileForm.cityCode"
-                                                wrapper-class="w-full relative"
+                                                v-model="profileForm.occupation"
+                                                :options="[{ label: '未设置', value: '' }, ...occupationOptions.map(item => ({ label: item, value: item }))]"
+                                                placeholder="未设置"
+                                                wrapper-class="w-full max-w-sm relative"
                                                 trigger-class="py-2.5 rounded-sm border-slate-300"
                                                 menu-class="max-h-64 overflow-y-auto rounded-sm"
                                             />
                                         </div>
-                                        <div class="flex flex-wrap gap-3">
-                                            <button @click="requestCurrentRegion" type="button" :disabled="locationResolving" class="px-4 py-2.5 bg-brand-50 text-brand-700 rounded-sm hover:bg-brand-100 text-sm font-bold border border-brand-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                {{ locationResolving ? '定位中...' : '自动定位上传' }}
-                                            </button>
-                                            <span class="text-xs text-slate-400 self-center">支持手动选择行政区，也支持点击按钮自动识别到末级行政区。</span>
-                                        </div>
-                                        <p class="text-sm text-slate-500">当前选择：{{ profileForm.provinceName || '未选省级' }} / {{ profileForm.cityName || '未选中间层级' }} / {{ profileForm.districtName || '未选末级行政区' }}</p>
                                     </div>
-                                </div>
-                                <div class="grid grid-cols-3 items-center">
-                                    <div></div>
-                                    <div class="col-span-2">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 items-start gap-3">
+                                        <label class="text-sm font-medium text-slate-500 md:pt-2">近期标签</label>
+                                        <div class="md:col-span-2">
+                                            <div v-if="user.recent_tags && user.recent_tags.length" class="flex flex-wrap gap-2">
+                                                <span v-for="tag in user.recent_tags" :key="`recent-tag-${tag}`" class="px-3 py-1.5 rounded-sm bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700">{{ tag }}</span>
+                                            </div>
+                                            <p v-else class="text-sm text-slate-400">暂无近期标签</p>
+                                            <p class="text-xs text-slate-400 mt-2">近期标签仅用于展示当前用户状态，不支持用户侧直接修改。</p>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 items-start gap-3">
+                                        <label class="text-sm font-medium text-slate-500 md:pt-2">地理位置</label>
+                                        <div class="md:col-span-2 space-y-3">
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
+                                                <CustomSelect
+                                                    :model-value="profileForm.provinceCode"
+                                                    @update:modelValue="(value) => { profileForm.provinceCode = value; handleProvinceChange(); }"
+                                                    :options="provinceOptions.map(item => ({ label: item.name, value: item.code }))"
+                                                    placeholder="选择省"
+                                                    wrapper-class="w-full relative"
+                                                    trigger-class="py-2.5 rounded-sm border-slate-300"
+                                                    menu-class="max-h-64 overflow-y-auto rounded-sm"
+                                                />
+                                                <CustomSelect
+                                                    :model-value="profileForm.cityCode"
+                                                    @update:modelValue="(value) => { profileForm.cityCode = value; handleCityChange(); }"
+                                                    :options="cityOptions.map(item => ({ label: item.name, value: item.code }))"
+                                                    placeholder="选择市"
+                                                    :disabled="!profileForm.provinceCode"
+                                                    wrapper-class="w-full relative"
+                                                    trigger-class="py-2.5 rounded-sm border-slate-300"
+                                                    menu-class="max-h-64 overflow-y-auto rounded-sm"
+                                                />
+                                                <CustomSelect
+                                                    :model-value="profileForm.districtCode"
+                                                    @update:modelValue="(value) => { profileForm.districtCode = value; handleDistrictChange(); }"
+                                                    :options="districtOptions.map(item => ({ label: item.name, value: item.code }))"
+                                                    placeholder="选择末级行政区"
+                                                    :disabled="!profileForm.cityCode"
+                                                    wrapper-class="w-full relative"
+                                                    trigger-class="py-2.5 rounded-sm border-slate-300"
+                                                    menu-class="max-h-64 overflow-y-auto rounded-sm"
+                                                />
+                                            </div>
+                                            <div class="flex flex-wrap gap-3">
+                                                <button @click="requestCurrentRegion" type="button" :disabled="locationResolving" class="px-4 py-2.5 bg-brand-50 text-brand-700 rounded-sm hover:bg-brand-100 text-sm font-bold border border-brand-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    {{ locationResolving ? '定位中...' : '自动定位上传' }}
+                                                </button>
+                                                <span class="text-xs text-slate-400 self-center">支持手动选择行政区，也支持点击按钮自动识别到末级行政区。</span>
+                                            </div>
+                                            <p class="text-sm text-slate-500">当前选择：{{ profileForm.provinceName || '未选省级' }} / {{ profileForm.cityName || '未选中间层级' }} / {{ profileForm.districtName || '未选末级行政区' }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end">
                                         <button @click="updateUserProfile" :disabled="profileSaving" class="px-5 py-2.5 bg-brand-600 text-white rounded-sm hover:bg-brand-700 text-sm font-bold shadow-lg shadow-brand-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                                             {{ profileSaving ? '保存中...' : '保存资料' }}
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </section>
 
-                        <div class="border-t border-slate-100 pt-8" v-if="user.role !== 'admin'">
-                            <h3 class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-5 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                账户升级
-                            </h3>
-                            <div class="bg-brand-50/50 rounded-sm p-5 border border-brand-100">
-                                <label class="block text-xs font-bold text-brand-800 mb-2">管理员邀请码</label>
-                                <div class="flex gap-3">
-                                    <input v-model="inviteCode" type="text" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none text-sm placeholder:text-brand-300" placeholder="输入邀请码...">
-                                    <button @click="upgradeAccount" class="px-5 py-2.5 bg-brand-600 text-white rounded-sm hover:bg-brand-700 text-sm font-bold whitespace-nowrap shadow-md shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!inviteCode">立即升级</button>
+                            <section v-else-if="profileCenterSection === 'account' && user.role !== 'admin'" class="bg-white rounded-sm border border-slate-200 shadow-sm p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Account Upgrade</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">账户升级</h2>
+                                <p class="mt-2 text-sm text-slate-500">输入管理员邀请码，升级当前账户权限。</p>
+                                <div class="mt-5 bg-brand-50/50 rounded-sm p-5 border border-brand-100 max-w-2xl">
+                                    <label class="block text-xs font-bold text-brand-800 mb-2">管理员邀请码</label>
+                                    <div class="flex gap-3">
+                                        <input v-model="inviteCode" type="text" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none text-sm placeholder:text-brand-300" placeholder="输入邀请码...">
+                                        <button @click="upgradeAccount" class="px-5 py-2.5 bg-brand-600 text-white rounded-sm hover:bg-brand-700 text-sm font-bold whitespace-nowrap shadow-md shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!inviteCode">立即升级</button>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </section>
 
-                        <div class="border-t border-slate-100 pt-8">
-                            <h3 class="text-sm font-bold text-red-600 uppercase tracking-wider mb-5">危险区域</h3>
-                            <button @click="deleteAccount" class="w-full px-5 py-4 border border-red-200 bg-red-50/30 text-red-600 rounded-sm hover:bg-red-50 text-sm font-bold flex items-center justify-between group transition-colors">
-                                <span>删除当前账户</span>
-                                <svg class="w-5 h-5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                            <section v-else-if="profileCenterSection === 'danger'" class="bg-white rounded-sm border border-slate-200 shadow-sm p-6">
+                                <div class="text-[11px] font-black uppercase tracking-[0.24em] text-rose-500">Danger Zone</div>
+                                <h2 class="mt-2 text-xl font-black text-slate-950">安全操作</h2>
+                                <p class="mt-2 text-sm text-slate-500">以下操作不可撤销，请谨慎执行。</p>
+                                <div class="mt-5 max-w-2xl">
+                                    <button @click="deleteAccount" class="w-full px-5 py-4 border border-red-200 bg-red-50/30 text-red-600 rounded-sm hover:bg-red-50 text-sm font-bold flex items-center justify-between group transition-colors">
+                                        <span>删除当前账户</span>
+                                        <svg class="w-5 h-5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </section>
                         </div>
-                    </div>
-                </div>
+                </DashboardSectionShell>
 
                 <!-- Family View -->
                 <DashboardSectionShell v-if="activeTab === 'family'" eyebrow="Family Center" title="家庭中心" heading="家庭协同与守护" description="查看家庭协同信息。">

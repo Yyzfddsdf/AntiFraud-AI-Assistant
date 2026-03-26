@@ -2,11 +2,13 @@
 
 <script>
 import DesktopSimulationQuizView from './DesktopSimulationQuizView.vue';
+import DesktopRiskTrendView from './DesktopRiskTrendView.vue';
 
 export default {
   name: 'DashboardCoreViews',
   components: {
-    DesktopSimulationQuizView
+    DesktopSimulationQuizView,
+    DesktopRiskTrendView
   },
   props: {
     app: {
