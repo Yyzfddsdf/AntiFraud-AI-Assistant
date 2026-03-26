@@ -18,7 +18,7 @@
             <span class="animate-pulse mr-1">*</span> {{ msg.content }}
           </div>
           <div v-else :class="['max-w-[80%] rounded-2xl px-4 py-3 text-[13px] shadow-sm leading-6 select-text', msg.type === 'user' ? 'bg-brand-600 text-white rounded-br-sm' : msg.type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200 rounded-bl-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-bl-sm']">
-            <div v-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
+            <div v-if="msg.content" class="chat-markdown" v-html="renderMarkdown(msg.content)"></div>
             <div v-if="msg.images && msg.images.length" :class="[msg.content ? 'mt-3' : '', 'grid grid-cols-2 gap-2']">
               <button
                 v-for="(image, imageIdx) in msg.images"
@@ -65,6 +65,31 @@
 </template>
 
 <script>
+import MarkdownIt from 'markdown-it';
+
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true
+});
+
+const defaultLinkOpen = markdown.renderer.rules.link_open || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+markdown.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  const targetIndex = tokens[idx].attrIndex('target');
+  const relIndex = tokens[idx].attrIndex('rel');
+  if (targetIndex < 0) {
+    tokens[idx].attrPush(['target', '_blank']);
+  } else {
+    tokens[idx].attrs[targetIndex][1] = '_blank';
+  }
+  if (relIndex < 0) {
+    tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+  } else {
+    tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
+  }
+  return defaultLinkOpen(tokens, idx, options, env, self);
+};
+
 export default {
   name: 'DesktopChatView',
   emits: ['back'],
@@ -79,6 +104,8 @@ export default {
     }
   },
   setup(props, { emit }) {
+    const renderMarkdown = (content) => markdown.render(String(content || ''));
+
     const handleBack = () => {
       if (props.embedded) {
         emit('back');
@@ -89,8 +116,97 @@ export default {
 
     return {
       ...props.app,
-      handleBack
+      handleBack,
+      renderMarkdown
     };
   }
 };
 </script>
+
+<style scoped>
+.chat-markdown :deep(p) {
+  margin: 0;
+}
+
+.chat-markdown :deep(p + p),
+.chat-markdown :deep(ul),
+.chat-markdown :deep(ol),
+.chat-markdown :deep(pre),
+.chat-markdown :deep(blockquote),
+.chat-markdown :deep(h1),
+.chat-markdown :deep(h2),
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  margin-top: 0.6rem;
+}
+
+.chat-markdown :deep(h1),
+.chat-markdown :deep(h2),
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.chat-markdown :deep(h1) {
+  font-size: 1.05rem;
+}
+
+.chat-markdown :deep(h2) {
+  font-size: 1rem;
+}
+
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  font-size: 0.95rem;
+}
+
+.chat-markdown :deep(ul),
+.chat-markdown :deep(ol) {
+  padding-left: 1.2rem;
+}
+
+.chat-markdown :deep(li + li) {
+  margin-top: 0.2rem;
+}
+
+.chat-markdown :deep(blockquote) {
+  border-left: 3px solid rgba(100, 116, 139, 0.35);
+  padding-left: 0.75rem;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.chat-markdown :deep(code) {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.chat-markdown :deep(pre) {
+  overflow-x: auto;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.6rem;
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+}
+
+.chat-markdown :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.chat-markdown :deep(a) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-markdown :deep(hr) {
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  margin-top: 0.75rem;
+}
+</style>
