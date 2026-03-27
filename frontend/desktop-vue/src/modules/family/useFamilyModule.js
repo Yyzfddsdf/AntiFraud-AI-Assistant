@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue';
+import { handleRealtimeHeartbeatMessage } from '../../app/realtimeHeartbeat.js';
 
 export function useFamilyModule(deps) {
   const familyOverview = ref(null);
@@ -207,7 +208,9 @@ export function useFamilyModule(deps) {
     ws.onmessage = (event) => {
       if (!event || typeof event.data !== 'string') return;
       try {
-        handleFamilyNotificationMessage(JSON.parse(event.data));
+        const payload = JSON.parse(event.data);
+        if (handleRealtimeHeartbeatMessage(ws, payload)) return;
+        handleFamilyNotificationMessage(payload);
       } catch {
         // ignore malformed payload to avoid UI cascade failure
       }

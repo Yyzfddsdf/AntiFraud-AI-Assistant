@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	realtime "antifraud/internal/platform/realtime"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/websocket"
 )
@@ -79,7 +81,9 @@ func (h *AlertWSHandler) runSession(ws *websocket.Conn, userID string, runtimeCf
 	if ws == nil {
 		return
 	}
-	defer ws.Close()
+	conn := realtime.NewSafeWebSocketConnection(ws)
+	defer conn.Close()
+	heartbeatTracker := realtime.NewWebSocketHeartbeatTracker(time.Now())
 
 	done := make(chan struct{})
 	var once sync.Once
@@ -93,17 +97,27 @@ func (h *AlertWSHandler) runSession(ws *websocket.Conn, userID string, runtimeCf
 		defer stop()
 		for {
 			var incoming string
-			if err := websocket.Message.Receive(ws, &incoming); err != nil {
+			if err := websocket.Message.Receive(conn.Raw(), &incoming); err != nil {
 				return
+			}
+			heartbeatTracker.Touch()
+			handled, err := conn.HandleHeartbeatMessage(incoming)
+			if err != nil {
+				return
+			}
+			if handled {
+				continue
 			}
 		}
 	}()
 
 	ticker := time.NewTicker(runtimeCfg.pollInterval)
 	defer ticker.Stop()
+	heartbeatTicker := time.NewTicker(realtime.WebSocketHeartbeatInterval)
+	defer heartbeatTicker.Stop()
 
 	sentRecordIDs := make(map[string]struct{})
-	if err := h.pushRecentRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
+	if err := h.pushRecentRiskAlerts(conn, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
 		stop()
 	}
 
@@ -112,7 +126,17 @@ func (h *AlertWSHandler) runSession(ws *websocket.Conn, userID string, runtimeCf
 		case <-done:
 			return
 		case <-ticker.C:
-			if err := h.pushRecentRiskAlerts(ws, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
+			if err := h.pushRecentRiskAlerts(conn, strings.TrimSpace(userID), sentRecordIDs, runtimeCfg.recentWindow); err != nil {
+				stop()
+				return
+			}
+		case <-heartbeatTicker.C:
+			if heartbeatTracker.IsExpired(time.Now(), realtime.WebSocketHeartbeatTimeout) {
+				_ = conn.Close()
+				stop()
+				return
+			}
+			if err := conn.SendPing(); err != nil {
 				stop()
 				return
 			}
@@ -120,8 +144,8 @@ func (h *AlertWSHandler) runSession(ws *websocket.Conn, userID string, runtimeCf
 	}
 }
 
-func (h *AlertWSHandler) pushRecentRiskAlerts(ws *websocket.Conn, userID string, sentRecordIDs map[string]struct{}, recentWindow time.Duration) error {
-	if ws == nil {
+func (h *AlertWSHandler) pushRecentRiskAlerts(conn *realtime.SafeWebSocketConnection, userID string, sentRecordIDs map[string]struct{}, recentWindow time.Duration) error {
+	if conn == nil || conn.Raw() == nil {
 		return fmt.Errorf("websocket connection is nil")
 	}
 
@@ -165,7 +189,7 @@ func (h *AlertWSHandler) pushRecentRiskAlerts(ws *websocket.Conn, userID string,
 			CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
 			SentAt:      time.Now().UTC().Format(time.RFC3339),
 		}
-		if err := websocket.JSON.Send(ws, msg); err != nil {
+		if err := conn.SendJSON(msg); err != nil {
 			return fmt.Errorf("send risk alert failed: %w", err)
 		}
 		sentRecordIDs[recordID] = struct{}{}

@@ -1572,6 +1572,12 @@ data:{"type":"done","reason":"stop"}
 - `poll_interval_seconds = 30`
 - `recent_window_minutes = 60`
 
+### 心跳机制
+
+- 服务端每 `25` 秒发送一次应用层心跳消息：`{"type":"ping","sent_at":"<RFC3339>"}`。
+- 客户端收到 `ping` 后，应回复：`{"type":"pong","sent_at":"<原 sent_at>","received_at":"<RFC3339>"}`。
+- 服务端连续 `90` 秒未收到客户端 `pong` 时，会主动关闭连接，客户端应触发重连。
+
 ### 鉴权方式
 
 - 非浏览器客户端：推荐使用 `Authorization: Bearer <JWT_TOKEN>`。
@@ -1603,6 +1609,14 @@ const ws = new WebSocket(`${protocol}://${location.host}/api/alert/ws?token=${en
 
 ws.onmessage = (event) => {
   const payload = JSON.parse(event.data);
+  if (payload.type === 'ping') {
+    ws.send(JSON.stringify({
+      type: 'pong',
+      sent_at: payload.sent_at || '',
+      received_at: new Date().toISOString()
+    }));
+    return;
+  }
   if (payload.type === 'risk_alert') {
     console.log('收到风险预警', payload);
   }
@@ -1972,6 +1986,7 @@ GET /api/users?query=admin
 - 连接建立后会按最近窗口轮询 `family_notifications`
 - 只推送“当前用户可见 + 未读 + 最近窗口内”的家庭通知
 - 家庭通知窗口与轮询频率来自 `config/config.json -> family_alert_ws`
+- 服务端每 `25` 秒发送一次 `ping`，客户端需回复 `pong`；连续 `90` 秒无心跳响应时，服务端会主动断开连接
 
 推送示例：
 

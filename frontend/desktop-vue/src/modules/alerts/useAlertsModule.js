@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue';
+import { handleRealtimeHeartbeatMessage } from '../../app/realtimeHeartbeat.js';
 
 export function useAlertsModule(deps) {
   const alertEvents = ref([]);
@@ -302,7 +303,9 @@ export function useAlertsModule(deps) {
     ws.onmessage = (event) => {
       if (!event || typeof event.data !== 'string') return;
       try {
-        handleAlertMessage(JSON.parse(event.data));
+        const payload = JSON.parse(event.data);
+        if (handleRealtimeHeartbeatMessage(ws, payload)) return;
+        handleAlertMessage(payload);
       } catch {
         // ignore malformed payload to avoid UI cascade failure
       }

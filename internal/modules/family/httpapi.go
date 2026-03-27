@@ -12,6 +12,7 @@ import (
 
 	"antifraud/internal/modules/login/adapters/outbound/smscode"
 	appcfg "antifraud/internal/platform/config"
+	realtime "antifraud/internal/platform/realtime"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/websocket"
@@ -388,7 +389,9 @@ func runFamilyNotificationSession(ws *websocket.Conn, userID uint, service UseCa
 	if ws == nil || service == nil {
 		return
 	}
-	defer ws.Close()
+	conn := realtime.NewSafeWebSocketConnection(ws)
+	defer conn.Close()
+	heartbeatTracker := realtime.NewWebSocketHeartbeatTracker(time.Now())
 
 	done := make(chan struct{})
 	var once sync.Once
@@ -402,27 +405,47 @@ func runFamilyNotificationSession(ws *websocket.Conn, userID uint, service UseCa
 		defer stop()
 		for {
 			var incoming string
-			if err := websocket.Message.Receive(ws, &incoming); err != nil {
+			if err := websocket.Message.Receive(conn.Raw(), &incoming); err != nil {
 				return
+			}
+			heartbeatTracker.Touch()
+			handled, err := conn.HandleHeartbeatMessage(incoming)
+			if err != nil {
+				return
+			}
+			if handled {
+				continue
 			}
 		}
 	}()
 
 	sentNotificationIDs := make(map[uint]struct{})
-	if err := pushFamilyNotifications(ws, service, userID, sentNotificationIDs, runtimeCfg.recentWindow); err != nil {
+	if err := pushFamilyNotifications(conn, service, userID, sentNotificationIDs, runtimeCfg.recentWindow); err != nil {
 		stop()
 		return
 	}
 
 	ticker := time.NewTicker(runtimeCfg.pollInterval)
 	defer ticker.Stop()
+	heartbeatTicker := time.NewTicker(realtime.WebSocketHeartbeatInterval)
+	defer heartbeatTicker.Stop()
 
 	for {
 		select {
 		case <-done:
 			return
 		case <-ticker.C:
-			if err := pushFamilyNotifications(ws, service, userID, sentNotificationIDs, runtimeCfg.recentWindow); err != nil {
+			if err := pushFamilyNotifications(conn, service, userID, sentNotificationIDs, runtimeCfg.recentWindow); err != nil {
+				stop()
+				return
+			}
+		case <-heartbeatTicker.C:
+			if heartbeatTracker.IsExpired(time.Now(), realtime.WebSocketHeartbeatTimeout) {
+				_ = conn.Close()
+				stop()
+				return
+			}
+			if err := conn.SendPing(); err != nil {
 				stop()
 				return
 			}
@@ -430,8 +453,8 @@ func runFamilyNotificationSession(ws *websocket.Conn, userID uint, service UseCa
 	}
 }
 
-func pushFamilyNotifications(ws *websocket.Conn, service UseCase, userID uint, sentNotificationIDs map[uint]struct{}, recentWindow time.Duration) error {
-	if ws == nil {
+func pushFamilyNotifications(conn *realtime.SafeWebSocketConnection, service UseCase, userID uint, sentNotificationIDs map[uint]struct{}, recentWindow time.Duration) error {
+	if conn == nil || conn.Raw() == nil {
 		return fmt.Errorf("family notification websocket is nil")
 	}
 	notifications, err := service.ListRecentUnreadNotifications(context.Background(), userID, recentWindow)
@@ -458,7 +481,7 @@ func pushFamilyNotifications(ws *websocket.Conn, service UseCase, userID uint, s
 			EventAt:        strings.TrimSpace(item.EventAt),
 			ReadAt:         strings.TrimSpace(item.ReadAt),
 		}
-		if err := websocket.JSON.Send(ws, msg); err != nil {
+		if err := conn.SendJSON(msg); err != nil {
 			return fmt.Errorf("send family notification failed: %w", err)
 		}
 		sentNotificationIDs[item.ID] = struct{}{}

@@ -1,12 +1,14 @@
-package auth
+package auth_test
 
 import (
 	"errors"
 	"testing"
+
+	auth "antifraud/internal/modules/login/domain/auth"
 )
 
 func TestIssueAndParseToken(t *testing.T) {
-	token, err := IssueToken(123, "alice@example.com", "alice")
+	token, err := auth.IssueToken(123, "alice@example.com", "alice")
 	if err != nil {
 		t.Fatalf("IssueToken returned error: %v", err)
 	}
@@ -14,7 +16,7 @@ func TestIssueAndParseToken(t *testing.T) {
 		t.Fatalf("IssueToken returned empty token")
 	}
 
-	claims, err := ParseToken(token)
+	claims, err := auth.ParseToken(token)
 	if err != nil {
 		t.Fatalf("ParseToken returned error: %v", err)
 	}
@@ -33,18 +35,18 @@ func TestIssueAndParseToken(t *testing.T) {
 }
 
 func TestParseTokenRejectsEmptyToken(t *testing.T) {
-	_, err := ParseToken(" ")
-	if !errors.Is(err, ErrInvalidToken) {
+	_, err := auth.ParseToken(" ")
+	if !errors.Is(err, auth.ErrInvalidToken) {
 		t.Fatalf("expected ErrInvalidToken, got=%v", err)
 	}
 }
 
 func TestIssueTokenGeneratesUniqueTokenIDs(t *testing.T) {
-	first, err := IssueToken(123, "alice@example.com", "alice")
+	first, err := auth.IssueToken(123, "alice@example.com", "alice")
 	if err != nil {
 		t.Fatalf("IssueToken first returned error: %v", err)
 	}
-	second, err := IssueToken(123, "alice@example.com", "alice")
+	second, err := auth.IssueToken(123, "alice@example.com", "alice")
 	if err != nil {
 		t.Fatalf("IssueToken second returned error: %v", err)
 	}
@@ -52,11 +54,11 @@ func TestIssueTokenGeneratesUniqueTokenIDs(t *testing.T) {
 		t.Fatalf("expected distinct tokens for repeated issue calls")
 	}
 
-	firstClaims, err := ParseToken(first)
+	firstClaims, err := auth.ParseToken(first)
 	if err != nil {
 		t.Fatalf("ParseToken first returned error: %v", err)
 	}
-	secondClaims, err := ParseToken(second)
+	secondClaims, err := auth.ParseToken(second)
 	if err != nil {
 		t.Fatalf("ParseToken second returned error: %v", err)
 	}

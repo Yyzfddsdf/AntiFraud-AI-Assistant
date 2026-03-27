@@ -375,6 +375,7 @@ flowchart TB
 - 邀请支持按邮箱或手机号定向
 - 守护关系通过 `family_guardian_links` 独立配置
 - 高风险家庭通知通过 `family_notifications` 持久化，并通过家庭通知 WebSocket 按 `family_alert_ws` 配置的最近窗口主动推送给守护人
+- 家庭通知 WebSocket 内置应用层心跳：服务端每 25 秒发送 `ping`，客户端回 `pong`，90 秒无响应则主动断开并等待客户端重连
 
 当前已落地的家庭接口：
 
@@ -616,6 +617,7 @@ flowchart TB
 - 触发规则：连接建立后按 `internal/platform/config/config.json -> alert_ws` 配置轮询用户 `history_cases`，命中“中/高风险且在告警窗口内”记录时主动推送。
 - 推送消息类型：`risk_alert`，包含 `record_id/title/case_summary/scam_type/risk_level/created_at/sent_at`。
 - 连接中断后服务端轮询协程自动退出，前端负责重连策略（建议指数退避）。
+- 服务端内置应用层心跳：每 25 秒发送一次 `ping`，客户端收到后回复 `pong`；连续 90 秒无响应时服务端会主动关闭连接。
 - 浏览器接入方式：`ws(s)://<host>/api/alert/ws?token=<JWT_TOKEN>`（原生 WebSocket 无法自定义 Authorization 头）。
 - 默认值（配置缺失或非法时回退）：`poll_interval_seconds=30`、`recent_window_minutes=60`。
 
