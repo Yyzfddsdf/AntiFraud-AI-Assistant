@@ -35,6 +35,12 @@ var historicalCaseVectorCacheHashSetJSON func(string, string, interface{}) error
 //go:linkname historicalCaseVectorCacheHashDelete antifraud/internal/modules/multi_agent/adapters/outbound/case_library.historicalCaseVectorCacheHashDelete
 var historicalCaseVectorCacheHashDelete func(string, string) error
 
+//go:linkname historicalCaseVectorCacheHashGetAll antifraud/internal/modules/multi_agent/adapters/outbound/case_library.historicalCaseVectorCacheHashGetAll
+var historicalCaseVectorCacheHashGetAll func(string) (map[string]string, error)
+
+//go:linkname historicalCaseVectorCacheDelete antifraud/internal/modules/multi_agent/adapters/outbound/case_library.historicalCaseVectorCacheDelete
+var historicalCaseVectorCacheDelete func(string) error
+
 //go:linkname historicalCaseDBOnce antifraud/internal/platform/database.historicalCaseDBOnce
 var historicalCaseDBOnce sync.Once
 

@@ -18,6 +18,8 @@ import (
 const conversationTTL = 5 * time.Minute
 
 const responsesMessageRoleDeveloper = "developer"
+const DefaultConversationKeyPrefix = "chat:context:"
+const AdminConversationKeyPrefix = "admin:chat:context:"
 
 // ConversationToolCall 是对工具调用的持久化表示。
 type ConversationToolCall struct {
@@ -37,12 +39,23 @@ type ConversationMessage struct {
 
 // ChatService 封装聊天模型客户端与模型 ID。
 type ChatService struct {
-	client *openai.Client
-	model  string
+	client              *openai.Client
+	model               string
+	toolProvider        func() []openai.Tool
+	toolHandlerResolver func(string) chattool.ChatToolHandler
 }
 
 // NewChatService 根据聊天配置创建服务实例。
 func NewChatService(cfg *appcfg.ChatConfig) *ChatService {
+	return newChatService(cfg, chattool.ChatTools, chattool.GetChatToolHandler)
+}
+
+// NewAdminChatService 根据聊天配置创建管理员聊天服务实例。
+func NewAdminChatService(cfg *appcfg.ChatConfig) *ChatService {
+	return newChatService(cfg, chattool.AdminChatTools, chattool.GetAdminChatToolHandler)
+}
+
+func newChatService(cfg *appcfg.ChatConfig, toolProvider func() []openai.Tool, toolHandlerResolver func(string) chattool.ChatToolHandler) *ChatService {
 	modelID := ""
 	apiKey := ""
 	baseURL := ""
@@ -56,14 +69,20 @@ func NewChatService(cfg *appcfg.ChatConfig) *ChatService {
 	}
 
 	return &ChatService{
-		client: openai.NewClient(apiKey, baseURL),
-		model:  modelID,
+		client:              openai.NewClient(apiKey, baseURL),
+		model:               modelID,
+		toolProvider:        toolProvider,
+		toolHandlerResolver: toolHandlerResolver,
 	}
 }
 
 // BuildMessagesForUser 组装最终请求消息：
 // 系统提示词 + Redis 历史上下文 + 当前用户输入。
 func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput string, currentUserImageURLs []string) ([]openai.ChatCompletionMessage, error) {
+	return BuildMessagesForUserWithPrefix(DefaultConversationKeyPrefix, systemPrompt, userID, currentUserInput, currentUserImageURLs)
+}
+
+func BuildMessagesForUserWithPrefix(conversationKeyPrefix string, systemPrompt string, userID string, currentUserInput string, currentUserImageURLs []string) ([]openai.ChatCompletionMessage, error) {
 	trimmedSystemPrompt := strings.TrimSpace(systemPrompt)
 	if trimmedSystemPrompt == "" {
 		return nil, fmt.Errorf("chat system prompt is empty")
@@ -81,7 +100,7 @@ func BuildMessagesForUser(systemPrompt string, userID string, currentUserInput s
 		},
 	}
 
-	key := conversationKey(trimmedUserID)
+	key := conversationKey(conversationKeyPrefix, trimmedUserID)
 	history := make([]ConversationMessage, 0)
 	found, err := cache.GetJSON(key, &history)
 	if err != nil {
@@ -213,7 +232,7 @@ func (s *ChatService) streamAssistantRound(ctx context.Context, input []any, emi
 	stream, err := s.client.StreamResponse(ctx, openai.ResponsesRequest{
 		Model: s.model,
 		Input: input,
-		Tools: responseToolsFromChatTools(chattool.ChatTools()),
+		Tools: responseToolsFromChatTools(s.resolveTools()),
 	})
 	if err != nil {
 		return responseRoundResult{}, fmt.Errorf("create responses stream failed: %w", err)
@@ -273,7 +292,7 @@ func (s *ChatService) handleToolCall(ctx context.Context, userID string, call op
 		"error": fmt.Sprintf("unsupported tool: %s", call.Function.Name),
 	}
 
-	handler := chattool.GetChatToolHandler(call.Function.Name)
+	handler := s.resolveToolHandler(call.Function.Name)
 	if handler == nil {
 		return toolPayload
 	}
@@ -627,6 +646,10 @@ func stringValue(value any) string {
 
 // PersistConversation 将本轮新增消息追加写入 Redis，并重置 TTL。
 func PersistConversation(userID string, newMessages []ConversationMessage) error {
+	return PersistConversationWithPrefix(DefaultConversationKeyPrefix, userID, newMessages)
+}
+
+func PersistConversationWithPrefix(conversationKeyPrefix string, userID string, newMessages []ConversationMessage) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
@@ -635,7 +658,7 @@ func PersistConversation(userID string, newMessages []ConversationMessage) error
 		return nil
 	}
 
-	key := conversationKey(trimmedUserID)
+	key := conversationKey(conversationKeyPrefix, trimmedUserID)
 
 	history := make([]ConversationMessage, 0)
 	_, err := cache.GetJSON(key, &history)
@@ -653,12 +676,16 @@ func PersistConversation(userID string, newMessages []ConversationMessage) error
 
 // ClearConversation 清空指定用户会话上下文。
 func ClearConversation(userID string) error {
+	return ClearConversationWithPrefix(DefaultConversationKeyPrefix, userID)
+}
+
+func ClearConversationWithPrefix(conversationKeyPrefix string, userID string) error {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
 	}
 
-	key := conversationKey(trimmedUserID)
+	key := conversationKey(conversationKeyPrefix, trimmedUserID)
 	if err := cache.Delete(key); err != nil {
 		return fmt.Errorf("clear conversation from redis failed: %w", err)
 	}
@@ -668,12 +695,16 @@ func ClearConversation(userID string) error {
 
 // GetConversationContext 查询上下文、剩余 TTL 和上下文是否存在。
 func GetConversationContext(userID string) ([]ConversationMessage, int64, bool, error) {
+	return GetConversationContextWithPrefix(DefaultConversationKeyPrefix, userID)
+}
+
+func GetConversationContextWithPrefix(conversationKeyPrefix string, userID string) ([]ConversationMessage, int64, bool, error) {
 	trimmedUserID := strings.TrimSpace(userID)
 	if trimmedUserID == "" {
 		trimmedUserID = "demo-user"
 	}
 
-	key := conversationKey(trimmedUserID)
+	key := conversationKey(conversationKeyPrefix, trimmedUserID)
 
 	history := make([]ConversationMessage, 0)
 	found, err := cache.GetJSON(key, &history)
@@ -698,8 +729,12 @@ func GetConversationContext(userID string) ([]ConversationMessage, int64, bool, 
 }
 
 // conversationKey 生成用户会话在 Redis 中的 key。
-func conversationKey(userID string) string {
-	return "chat:context:" + strings.TrimSpace(userID)
+func conversationKey(prefix string, userID string) string {
+	trimmedPrefix := strings.TrimSpace(prefix)
+	if trimmedPrefix == "" {
+		trimmedPrefix = DefaultConversationKeyPrefix
+	}
+	return trimmedPrefix + strings.TrimSpace(userID)
 }
 
 // sanitizeConversationMessages 过滤非法角色并裁剪内容。
@@ -790,4 +825,18 @@ func conversationToOpenAIMessage(item ConversationMessage) (openai.ChatCompletio
 func EncodeEvent(event map[string]interface{}) string {
 	data, _ := json.Marshal(event)
 	return string(data)
+}
+
+func (s *ChatService) resolveTools() []openai.Tool {
+	if s != nil && s.toolProvider != nil {
+		return s.toolProvider()
+	}
+	return chattool.ChatTools()
+}
+
+func (s *ChatService) resolveToolHandler(name string) chattool.ChatToolHandler {
+	if s != nil && s.toolHandlerResolver != nil {
+		return s.toolHandlerResolver(name)
+	}
+	return chattool.GetChatToolHandler(name)
 }

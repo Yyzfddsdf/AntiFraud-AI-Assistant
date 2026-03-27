@@ -89,6 +89,7 @@ type Config struct {
 	Agents        AgentModelConfig `json:"agents"`
 	Embedding     EmbeddingConfig  `json:"embedding"`
 	Chat          ChatConfig       `json:"chat"`
+	AdminChat     ChatConfig       `json:"admin_chat"`
 	Tavily        TavilyConfig     `json:"tavily"`
 	Redis         RedisConfig      `json:"redis"`
 	Prompts       PromptConfig     `json:"prompts"`
@@ -169,6 +170,7 @@ func (c *Config) applyEnvOverrides() {
 
 	c.Embedding.APIKey = firstNonEmptyEnv("EMBEDDING_API_KEY", c.Embedding.APIKey)
 	c.Chat.APIKey = firstNonEmptyEnv("CHAT_API_KEY", c.Chat.APIKey)
+	c.AdminChat.APIKey = firstNonEmptyEnv("ADMIN_CHAT_API_KEY", c.AdminChat.APIKey)
 	c.Tavily.APIKey = firstNonEmptyEnv("TAVILY_API_KEY", c.Tavily.APIKey)
 }
 
@@ -192,7 +194,8 @@ func (c *Config) normalize() {
 		c.Agents.SimulationQuiz = c.Agents.Main
 	}
 	c.Embedding = normalizeEmbedding(c.Embedding)
-	c.Chat = normalizeChat(c.Chat, c.Agents.Main)
+	c.Chat = normalizeChatFromModel(c.Chat, c.Agents.Main)
+	c.AdminChat = normalizeChatFromChat(c.AdminChat, c.Chat)
 	c.Tavily = normalizeTavily(c.Tavily)
 	c.Redis = normalizeRedis(c.Redis)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
@@ -224,7 +227,7 @@ func normalizeEmbedding(embeddingCfg EmbeddingConfig) EmbeddingConfig {
 	return embeddingCfg
 }
 
-func normalizeChat(chatCfg ChatConfig, mainModelCfg ModelConfig) ChatConfig {
+func normalizeChatFromModel(chatCfg ChatConfig, mainModelCfg ModelConfig) ChatConfig {
 	chatCfg.Prompt = strings.TrimSpace(chatCfg.Prompt)
 	chatCfg.APIKey = strings.TrimSpace(chatCfg.APIKey)
 	chatCfg.BaseURL = strings.TrimSpace(chatCfg.BaseURL)
@@ -238,6 +241,27 @@ func normalizeChat(chatCfg ChatConfig, mainModelCfg ModelConfig) ChatConfig {
 	}
 	if chatCfg.Model == "" {
 		chatCfg.Model = strings.TrimSpace(mainModelCfg.Model)
+	}
+	return chatCfg
+}
+
+func normalizeChatFromChat(chatCfg ChatConfig, baseChatCfg ChatConfig) ChatConfig {
+	chatCfg.Prompt = strings.TrimSpace(chatCfg.Prompt)
+	chatCfg.APIKey = strings.TrimSpace(chatCfg.APIKey)
+	chatCfg.BaseURL = strings.TrimSpace(chatCfg.BaseURL)
+	chatCfg.Model = strings.TrimSpace(chatCfg.Model)
+
+	if chatCfg.Prompt == "" {
+		chatCfg.Prompt = strings.TrimSpace(baseChatCfg.Prompt)
+	}
+	if chatCfg.APIKey == "" {
+		chatCfg.APIKey = strings.TrimSpace(baseChatCfg.APIKey)
+	}
+	if chatCfg.BaseURL == "" {
+		chatCfg.BaseURL = strings.TrimSpace(baseChatCfg.BaseURL)
+	}
+	if chatCfg.Model == "" {
+		chatCfg.Model = strings.TrimSpace(baseChatCfg.Model)
 	}
 	return chatCfg
 }
@@ -318,6 +342,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validateChat("chat", c.Chat); err != nil {
+		return err
+	}
+	if err := validateChat("admin_chat", c.AdminChat); err != nil {
 		return err
 	}
 	if err := validateTavily("tavily", c.Tavily); err != nil {

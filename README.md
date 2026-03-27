@@ -53,7 +53,7 @@ go run ./cmd/api
 
 桌面端：
 
-- 当前定位为纯管理员控制台，只保留管理员分析、地理态势、用户管理、案件审核、案件库与独立 AI 聊天入口
+- 当前定位为纯管理员控制台，只保留管理员分析、地理态势、用户管理、案件审核、案件库与独立管理助手入口
 - 账号体系仍然统一保留注册/登录；非管理员登录桌面端后，可通过邀请码升级为管理员再进入控制台
 
 ```bash
@@ -99,6 +99,7 @@ npm run dev
   - `AGENT_CASE_COLLECTION_API_KEY`
   - `EMBEDDING_API_KEY`
   - `CHAT_API_KEY`
+  - `ADMIN_CHAT_API_KEY`
   - `TAVILY_API_KEY`
 
 ---
@@ -113,6 +114,7 @@ npm run dev
   - `agents.main / image / image_quick / video / audio`：多智能体模型参数
   - `embedding`：向量模型参数（`model`、`api_key`、`base_url`）
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
+  - `admin_chat`：管理员聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `redis`：统一缓存配置（`addr`、`password`、`db`）
   - `alert_ws`：实时告警轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `family_alert_ws`：家庭通知 WebSocket 轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
@@ -142,6 +144,7 @@ npm run dev
 说明：
 
 - 家庭通知当前不走 Redis 缓存，而是“`family_notifications` 持久化 + `family_alert_ws` 最近窗口 WebSocket 推送”。
+- 历史案件库在服务启动时会自动对 Redis 向量缓存做一致性自检；发现缺失、脏数据或内容漂移时，会直接按 DB 快照重建缓存。
 
 ---
 
@@ -760,6 +763,9 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 - `POST /api/chat`：支持文本，或文本 + 多张图片（`images` 传 Base64 Data URL 数组）
 - `GET /api/chat/context`
 - `POST /api/chat/refresh`
+- `POST /api/admin/chat`：管理员版聊天，内置联网搜索与地区案件统计工具
+- `GET /api/admin/chat/context`
+- `POST /api/admin/chat/refresh`
 
 完整接口说明见：`API.md`
 

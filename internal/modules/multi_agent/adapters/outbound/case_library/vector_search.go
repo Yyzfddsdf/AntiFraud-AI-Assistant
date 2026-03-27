@@ -205,17 +205,19 @@ func snapshotHistoricalCaseVectorCache() ([]HistoricalCaseRecord, error) {
 	if err != nil {
 		log.Printf("[case_library] load vector cache from redis failed: %v", err)
 	} else if ready {
-		if len(records) > 0 {
-			count, countErr := countHistoricalCasesFromDB()
-			if countErr != nil {
-				log.Printf("[case_library] count historical cases failed during cache validation: %v", countErr)
-			} else if count == 0 {
-				log.Printf("[case_library] detected stale vector cache: redis_records=%d db_records=0, rebuilding cache", len(records))
-				if cacheErr := replaceHistoricalCaseVectorCache([]HistoricalCaseRecord{}); cacheErr != nil {
-					log.Printf("[case_library] clear stale vector cache failed: %v", cacheErr)
-				}
-				return []HistoricalCaseRecord{}, nil
+		count, countErr := countHistoricalCasesFromDB()
+		if countErr != nil {
+			log.Printf("[case_library] count historical cases failed during cache validation: %v", countErr)
+		} else if int(count) != len(records) {
+			log.Printf("[case_library] detected vector cache drift: redis_records=%d db_records=%d, rebuilding cache", len(records), count)
+			recordsFromDB, dbErr := queryAllHistoricalCasesFromDB()
+			if dbErr != nil {
+				return nil, dbErr
 			}
+			if cacheErr := replaceHistoricalCaseVectorCache(recordsFromDB); cacheErr != nil {
+				log.Printf("[case_library] rebuild vector cache after drift detection failed: %v", cacheErr)
+			}
+			return cloneHistoricalCaseRecords(recordsFromDB), nil
 		}
 		return cloneHistoricalCaseRecords(records), nil
 	}
@@ -388,8 +390,20 @@ func ensureHistoricalCaseVectorCacheReady() (bool, error) {
 }
 
 func WarmupHistoricalCaseVectorCache() error {
-	_, err := ensureHistoricalCaseVectorCacheReady()
-	return err
+	report, err := SelfCheckHistoricalCaseVectorCache(true)
+	if err != nil {
+		return err
+	}
+	if report.Repaired {
+		log.Printf("[case_library] repaired vector cache during warmup: redis=%d db=%d missing=%d stale=%d mismatched=%d",
+			report.RedisCount,
+			report.DBCount,
+			len(report.MissingCaseIDs),
+			len(report.StaleCaseIDs),
+			len(report.MismatchedCaseIDs),
+		)
+	}
+	return nil
 }
 
 func cloneHistoricalCaseRecords(records []HistoricalCaseRecord) []HistoricalCaseRecord {

@@ -8,8 +8,8 @@
           </button>
         </div>
         <div class="chat-topbar-title">
-          <div class="chat-topbar-eyebrow">{{ embedded ? '用户问题助手回应' : '管理员 AI 助手' }}</div>
-          <div class="chat-topbar-name">{{ embedded ? 'Sentinel AI' : '管理员 AI 聊天' }}</div>
+          <div class="chat-topbar-eyebrow">{{ embedded ? '用户问题助手回应' : '平台管理助手' }}</div>
+          <div class="chat-topbar-name">{{ embedded ? 'Sentinel AI' : '管理助手' }}</div>
         </div>
         <div class="flex items-center justify-end">
           <button @click="clearChatHistory" class="chat-topbar-action">

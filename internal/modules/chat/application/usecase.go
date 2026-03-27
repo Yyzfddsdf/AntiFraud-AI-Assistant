@@ -69,6 +69,19 @@ func NewDefaultUseCase(configPath string) *UseCase {
 	)
 }
 
+// NewAdminUseCase 创建管理员聊天应用服务。
+func NewAdminUseCase(configPath string) *UseCase {
+	if configPath == "" {
+		configPath = defaultConfigPath
+	}
+	return NewUseCase(
+		adminConfigProvider{path: configPath},
+		adminMessageBuilder{},
+		adminResponderFactory{},
+		adminConversationStore{},
+	)
+}
+
 // HandleChat 执行一轮聊天请求。
 func (u *UseCase) HandleChat(ctx context.Context, userID string, message string, images []string, emit func(event map[string]interface{}) error) (string, error) {
 	if u == nil {
@@ -156,4 +169,43 @@ func (defaultConversationStore) Clear(userID string) error {
 
 func (defaultConversationStore) GetContext(userID string) ([]chatservice.ConversationMessage, int64, bool, error) {
 	return chatservice.GetConversationContext(userID)
+}
+
+type adminConfigProvider struct {
+	path string
+}
+
+func (p adminConfigProvider) LoadChatConfig(ctx context.Context) (appcfg.ChatConfig, error) {
+	_ = ctx
+	cfg, err := appcfg.LoadConfig(p.path)
+	if err != nil {
+		return appcfg.ChatConfig{}, err
+	}
+	return cfg.AdminChat, nil
+}
+
+type adminMessageBuilder struct{}
+
+func (adminMessageBuilder) Build(systemPrompt string, userID string, userInput string, userImageURLs []string) ([]openai.ChatCompletionMessage, error) {
+	return chatservice.BuildMessagesForUserWithPrefix(chatservice.AdminConversationKeyPrefix, systemPrompt, userID, userInput, userImageURLs)
+}
+
+type adminResponderFactory struct{}
+
+func (adminResponderFactory) New(chatCfg appcfg.ChatConfig) ConversationResponder {
+	return chatservice.NewAdminChatService(&chatCfg)
+}
+
+type adminConversationStore struct{}
+
+func (adminConversationStore) Persist(userID string, newMessages []chatservice.ConversationMessage) error {
+	return chatservice.PersistConversationWithPrefix(chatservice.AdminConversationKeyPrefix, userID, newMessages)
+}
+
+func (adminConversationStore) Clear(userID string) error {
+	return chatservice.ClearConversationWithPrefix(chatservice.AdminConversationKeyPrefix, userID)
+}
+
+func (adminConversationStore) GetContext(userID string) ([]chatservice.ConversationMessage, int64, bool, error) {
+	return chatservice.GetConversationContextWithPrefix(chatservice.AdminConversationKeyPrefix, userID)
 }

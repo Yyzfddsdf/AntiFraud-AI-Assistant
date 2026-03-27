@@ -78,6 +78,10 @@ func buildGeoCaseMapOverview() (apimodel.GeoCaseMapResponse, error) {
 	return result, nil
 }
 
+func BuildGeoCaseMapOverview() (apimodel.GeoCaseMapResponse, error) {
+	return buildGeoCaseMapOverview()
+}
+
 func buildGeoCaseMapChildren(parentCode string, level string) (apimodel.GeoCaseMapChildrenResponse, error) {
 	normalizedLevel := normalizeGeoLevel(level)
 	normalizedParentCode := strings.TrimSpace(parentCode)
@@ -105,6 +109,10 @@ func buildGeoCaseMapChildren(parentCode string, level string) (apimodel.GeoCaseM
 	}
 	_ = cache.SetJSON(cacheKey, result, geoCaseMapChildrenCacheTTL)
 	return result, nil
+}
+
+func BuildGeoCaseMapChildren(parentCode string, level string) (apimodel.GeoCaseMapChildrenResponse, error) {
+	return buildGeoCaseMapChildren(parentCode, level)
 }
 
 func buildGeoCaseRegionCases(regionCode string, window string, page int, pageSize int) (apimodel.GeoCaseMapRegionCasesResponse, error) {

@@ -1,9 +1,12 @@
 import { ref } from 'vue';
 
+const adminChatBasePath = '/admin/chat';
+const adminChatWelcomeMessage = '你好！我是管理助手。我可以帮你查询全国、省、市、区县案件分布、地区Top诈骗类型，以及辅助平台治理分析。';
+
 export function useChatModule(deps) {
   const showChat = ref(false);
   const chatMessages = ref([
-    { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
+    { type: 'ai', content: adminChatWelcomeMessage }
   ]);
   const chatInput = ref('');
   const chatImages = ref([]);
@@ -19,9 +22,9 @@ export function useChatModule(deps) {
     if (!deps.isAuthenticated.value) return;
     if (chatHistoryLoaded.value && !force) return;
     try {
-      const data = await deps.request('/chat/context');
+      const data = await deps.request(`${adminChatBasePath}/context`);
       chatMessages.value = [
-        { type: 'ai', content: '你好！我是你的反诈骗智能助手。我可以帮你分析风险、解答疑问，或者总结最近的安全情况。' }
+        { type: 'ai', content: adminChatWelcomeMessage }
       ];
       if (data.messages && Array.isArray(data.messages)) {
         const history = [];
@@ -196,7 +199,7 @@ export function useChatModule(deps) {
     scrollToBottom();
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`/api${adminChatBasePath}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +274,7 @@ export function useChatModule(deps) {
   const clearChatHistory = async () => {
     if (!confirm('确定要清除对话历史吗？')) return;
     try {
-      await deps.request('/chat/refresh', 'POST');
+      await deps.request(`${adminChatBasePath}/refresh`, 'POST');
       chatMessages.value = [{ type: 'ai', content: '对话历史已清除。' }];
       chatInput.value = '';
       chatImages.value = [];

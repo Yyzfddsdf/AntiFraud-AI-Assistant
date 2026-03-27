@@ -49,6 +49,7 @@ func BuildRouter() (*gin.Engine, error) {
 	simulationService := scam_simulation.NewService()
 	authHandler := controllers.NewDefaultAuthHandler(activeTokenManager, smsCodeService)
 	chatHandler := chatapi.NewHandler(chatapp.NewDefaultUseCase(defaultConfigPath))
+	adminChatHandler := chatapi.NewHandler(chatapp.NewAdminUseCase(defaultConfigPath))
 
 	state.RegisterHistoryObserver(func(record state.CaseHistoryRecord) {
 		multihttp.TouchGeoCaseMapCacheVersion()
@@ -77,7 +78,7 @@ func BuildRouter() (*gin.Engine, error) {
 	r.Use(middleware.RateLimitMiddleware())
 
 	registerAuthRoutes(r, authHandler, smsCodeService)
-	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, regionService, simulationService, chatHandler)
+	registerProtectedRoutes(r, authUserReader, activeTokenManager, authHandler, userProfileService, familyService, regionService, simulationService, chatHandler, adminChatHandler)
 
 	return r, nil
 }
@@ -127,6 +128,7 @@ func registerProtectedRoutes(
 	regionService *region_system.Service,
 	simulationService *scam_simulation.Service,
 	chatHandler *chatapi.Handler,
+	adminChatHandler *chatapi.Handler,
 ) {
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(authUserReader), middleware.ActiveTokenLimitMiddleware(activeTokenManager))
@@ -139,6 +141,9 @@ func registerProtectedRoutes(
 	region_system.RegisterRoutes(api, regionService)
 	scam_simulation.RegisterRoutes(api, simulationService)
 	chatapi.RegisterRoutes(api, chatHandler)
+	adminChat := api.Group("/admin")
+	adminChat.Use(middleware.AdminMiddleware(authUserReader))
+	chatapi.RegisterRoutes(adminChat, adminChatHandler)
 	api.GET("/alert/ws", multihttp.AlertWebSocketHandle)
 	family_system.RegisterRoutes(api, familyService)
 	api.POST("/scam/image/quick-analyze", multihttp.AnalyzeImageQuickHandle)

@@ -28,7 +28,7 @@
           </div>
         </div>
 
-        <button @click="activeTab = 'chat'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'chat' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">AI 聊天</button>
+        <button @click="activeTab = 'chat'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'chat' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">管理助手</button>
       </div>
     </div>
 

@@ -1552,6 +1552,66 @@ data:{"type":"done","reason":"stop"}
 
 ---
 
+## 13.0) 管理员聊天对话（仅管理员）
+
+- **Method**: `POST`
+- **Path**: `/api/admin/chat`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  - `Accept: text/event-stream`
+
+### 说明
+
+- 仅管理员可调用。
+- 复用聊天系统同一套流式机制与模型配置，但切换为管理员提示词与管理员工具集。
+- 保留内置联网搜索能力（Responses API `web_search`）。
+- 当前管理员专属工具包括：
+  - 查询某个省/市/区县在指定时间窗口下的案件 Top3 诈骗类型
+  - 查询全国 / 某省 / 某市范围内案件数量 TopK 地区排行
+  - 查询案件库相似案例
+- 管理员聊天上下文单独存入 Redis，不与普通用户聊天上下文混用：
+  - Redis 上下文键：`admin:chat:context:<user_id>`
+- 管理员聊天配置读取：`config/config.json` 的 `admin_chat` 节点（`prompt`、`model`、`api_key`、`base_url`）。
+- 其余 SSE 事件格式与普通聊天保持一致。
+
+### 常见失败响应
+
+- `401` 未认证
+- `403` 权限不足（非管理员）
+- `500` 配置加载失败 / Redis 上下文加载失败 / 调用模型失败 / Redis 上下文写入失败
+
+---
+
+## 13.0.1) 获取管理员对话上下文（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/admin/chat/context`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 返回管理员聊天上下文与剩余 TTL。
+- Redis 键空间与普通聊天独立：`admin:chat:context:<user_id>`。
+
+---
+
+## 13.0.2) 刷新管理员对话上下文（仅管理员）
+
+- **Method**: `POST`
+- **Path**: `/api/admin/chat/refresh`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 立即清除当前管理员聊天上下文，不等待 TTL 过期。
+
+---
+
 ## 13.1) 实时风险预警 WebSocket（需鉴权，中高风险）
 
 - **Method**: `GET`
@@ -2055,6 +2115,9 @@ GET /api/users?query=admin
 21. `POST /api/chat`
 22. `GET /api/chat/context`
 23. `POST /api/chat/refresh`
+24. `POST /api/admin/chat`
+25. `GET /api/admin/chat/context`
+26. `POST /api/admin/chat/refresh`
 24. `DELETE /api/user`
 
 ---
