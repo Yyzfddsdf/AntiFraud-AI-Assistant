@@ -19,30 +19,55 @@
             <span class="text-sm font-bold text-slate-800">上传附件 <span class="text-slate-400 font-normal">(选填)</span></span>
           </div>
           <div class="grid grid-cols-3 gap-3">
-            <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadImg.click()">
-              <input type="file" ref="uploadImg" multiple accept="image/*" class="hidden" @change="state.handleFileSelect($event, 'images')">
-              <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <label class="mobile-upload-card" for="mobile-upload-image">
+              <input id="mobile-upload-image" type="file" multiple accept="image/*" class="hidden" @change="state.handleFileSelect($event, 'images')">
+              <div class="mobile-upload-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                </svg>
+                <span class="mobile-upload-card__marker" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="8" cy="8" r="1.6"></circle>
+                    <path d="m4.5 18 5.2-5.1 3.4 3 2.8-2.7 3.6 4.8"></path>
+                  </svg>
+                </span>
               </div>
-              <span class="text-[11px] font-bold text-slate-500">图片</span>
+              <span class="mobile-upload-card__text">图片</span>
               <span v-if="state.analyzeForm.images.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ state.analyzeForm.images.length }}</span>
-            </div>
-            <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadAud.click()">
-              <input type="file" ref="uploadAud" multiple accept="audio/*" class="hidden" @change="state.handleFileSelect($event, 'audios')">
-              <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+            </label>
+            <label class="mobile-upload-card" for="mobile-upload-audio">
+              <input id="mobile-upload-audio" type="file" multiple accept="audio/*" class="hidden" @change="state.handleFileSelect($event, 'audios')">
+              <div class="mobile-upload-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                </svg>
+                <span class="mobile-upload-card__marker" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6.5 15.8v-3.6"></path>
+                    <path d="M10 17.2V8.8"></path>
+                    <path d="M13.5 15.8v-5.2"></path>
+                    <path d="M17 16.6v-7"></path>
+                  </svg>
+                </span>
               </div>
-              <span class="text-[11px] font-bold text-slate-500">音频</span>
+              <span class="mobile-upload-card__text">音频</span>
               <span v-if="state.analyzeForm.audios.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ state.analyzeForm.audios.length }}</span>
-            </div>
-            <div class="relative aspect-square bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200 active:bg-slate-100 transition-colors" @click="$refs.uploadVid.click()">
-              <input type="file" ref="uploadVid" multiple accept="video/*" class="hidden" @change="state.handleFileSelect($event, 'videos')">
-              <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 mb-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </label>
+            <label class="mobile-upload-card" for="mobile-upload-video">
+              <input id="mobile-upload-video" type="file" multiple accept="video/*" class="hidden" @change="state.handleFileSelect($event, 'videos')">
+              <div class="mobile-upload-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                </svg>
+                <span class="mobile-upload-card__marker" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="m9 8 7 4-7 4z"></path>
+                  </svg>
+                </span>
               </div>
-              <span class="text-[11px] font-bold text-slate-500">视频</span>
+              <span class="mobile-upload-card__text">视频</span>
               <span v-if="state.analyzeForm.videos.length" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-white">{{ state.analyzeForm.videos.length }}</span>
-            </div>
+            </label>
           </div>
         </div>
       </div>
@@ -254,3 +279,74 @@ defineProps({
   }
 });
 </script>
+
+<style scoped>
+.mobile-upload-card {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px dashed #cacaca;
+  background: #ffffff;
+  border-radius: 1.15rem;
+  box-shadow: 0 32px 28px -32px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.mobile-upload-card:active {
+  transform: scale(0.98);
+  border-color: #bfc5ce;
+  background-color: #fafafa;
+}
+
+.mobile-upload-card__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-upload-card__icon > svg {
+  width: 2.8rem;
+  height: 2.8rem;
+  fill: rgba(75, 85, 99, 1);
+}
+
+.mobile-upload-card__marker {
+  position: absolute;
+  right: -0.2rem;
+  bottom: 0.05rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #d7dbe2;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-upload-card__marker svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: none;
+  stroke: rgba(75, 85, 99, 1);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mobile-upload-card__text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(75, 85, 99, 1);
+  line-height: 1;
+}
+</style>

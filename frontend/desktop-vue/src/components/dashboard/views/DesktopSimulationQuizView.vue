@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_380px]">
+      <div class="grid gap-4 2xl:grid-cols-[minmax(0,1.2fr)_420px]">
         <div class="space-y-4">
           <div class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between gap-3">
@@ -193,7 +193,7 @@
       </div>
 
       <div class="px-6 py-6">
-        <div v-if="simulationCurrentStep && simulationStatus === 'in_progress'" class="mx-auto max-w-5xl space-y-5">
+        <div v-if="simulationCurrentStep && simulationStatus === 'in_progress'" class="w-full space-y-5">
           <div class="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{{ simulationCurrentStep.step_type }}</div>
           <div class="rounded-sm border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">{{ simulationCurrentStep.narrative }}</div>
           <div class="text-3xl font-black leading-10 tracking-tight text-slate-950">{{ simulationCurrentStep.question }}</div>
@@ -213,7 +213,7 @@
           </div>
         </div>
 
-        <div v-else-if="simulationStatus === 'completed' && simulationResult" class="mx-auto grid max-w-5xl gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(260px,0.95fr)]">
+        <div v-else-if="simulationStatus === 'completed' && simulationResult" class="grid w-full gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <div class="rounded-sm border border-brand-200 bg-brand-50 p-6">
             <h4 class="text-2xl font-black text-brand-900">答题完成 · {{ simulationResult.level }}</h4>
             <p class="mt-2 text-sm text-brand-800">总分：{{ simulationResult.total_score }}</p>
@@ -244,7 +244,7 @@
           </div>
         </div>
 
-        <div v-else class="mx-auto max-w-4xl rounded-sm border border-dashed border-slate-200 bg-slate-50 px-8 py-16 text-center">
+        <div v-else class="w-full rounded-sm border border-dashed border-slate-200 bg-slate-50 px-8 py-16 text-center">
           <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-sm border border-slate-200 bg-white">
             <span class="text-2xl font-black text-slate-400">Q</span>
           </div>

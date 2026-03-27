@@ -4,7 +4,11 @@
 
     <main :class="['flex-1 custom-scrollbar', activeTab === 'admin_stats' || activeTab === 'family' || activeTab === 'profile' || activeTab === 'simulation_quiz' || isTaskCenterTab(activeTab) ? 'overflow-hidden' : 'overflow-y-auto']">
       <div :class="[
-        activeTab === 'admin_stats' || activeTab === 'family' || activeTab === 'profile' || activeTab === 'simulation_quiz' || isTaskCenterTab(activeTab) ? 'w-full max-w-[1600px] mx-auto p-4 min-w-0' : 'max-w-[1600px] mx-auto p-4',
+        activeTab === 'admin_stats' || activeTab === 'family' || activeTab === 'simulation_quiz' || isTaskCenterTab(activeTab)
+          ? 'w-full p-4 min-w-0'
+          : activeTab === 'profile'
+            ? 'w-full max-w-[1600px] mx-auto p-4 min-w-0'
+            : 'max-w-[1600px] mx-auto p-4',
         activeTab === 'admin_stats' || activeTab === 'family' || activeTab === 'profile' || activeTab === 'simulation_quiz' || isTaskCenterTab(activeTab) ? 'h-full' : 'min-h-full'
       ]">
         <DashboardCoreViews :app="app" />
