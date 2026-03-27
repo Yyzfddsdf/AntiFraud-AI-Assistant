@@ -1,12 +1,14 @@
-# API 文档（登录系统）
+﻿# API 文档（登录系统）
 
 ## 基础信息
 
-- 服务默认地址：`http://localhost:8081`
+- 代理/网关访问示例地址：`http://<HOST>`
+- 本地默认服务地址：`http://localhost:8081`
 - 统一前缀：`/api`
 - 数据格式：`application/json`
 - 鉴权方式：`Authorization: Bearer <token>`
 - 活跃会话策略：单用户最多保留 `2` 个最近活跃 token，活跃 TTL 为 `5` 分钟；超出后会按队列语义挤掉最旧 token
+- 以下 `curl` 示例默认使用 `http://<HOST>`；如在本机直连后端，请替换为 `http://localhost:8081`
 
 ## 全局 401 约定（前端必须统一处理）
 
@@ -915,7 +917,7 @@
 ### cURL 示例
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/image/quick-analyze" \
+curl -X POST "http://<HOST>/api/scam/image/quick-analyze" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1574,7 +1576,7 @@ data:{"type":"done","reason":"stop"}
 
 - 非浏览器客户端：推荐使用 `Authorization: Bearer <JWT_TOKEN>`。
 - 浏览器原生 WebSocket：使用 Query 参数 `token` 传 JWT，例如：
-  - `ws://localhost:8081/api/alert/ws?token=<JWT_TOKEN>`
+  - `ws://<HOST>/api/alert/ws?token=<JWT_TOKEN>`
 
 ### 消息示例（服务端 -> 客户端）
 
@@ -2047,13 +2049,13 @@ GET /api/users?query=admin
 ### 获取验证码
 
 ```bash
-curl -X GET "http://localhost:8081/api/auth/captcha"
+curl -X GET "http://<HOST>/api/auth/captcha"
 ```
 
 ### 注册
 
 ```bash
-curl -X POST "http://localhost:8081/api/auth/register" \
+curl -X POST "http://<HOST>/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "username":"test_user",
@@ -2067,7 +2069,7 @@ curl -X POST "http://localhost:8081/api/auth/register" \
 ### 登录
 
 ```bash
-curl -X POST "http://localhost:8081/api/auth/login" \
+curl -X POST "http://<HOST>/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
     "email":"test_user@example.com",
@@ -2080,35 +2082,35 @@ curl -X POST "http://localhost:8081/api/auth/login" \
 ### 获取当前用户
 
 ```bash
-curl -X GET "http://localhost:8081/api/user" \
+curl -X GET "http://<HOST>/api/user" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 获取所有用户列表（仅管理员）
 
 ```bash
-curl -X GET "http://localhost:8081/api/users" \
+curl -X GET "http://<HOST>/api/users" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 搜索特定用户（仅管理员）
 
 ```bash
-curl -X GET "http://localhost:8081/api/users?query=admin" \
+curl -X GET "http://<HOST>/api/users?query=admin" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 删除当前用户
 
 ```bash
-curl -X DELETE "http://localhost:8081/api/user" \
+curl -X DELETE "http://<HOST>/api/user" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 多模态诈骗智能助手分析
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/multimodal/analyze" \
+curl -X POST "http://<HOST>/api/scam/multimodal/analyze" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2122,42 +2124,42 @@ curl -X POST "http://localhost:8081/api/scam/multimodal/analyze" \
 ### 查询当前用户任务状态
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/multimodal/tasks" \
+curl -X GET "http://<HOST>/api/scam/multimodal/tasks" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 查询指定任务详情
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/multimodal/tasks/<TASK_ID>" \
+curl -X GET "http://<HOST>/api/scam/multimodal/tasks/<TASK_ID>" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 查询当前用户历史案件明细
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/multimodal/history" \
+curl -X GET "http://<HOST>/api/scam/multimodal/history" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 查询当前用户风险总览
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/multimodal/history/overview?interval=day" \
+curl -X GET "http://<HOST>/api/scam/multimodal/history/overview?interval=day" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 查询当前用户所在地区案件统计
 
 ```bash
-curl -X GET "http://localhost:8081/api/regions/cases/stats/current" \
+curl -X GET "http://<HOST>/api/regions/cases/stats/current" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 生成反诈模拟题包
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/simulation/packs/generate" \
+curl -X POST "http://<HOST>/api/scam/simulation/packs/generate" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2171,7 +2173,7 @@ curl -X POST "http://localhost:8081/api/scam/simulation/packs/generate" \
 ### 聊天对话（SSE）
 
 ```bash
-curl -N -X POST "http://localhost:8081/api/chat" \
+curl -N -X POST "http://<HOST>/api/chat" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
@@ -2187,14 +2189,14 @@ curl -N -X POST "http://localhost:8081/api/chat" \
 ### 刷新对话上下文
 
 ```bash
-curl -X POST "http://localhost:8081/api/chat/refresh" \
+curl -X POST "http://<HOST>/api/chat/refresh" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ### 获取当前对话上下文
 
 ```bash
-curl -X GET "http://localhost:8081/api/chat/context" \
+curl -X GET "http://<HOST>/api/chat/context" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -2324,7 +2326,7 @@ curl -X GET "http://localhost:8081/api/chat/context" \
 ### cURL 示例
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/case-library/cases" \
+curl -X POST "http://<HOST>/api/scam/case-library/cases" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2404,7 +2406,7 @@ curl -X POST "http://localhost:8081/api/scam/case-library/cases" \
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases?page=1&page_size=20" \
+curl -X GET "http://<HOST>/api/scam/case-library/cases?page=1&page_size=20" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -2473,7 +2475,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases?page=1&page_size=
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval=week" \
+curl -X GET "http://<HOST>/api/scam/case-library/cases/overview?interval=week" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -2628,7 +2630,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/overview?interval
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=冒充客服类&focus_group=老人&top_k=3" \
+curl -X GET "http://<HOST>/api/scam/case-library/cases/graph?focus_type=冒充客服类&focus_group=老人&top_k=3" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -2789,6 +2791,48 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=
 
 ---
 
+## 18.4) 获取地图边界 GeoJSON（仅管理员）
+
+- **Method**: `GET`
+- **Path**: `/api/scam/case-library/maps/geojson?code=<6位行政区编码>`
+- **Header**:
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Accept: application/json`
+
+### 说明
+
+- 仅管理员可调用。
+- 用于管理员 geo 地图页加载行政区边界 GeoJSON。
+- `code` 必须为 6 位行政区划编码；留空时默认返回全国边界 `100000`。
+- 该接口由后端代理并缓存上游地图边界数据，避免浏览器直接请求第三方地图域名。
+- 返回体为原始 GeoJSON。
+
+### 成功响应（200）
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": []
+}
+```
+
+### 常见失败响应
+
+- `400` `code` 不是合法的 6 位行政区划编码。
+- `401` 未认证。
+- `403` 权限不足（非管理员）。
+- `502` 上游地图边界服务不可用或返回数据异常。
+
+### 调用示例
+
+```bash
+curl -X GET "http://<HOST>/api/scam/case-library/maps/geojson?code=100000" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Accept: application/json"
+```
+
+---
+
 ## 18.2) 获取可选诈骗类型列表（仅管理员）
 
 - **Method**: `GET`
@@ -2912,7 +2956,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/graph?focus_type=
 ### cURL 示例
 
 ```bash
-curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12DE" \
+curl -X GET "http://<HOST>/api/scam/case-library/cases/HCASE-5F3C91AA12DE" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -3070,7 +3114,7 @@ curl -X GET "http://localhost:8081/api/scam/case-library/cases/HCASE-5F3C91AA12D
 ### cURL 示例
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/review/cases/PREV-5F3C91AA12DE/approve" \
+curl -X POST "http://<HOST>/api/scam/review/cases/PREV-5F3C91AA12DE/approve" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -3125,7 +3169,7 @@ curl -X POST "http://localhost:8081/api/scam/review/cases/PREV-5F3C91AA12DE/appr
 ### cURL 示例
 
 ```bash
-curl -X POST "http://localhost:8081/api/scam/case-collection/search" \
+curl -X POST "http://<HOST>/api/scam/case-collection/search" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -3133,3 +3177,5 @@ curl -X POST "http://localhost:8081/api/scam/case-collection/search" \
     "case_count": 5
   }'
 ```
+
+

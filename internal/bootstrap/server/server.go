@@ -159,6 +159,7 @@ func registerProtectedRoutes(
 	adminCaseLibrary.GET("/cases/overview", multihttp.GetHistoricalCaseStatisticsOverviewHandle)
 	adminCaseLibrary.GET("/cases/graph", multihttp.GetHistoricalCaseGraphHandle)
 	adminCaseLibrary.GET("/cases/geo-map", multihttp.GetGeoCaseMapHandle)
+	adminCaseLibrary.GET("/maps/geojson", multihttp.GetGeoBoundaryGeoJSONHandle)
 	adminCaseLibrary.GET("/options/scam-types", multihttp.GetHistoricalCaseScamTypeOptionsHandle)
 	adminCaseLibrary.GET("/options/target-groups", multihttp.GetHistoricalCaseTargetGroupOptionsHandle)
 	adminCaseLibrary.GET("/cases/:caseId", multihttp.GetHistoricalCaseDetailHandle)

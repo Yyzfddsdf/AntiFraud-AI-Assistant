@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 
-const CHINA_MAP_URL = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
-const PROVINCE_MAP_URL = (code) => `https://geo.datav.aliyun.com/areas_v3/bound/${code}_full.json`;
+const DEFAULT_GEO_BOUNDARY_CODE = '100000';
+const buildGeoBoundaryPath = (code) => `/scam/case-library/maps/geojson?code=${encodeURIComponent(String(code || DEFAULT_GEO_BOUNDARY_CODE).trim() || DEFAULT_GEO_BOUNDARY_CODE)}`;
 
 const riskColors = {
   高: '#fb7185',
@@ -167,13 +167,15 @@ export function useGeoRiskMapModule(deps) {
     }
   };
 
-  const loadGeoJSON = async (mapKey, url) => {
+  const loadGeoJSON = async (mapKey, boundaryCode) => {
     if (geoJSONCache.has(mapKey)) return geoJSONCache.get(mapKey);
-    const response = await fetch(url);
-    if (!response.ok) {
+    const geoJSON = await deps.request(buildGeoBoundaryPath(boundaryCode), 'GET', null, {
+      silent: true,
+      throwOnError: true
+    });
+    if (!geoJSON || typeof geoJSON !== 'object') {
       throw new Error('地图边界数据加载失败');
     }
-    const geoJSON = await response.json();
     geoJSONCache.set(mapKey, geoJSON);
     return geoJSON;
   };
@@ -234,12 +236,12 @@ export function useGeoRiskMapModule(deps) {
       : geoViewMode.value === 'city' && geoSelectedProvinceCode.value
         ? `province-${geoSelectedProvinceCode.value}`
         : 'china-country';
-    const mapURL = geoViewMode.value === 'district' && geoSelectedCityCode.value
-      ? PROVINCE_MAP_URL(geoSelectedCityCode.value)
+    const boundaryCode = geoViewMode.value === 'district' && geoSelectedCityCode.value
+      ? geoSelectedCityCode.value
       : geoViewMode.value === 'city' && geoSelectedProvinceCode.value
-        ? PROVINCE_MAP_URL(geoSelectedProvinceCode.value)
-        : CHINA_MAP_URL;
-    const geoJSON = await loadGeoJSON(mapKey, mapURL);
+        ? geoSelectedProvinceCode.value
+        : DEFAULT_GEO_BOUNDARY_CODE;
+    const geoJSON = await loadGeoJSON(mapKey, boundaryCode);
     window.echarts.registerMap(mapKey, geoJSON);
 
     const entries = geoCurrentEntries.value;

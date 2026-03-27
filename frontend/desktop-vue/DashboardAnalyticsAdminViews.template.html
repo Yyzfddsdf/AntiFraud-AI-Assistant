@@ -11,7 +11,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <nav class="p-2.5 space-y-1">
                                     <button
                                         @click="setAdminAnalyticsSection('overview')"
@@ -361,9 +360,53 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                </div>
+                  </div>
+                  </div>
 
+                <teleport to="body">
+                    <div v-if="showGraphModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in" @click.self="showGraphModal = false">
+                        <div class="w-full max-w-[95vw] h-[90vh] bg-white rounded-sm shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-slide-up">
+                            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                                <div>
+                                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">案件关联全景图谱</h3>
+                                    <p class="text-xs text-slate-500 mt-1">支持滚轮缩放、拖拽平移，点击节点可查看详情</p>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <button @click="resetGraphZoom" class="px-3 py-1.5 rounded-sm border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                                        重置视角
+                                    </button>
+                                    <button @click="showGraphModal = false" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 relative bg-slate-50/30">
+                                <div id="adminGraphNetwork" class="w-full h-full"></div>
+
+                                <div class="absolute top-6 left-6 bg-white/90 backdrop-blur p-4 rounded-sm border border-slate-200 shadow-xl space-y-3 pointer-events-none">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-4 h-4 rounded-sm bg-emerald-500 shadow-sm shadow-emerald-500/30 transform rotate-45"></span>
+                                        <span class="text-xs font-bold text-slate-700">人群视角锚点 (Target Hubs)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-4 h-4 rounded-sm bg-fuchsia-500 shadow-sm shadow-fuchsia-500/30"></span>
+                                        <span class="text-xs font-bold text-slate-700">诈骗手法类型 (Scam Types)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-4 h-4 rounded-sm bg-brand-500 shadow-sm shadow-brand-500/30"></span>
+                                        <span class="text-xs font-bold text-slate-700">高频关键词 (Keywords)</span>
+                                    </div>
+                                    <div class="pt-2 border-t border-slate-100">
+                                        <p class="text-[9px] text-slate-400 font-medium">提示：点击“人群”菱形节点可高亮所有关联手法</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </teleport>
+  
                 <!-- Users View (Admin Only) -->
                 <div v-if="activeTab === 'users' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
                     <div class="flex justify-between items-center mb-8">

@@ -44,7 +44,8 @@ go run ./cmd/api
 
 启动后可访问：
 
-- API 基地址：`http://localhost:8081/api`
+- 本地 API 基地址：`http://localhost:8081/api`
+- 如通过代理、网关或其他转发入口访问，请使用当前访问地址下的同源 `/api`，例如：`http://<HOST>/api`
 
 ### 2.3 独立前端服务（Vue 模块化版）
 
@@ -74,6 +75,7 @@ npm run dev
 
 - 桌面端和移动端分别独立启动，互不影响
 - 两个 Vite 开发服务器都已代理 `/api` 到 `http://127.0.0.1:8081`
+- 如通过代理、网关或其他转发入口访问前端页面，浏览器仍应通过当前页面同源 `/api` 完成接口调用
 - 联调时请先启动 Go 服务
 
 ---
@@ -712,6 +714,7 @@ api.GET("/users", middleware.AdminMiddleware(authUserReader), controllers.GetAll
 
 - `POST /api/scam/case-library/cases`
 - `GET /api/scam/case-library/cases?page=<n>&page_size=<m>`
+- `GET /api/scam/case-library/maps/geojson?code=<6位行政区编码>`
 - `GET /api/scam/case-library/options/scam-types`
 - `GET /api/scam/case-library/options/target-groups`
 - `GET /api/scam/case-library/cases/:caseId`
