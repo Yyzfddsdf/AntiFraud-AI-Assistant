@@ -1,12 +1,11 @@
 import { createTabRouter } from './tabRouter';
 
-const adminTabs = new Set(['admin_stats', 'geo_risk_map', 'geo_risk_map_full', 'users', 'case_review', 'case_library']);
+const adminTabs = new Set(['chat', 'admin_stats', 'geo_risk_map_full', 'users', 'case_review', 'case_library', 'profile']);
 
 export const createDesktopTabRouter = () => createTabRouter({
-  appTabs: ['submit', 'tasks', 'risk_trend', 'simulation_quiz', 'history', 'family', 'profile', 'admin_stats', 'geo_risk_map', 'geo_risk_map_full', 'users', 'case_review', 'case_library'],
-  defaultAppTab: 'tasks',
+  appTabs: ['chat', 'admin_stats', 'geo_risk_map_full', 'users', 'case_review', 'case_library', 'profile'],
+  defaultAppTab: 'admin_stats',
   isTabAllowed: (tab, context) => {
-    if (!adminTabs.has(tab)) return true;
-    return String(context?.userRole || '').trim() === 'admin';
+    return adminTabs.has(tab) && String(context?.userRole || '').trim() === 'admin';
   }
 });

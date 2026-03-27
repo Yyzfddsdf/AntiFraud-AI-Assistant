@@ -5,6 +5,15 @@ type GeoCaseMapTopScamType struct {
 	Count    int    `json:"count"`
 }
 
+type GeoCaseMapCaseSummaryItem struct {
+	RecordID    string `json:"record_id"`
+	Title       string `json:"title"`
+	CaseSummary string `json:"case_summary"`
+	ScamType    string `json:"scam_type,omitempty"`
+	RiskLevel   string `json:"risk_level"`
+	CreatedAt   string `json:"created_at"`
+}
+
 type GeoCaseMapWindowStats struct {
 	Count         int                     `json:"count"`
 	PreviousCount int                     `json:"previous_count"`
@@ -21,24 +30,10 @@ type GeoCaseMapRegionStats struct {
 	AllTime GeoCaseMapWindowStats `json:"all_time"`
 }
 
-type GeoCaseMapCityItem struct {
+type GeoCaseMapRegionItem struct {
 	RegionCode string                `json:"region_code"`
 	RegionName string                `json:"region_name"`
 	Stats      GeoCaseMapRegionStats `json:"stats"`
-	Districts  []GeoCaseMapDistrictItem `json:"districts"`
-}
-
-type GeoCaseMapDistrictItem struct {
-	RegionCode string                `json:"region_code"`
-	RegionName string                `json:"region_name"`
-	Stats      GeoCaseMapRegionStats `json:"stats"`
-}
-
-type GeoCaseMapProvinceItem struct {
-	RegionCode string                `json:"region_code"`
-	RegionName string                `json:"region_name"`
-	Stats      GeoCaseMapRegionStats `json:"stats"`
-	Cities     []GeoCaseMapCityItem  `json:"cities"`
 }
 
 type GeoCaseMapSummary struct {
@@ -49,7 +44,32 @@ type GeoCaseMapSummary struct {
 }
 
 type GeoCaseMapResponse struct {
-	GeneratedAt string                   `json:"generated_at"`
-	Summary     GeoCaseMapSummary        `json:"summary"`
-	Provinces   []GeoCaseMapProvinceItem `json:"provinces"`
+	GeneratedAt string                 `json:"generated_at"`
+	Level       string                 `json:"level"`
+	Summary     GeoCaseMapSummary      `json:"summary"`
+	Regions     []GeoCaseMapRegionItem `json:"regions"`
+}
+
+type GeoCaseMapChildrenResponse struct {
+	GeneratedAt string                 `json:"generated_at"`
+	Level       string                 `json:"level"`
+	ParentCode  string                 `json:"parent_code"`
+	ParentName  string                 `json:"parent_name"`
+	RegionCount int                    `json:"region_count"`
+	Regions     []GeoCaseMapRegionItem `json:"regions"`
+}
+
+type GeoCaseMapRegionCasesResponse struct {
+	GeneratedAt string                      `json:"generated_at"`
+	RegionCode  string                      `json:"region_code"`
+	RegionName  string                      `json:"region_name"`
+	Window      string                      `json:"window"`
+	CaseCount   int                         `json:"case_count"`
+	Page        int                         `json:"page"`
+	PageSize    int                         `json:"page_size"`
+	Total       int                         `json:"total"`
+	TotalPages  int                         `json:"total_pages"`
+	HasPrev     bool                        `json:"has_prev"`
+	HasNext     bool                        `json:"has_next"`
+	Cases       []GeoCaseMapCaseSummaryItem `json:"cases"`
 }

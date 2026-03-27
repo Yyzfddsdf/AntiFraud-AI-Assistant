@@ -8,21 +8,27 @@
         <span class="font-black text-sm text-slate-900 tracking-tight uppercase">Sentinel AI</span>
       </div>
 
-      <div class="flex items-center gap-1">
-        <button @click="openTaskCenter" :class="['px-3 py-1 text-xs font-bold transition-colors', isTaskCenterTab(activeTab) ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">任务中心</button>
-        <button @click="activeTab = 'simulation_quiz'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'simulation_quiz' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">反诈模拟</button>
-        <button @click="activeTab = 'family'" :class="['px-3 py-1 text-xs font-bold transition-colors relative', activeTab === 'family' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">
-          家庭中心
-          <span v-if="familyUnreadCount > 0" class="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 bg-rose-500 text-white text-[8px] font-black leading-[14px] text-center">{{ familyUnreadCount }}</span>
-        </button>
-
-        <div v-if="user.role === 'admin'" class="flex items-center gap-1 ml-2 pl-2 border-l border-slate-300">
-          <button @click="activeTab = 'admin_stats'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'admin_stats' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">全景分析</button>
-          <button @click="activeTab = 'geo_risk_map_full'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'geo_risk_map_full' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">地理态势</button>
-          <button @click="activeTab = 'users'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'users' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">用户管理</button>
-          <button @click="activeTab = 'case_review'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_review' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">案件审核</button>
-          <button @click="activeTab = 'case_library'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_library' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">案件库</button>
+      <div class="flex items-center gap-2">
+        <div class="relative flex items-center gap-1">
+          <button @click="activeTab = 'users'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'users' ? 'text-blue-900' : 'text-slate-700 hover:text-blue-900 hover:bg-slate-100']">用户管理</button>
+          <button @click="activeTab = 'geo_risk_map_full'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'geo_risk_map_full' ? 'text-blue-900' : 'text-slate-700 hover:text-blue-900 hover:bg-slate-100']">地区案件统计</button>
+          <div class="pointer-events-none absolute left-3 right-3 -bottom-2.5 hidden md:block">
+            <div class="h-0.5 w-full rounded-full bg-blue-950"></div>
+            <div class="mt-0.5 text-[7px] font-bold uppercase tracking-[0.18em] text-blue-950/80 text-center">用户统计</div>
+          </div>
         </div>
+
+        <div class="relative flex items-center gap-1">
+          <button @click="activeTab = 'admin_stats'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'admin_stats' ? 'text-blue-900' : 'text-slate-700 hover:text-blue-900 hover:bg-slate-100']">全景分析</button>
+          <button @click="activeTab = 'case_review'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_review' ? 'text-blue-900' : 'text-slate-700 hover:text-blue-900 hover:bg-slate-100']">案件审核</button>
+          <button @click="activeTab = 'case_library'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'case_library' ? 'text-blue-900' : 'text-slate-700 hover:text-blue-900 hover:bg-slate-100']">案件库</button>
+          <div class="pointer-events-none absolute left-3 right-3 -bottom-2.5 hidden md:block">
+            <div class="h-0.5 w-full rounded-full bg-blue-950"></div>
+            <div class="mt-0.5 text-[7px] font-bold uppercase tracking-[0.18em] text-blue-950/80 text-center">平台治理</div>
+          </div>
+        </div>
+
+        <button @click="activeTab = 'chat'" :class="['px-3 py-1 text-xs font-bold transition-colors', activeTab === 'chat' ? 'text-brand-700' : 'text-slate-700 hover:text-brand-700 hover:bg-slate-100']">AI 聊天</button>
       </div>
     </div>
 

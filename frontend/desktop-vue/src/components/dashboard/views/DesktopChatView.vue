@@ -3,13 +3,13 @@
     <div class="chat-frame">
       <div class="chat-topbar">
         <div class="flex items-center min-w-0">
-          <button @click="handleBack" class="chat-topbar-action">
-            {{ embedded ? '返回题目' : '返回反诈模拟' }}
+          <button v-if="embedded || !hideBackAction" @click="handleBack" class="chat-topbar-action">
+            {{ embedded ? '返回题目' : '返回全景分析' }}
           </button>
         </div>
         <div class="chat-topbar-title">
-          <div class="chat-topbar-eyebrow">用户问题助手回应</div>
-          <div class="chat-topbar-name">Sentinel AI</div>
+          <div class="chat-topbar-eyebrow">{{ embedded ? '用户问题助手回应' : '管理员 AI 助手' }}</div>
+          <div class="chat-topbar-name">{{ embedded ? 'Sentinel AI' : '管理员 AI 聊天' }}</div>
         </div>
         <div class="flex items-center justify-end">
           <button @click="clearChatHistory" class="chat-topbar-action">
@@ -160,6 +160,10 @@ export default {
     embedded: {
       type: Boolean,
       default: false
+    },
+    hideBackAction: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
@@ -171,7 +175,7 @@ export default {
         emit('back');
         return;
       }
-      props.app.activeTab = 'simulation_quiz';
+      props.app.activeTab = 'admin_stats';
     };
 
     return {

@@ -2,12 +2,10 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	chatapi "antifraud/internal/modules/chat/adapters/inbound/http"
 	chatapp "antifraud/internal/modules/chat/application"
@@ -22,7 +20,6 @@ import (
 	region_system "antifraud/internal/modules/region"
 	"antifraud/internal/modules/scam_simulation"
 	"antifraud/internal/modules/user_profile"
-	"antifraud/internal/platform/cache"
 	appcfg "antifraud/internal/platform/config"
 	"antifraud/internal/platform/database"
 
@@ -54,7 +51,7 @@ func BuildRouter() (*gin.Engine, error) {
 	chatHandler := chatapi.NewHandler(chatapp.NewDefaultUseCase(defaultConfigPath))
 
 	state.RegisterHistoryObserver(func(record state.CaseHistoryRecord) {
-		_ = cache.SetJSON("cache:case_library:geo_map:v1:version", fmt.Sprintf("%d", time.Now().UnixNano()), 0)
+		multihttp.TouchGeoCaseMapCacheVersion()
 		region_system.TouchRegionCaseStatsCacheVersion()
 		if record.RiskLevel != "高" {
 			return
@@ -159,6 +156,8 @@ func registerProtectedRoutes(
 	adminCaseLibrary.GET("/cases/overview", multihttp.GetHistoricalCaseStatisticsOverviewHandle)
 	adminCaseLibrary.GET("/cases/graph", multihttp.GetHistoricalCaseGraphHandle)
 	adminCaseLibrary.GET("/cases/geo-map", multihttp.GetGeoCaseMapHandle)
+	adminCaseLibrary.GET("/cases/geo-map/children", multihttp.GetGeoCaseMapChildrenHandle)
+	adminCaseLibrary.GET("/cases/geo-map/region-cases", multihttp.GetGeoCaseRegionCasesHandle)
 	adminCaseLibrary.GET("/maps/geojson", multihttp.GetGeoBoundaryGeoJSONHandle)
 	adminCaseLibrary.GET("/options/scam-types", multihttp.GetHistoricalCaseScamTypeOptionsHandle)
 	adminCaseLibrary.GET("/options/target-groups", multihttp.GetHistoricalCaseTargetGroupOptionsHandle)

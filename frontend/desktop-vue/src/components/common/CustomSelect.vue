@@ -23,7 +23,7 @@
           :class="resolveOptionClass(option)"
           @click="selectOption(option)">
           <span class="truncate">{{ option.label }}</span>
-          <svg v-if="isSelected(option.value)" class="w-4 h-4 shrink-0 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="isSelected(option.value)" :class="['w-4 h-4 shrink-0', resolvedSelectedIconClass]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </button>
@@ -89,6 +89,14 @@ export default {
     optionClass: {
       type: String,
       default: ''
+    },
+    selectedOptionClass: {
+      type: String,
+      default: ''
+    },
+    selectedIconClass: {
+      type: String,
+      default: ''
     }
   },
   emits: ['update:modelValue'],
@@ -137,7 +145,8 @@ export default {
         : active
           ? 'bg-brand-50 text-brand-700'
           : 'text-slate-700 hover:bg-slate-100';
-      return `${base} ${state} ${props.optionClass}`.trim();
+      const selectedState = active ? props.selectedOptionClass : '';
+      return `${base} ${state} ${props.optionClass} ${selectedState}`.trim();
     };
 
     const handlePointerDown = (event) => {
@@ -166,7 +175,8 @@ export default {
       closeMenu,
       toggleOpen,
       selectOption,
-      resolveOptionClass
+      resolveOptionClass,
+      resolvedSelectedIconClass: computed(() => props.selectedIconClass || 'text-brand-600')
     };
   }
 };

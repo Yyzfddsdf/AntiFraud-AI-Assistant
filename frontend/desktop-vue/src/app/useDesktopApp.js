@@ -18,9 +18,10 @@ export function useDesktopApp() {
   const authReady = ref(false);
   const token = ref(localStorage.getItem('token') || '');
   const user = ref({});
+  const isAdminUser = computed(() => isAuthenticated.value && String(user.value?.role || '').trim() === 'admin');
   const authMode = ref('login');
   const loginMethod = ref('password');
-  const activeTab = ref('tasks');
+  const activeTab = ref('admin_stats');
   const tabRouter = createDesktopTabRouter();
   let stopTabRouter = null;
 
@@ -866,6 +867,7 @@ export function useDesktopApp() {
 
   const handleActiveTabChange = createDesktopTabChangeHandler({
     syncRouteFromActiveTab,
+    fetchChatHistory: chatModule.fetchChatHistory,
     fetchPendingReviews: caseLibraryModule.fetchPendingReviews,
     fetchCaseLibrary: caseLibraryModule.fetchCaseLibrary,
     fetchCaseOptionLists: caseLibraryModule.fetchCaseOptionLists,
@@ -886,6 +888,10 @@ export function useDesktopApp() {
     resumeOngoingSimulationSession
   });
   watch(activeTab, handleActiveTabChange);
+  watch(isAdminUser, (nextValue) => {
+    if (!nextValue) return;
+    handleActiveTabChange(activeTab.value);
+  });
   watch([activeTab, adminAnalyticsSection], ([currentTab]) => {
     if (currentTab !== 'admin_stats') return;
     chartsModule.refreshVisibleAdminCharts();
@@ -896,23 +902,8 @@ export function useDesktopApp() {
 
   let pollInterval = null;
   startPolling = () => {
-    fetchTasks({ silent: true });
-    fetchHistory({ silent: true });
-    chartsModule.fetchCurrentRegionCaseStats();
-    familyModule.fetchFamilyOverview({ silent: true });
-    alertsModule.connectAlertWebSocket();
-    familyModule.connectFamilyNotificationWebSocket();
+    if (!isAdminUser.value) return;
     if (pollInterval) clearInterval(pollInterval);
-    pollInterval = setInterval(() => {
-      if (isAuthenticated.value && activeTab.value === 'tasks') fetchTasks({ silent: true });
-      if (isAuthenticated.value && activeTab.value === 'family') {
-        familyModule.fetchFamilyOverview({ silent: true }).then(() => {
-          if (!familyModule.familyHasGroup.value) {
-            familyModule.fetchReceivedFamilyInvitations({ silent: true });
-          }
-        });
-      }
-    }, 5000);
   };
 
   stopPolling = () => {
@@ -983,8 +974,6 @@ export function useDesktopApp() {
     if (token.value) {
       await getUserInfo();
       await hydrateRegionOptionsFromProfile();
-      await chartsModule.fetchCurrentRegionCaseStats();
-      await resumeOngoingSimulationSession();
     } else {
       reconcileRouteState({ replace: true });
     }
@@ -1033,6 +1022,7 @@ export function useDesktopApp() {
 
   return {
     isAuthenticated,
+    isAdminUser,
     authReady,
     user,
     authMode,

@@ -12,12 +12,23 @@ import (
 )
 
 const (
-	geoCaseMapCacheVersionKey = "cache:case_library:geo_map:v1:version"
-	geoCaseMapCacheKeyPrefix  = "cache:case_library:geo_map:v1:data:"
-	geoCaseMapCacheTTL        = 2 * time.Minute
+	geoCaseMapCacheVersionKey        = "cache:case_library:geo_map:v2:version"
+	geoCaseMapOverviewCacheKeyPrefix = "cache:case_library:geo_map:v2:overview:"
+	geoCaseMapChildrenCacheKeyPrefix = "cache:case_library:geo_map:v2:children:"
+	geoCaseRegionCasesCacheKeyPrefix = "cache:case_library:geo_map:v2:region_cases:"
+	geoCaseMapOverviewCacheTTL       = 2 * time.Minute
+	geoCaseMapChildrenCacheTTL       = 2 * time.Minute
+	geoCaseRegionCasesCacheTTL       = 90 * time.Second
+	geoCaseMapLevelProvince          = "province"
+	geoCaseMapLevelCity              = "city"
+	geoCaseMapLevelDistrict          = "district"
 )
 
 type geoCaseJoinedRow struct {
+	RecordID     string    `gorm:"column:record_id"`
+	Title        string    `gorm:"column:title"`
+	CaseSummary  string    `gorm:"column:case_summary"`
+	RiskLevel    string    `gorm:"column:risk_level"`
 	UserID       string    `gorm:"column:user_id"`
 	ScamType     string    `gorm:"column:scam_type"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
@@ -44,14 +55,8 @@ type geoRegionAggregate struct {
 	AllTime    geoWindowAccumulator
 }
 
-type geoProvinceAggregate struct {
-	geoRegionAggregate
-	Cities map[string]*geoRegionAggregate
-	CityDistricts map[string]map[string]*geoRegionAggregate
-}
-
-func buildGeoCaseMap() (apimodel.GeoCaseMapResponse, error) {
-	cacheKey := buildGeoCaseMapCacheKey()
+func buildGeoCaseMapOverview() (apimodel.GeoCaseMapResponse, error) {
+	cacheKey := buildGeoCaseMapOverviewCacheKey()
 	var cached apimodel.GeoCaseMapResponse
 	if found, err := cache.GetJSON(cacheKey, &cached); err == nil && found {
 		return cached, nil
@@ -61,180 +66,138 @@ func buildGeoCaseMap() (apimodel.GeoCaseMapResponse, error) {
 	if err != nil {
 		return apimodel.GeoCaseMapResponse{}, err
 	}
+
 	now := time.Now()
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	last7dStart := todayStart.AddDate(0, 0, -6)
-	prev7dStart := last7dStart.AddDate(0, 0, -7)
-	last30dStart := todayStart.AddDate(0, 0, -29)
-	prev30dStart := last30dStart.AddDate(0, 0, -30)
-
-	provinces := make(map[string]*geoProvinceAggregate)
-	userLocations := make(map[string]struct{})
-	for _, row := range rows {
-		provinceCode := strings.TrimSpace(row.ProvinceCode)
-		provinceName := strings.TrimSpace(row.ProvinceName)
-		cityCode := strings.TrimSpace(row.CityCode)
-		cityName := strings.TrimSpace(row.CityName)
-		scamType := normalizeGeoScamType(row.ScamType)
-		if provinceCode == "" || provinceName == "" {
-			continue
-		}
-		userLocations[strings.TrimSpace(row.UserID)] = struct{}{}
-		province := provinces[provinceCode]
-		if province == nil {
-			province = &geoProvinceAggregate{
-				geoRegionAggregate: newGeoRegionAggregate(provinceCode, provinceName),
-				Cities:             map[string]*geoRegionAggregate{},
-				CityDistricts:      map[string]map[string]*geoRegionAggregate{},
-			}
-			provinces[provinceCode] = province
-		}
-		applyGeoCaseToAggregate(&province.geoRegionAggregate, row.CreatedAt, scamType, now, todayStart, last7dStart, prev7dStart, last30dStart, prev30dStart)
-
-		if cityCode == "" || cityName == "" {
-			continue
-		}
-		city := province.Cities[cityCode]
-		if city == nil {
-			aggregate := newGeoRegionAggregate(cityCode, cityName)
-			city = &aggregate
-			province.Cities[cityCode] = city
-		}
-		applyGeoCaseToAggregate(city, row.CreatedAt, scamType, now, todayStart, last7dStart, prev7dStart, last30dStart, prev30dStart)
-
-		districtCode := strings.TrimSpace(row.DistrictCode)
-		districtName := strings.TrimSpace(row.DistrictName)
-		if districtCode == "" || districtName == "" {
-			continue
-		}
-		if province.CityDistricts[cityCode] == nil {
-			province.CityDistricts[cityCode] = map[string]*geoRegionAggregate{}
-		}
-		district := province.CityDistricts[cityCode][districtCode]
-		if district == nil {
-			aggregate := newGeoRegionAggregate(districtCode, districtName)
-			district = &aggregate
-			province.CityDistricts[cityCode][districtCode] = district
-		}
-		applyGeoCaseToAggregate(district, row.CreatedAt, scamType, now, todayStart, last7dStart, prev7dStart, last30dStart, prev30dStart)
-	}
-
-	provinceItems := make([]apimodel.GeoCaseMapProvinceItem, 0, len(provinces))
-	allProvinceToday := make([]int, 0, len(provinces))
-	allProvince7d := make([]int, 0, len(provinces))
-	allProvince30d := make([]int, 0, len(provinces))
-	allProvinceAll := make([]int, 0, len(provinces))
-	cityCount := 0
-
-	for _, province := range provinces {
-		cityItems := make([]apimodel.GeoCaseMapCityItem, 0, len(province.Cities))
-		cityToday := make([]int, 0, len(province.Cities))
-		city7d := make([]int, 0, len(province.Cities))
-		city30d := make([]int, 0, len(province.Cities))
-		cityAll := make([]int, 0, len(province.Cities))
-		for _, city := range province.Cities {
-			cityToday = append(cityToday, city.Today.Count)
-			city7d = append(city7d, city.Last7d.Count)
-			city30d = append(city30d, city.Last30d.Count)
-			cityAll = append(cityAll, city.AllTime.Count)
-		}
-		for cityCode, city := range province.Cities {
-			districtAggregates := province.CityDistricts[cityCode]
-			districtItems := make([]apimodel.GeoCaseMapDistrictItem, 0, len(districtAggregates))
-			districtToday := make([]int, 0, len(districtAggregates))
-			district7d := make([]int, 0, len(districtAggregates))
-			district30d := make([]int, 0, len(districtAggregates))
-			districtAll := make([]int, 0, len(districtAggregates))
-			for _, district := range districtAggregates {
-				districtToday = append(districtToday, district.Today.Count)
-				district7d = append(district7d, district.Last7d.Count)
-				district30d = append(district30d, district.Last30d.Count)
-				districtAll = append(districtAll, district.AllTime.Count)
-			}
-			for _, district := range districtAggregates {
-				districtItems = append(districtItems, apimodel.GeoCaseMapDistrictItem{
-					RegionCode: district.RegionCode,
-					RegionName: district.RegionName,
-					Stats: buildGeoRegionStats(*district,
-						geoRiskLevel(district.Today.Count, districtToday),
-						geoRiskLevel(district.Last7d.Count, district7d),
-						geoRiskLevel(district.Last30d.Count, district30d),
-						geoRiskLevel(district.AllTime.Count, districtAll),
-					),
-				})
-			}
-			sort.Slice(districtItems, func(i, j int) bool {
-				if districtItems[i].Stats.AllTime.Count == districtItems[j].Stats.AllTime.Count {
-					return districtItems[i].RegionCode < districtItems[j].RegionCode
-				}
-				return districtItems[i].Stats.AllTime.Count > districtItems[j].Stats.AllTime.Count
-			})
-			cityItems = append(cityItems, apimodel.GeoCaseMapCityItem{
-				RegionCode: city.RegionCode,
-				RegionName: city.RegionName,
-				Stats: buildGeoRegionStats(*city,
-					geoRiskLevel(city.Today.Count, cityToday),
-					geoRiskLevel(city.Last7d.Count, city7d),
-					geoRiskLevel(city.Last30d.Count, city30d),
-					geoRiskLevel(city.AllTime.Count, cityAll),
-				),
-				Districts: districtItems,
-			})
-		}
-		sort.Slice(cityItems, func(i, j int) bool {
-			if cityItems[i].Stats.AllTime.Count == cityItems[j].Stats.AllTime.Count {
-				return cityItems[i].RegionCode < cityItems[j].RegionCode
-			}
-			return cityItems[i].Stats.AllTime.Count > cityItems[j].Stats.AllTime.Count
-		})
-
-		allProvinceToday = append(allProvinceToday, province.Today.Count)
-		allProvince7d = append(allProvince7d, province.Last7d.Count)
-		allProvince30d = append(allProvince30d, province.Last30d.Count)
-		allProvinceAll = append(allProvinceAll, province.AllTime.Count)
-		cityCount += len(cityItems)
-		provinceItems = append(provinceItems, apimodel.GeoCaseMapProvinceItem{
-			RegionCode: province.RegionCode,
-			RegionName: province.RegionName,
-			Stats: buildGeoRegionStats(province.geoRegionAggregate,
-				geoRiskLevel(province.Today.Count, allProvinceToday),
-				geoRiskLevel(province.Last7d.Count, allProvince7d),
-				geoRiskLevel(province.Last30d.Count, allProvince30d),
-				geoRiskLevel(province.AllTime.Count, allProvinceAll),
-			),
-			Cities: cityItems,
-		})
-	}
-
-	// Recompute province risk levels after the full distribution is known.
-	for index := range provinceItems {
-		provinceItems[index].Stats = buildGeoRegionStats(
-			provinces[provinceItems[index].RegionCode].geoRegionAggregate,
-			geoRiskLevel(provinceItems[index].Stats.Today.Count, allProvinceToday),
-			geoRiskLevel(provinceItems[index].Stats.Last7d.Count, allProvince7d),
-			geoRiskLevel(provinceItems[index].Stats.Last30d.Count, allProvince30d),
-			geoRiskLevel(provinceItems[index].Stats.AllTime.Count, allProvinceAll),
-		)
-	}
-
-	sort.Slice(provinceItems, func(i, j int) bool {
-		if provinceItems[i].Stats.AllTime.Count == provinceItems[j].Stats.AllTime.Count {
-			return provinceItems[i].RegionCode < provinceItems[j].RegionCode
-		}
-		return provinceItems[i].Stats.AllTime.Count > provinceItems[j].Stats.AllTime.Count
-	})
-
 	result := apimodel.GeoCaseMapResponse{
 		GeneratedAt: now.Format(time.RFC3339),
-		Summary: apimodel.GeoCaseMapSummary{
-			TotalUsersWithLocation: len(userLocations),
-			TotalCases:             len(rows),
-			ProvinceCount:          len(provinceItems),
-			CityCount:              cityCount,
-		},
-		Provinces: provinceItems,
+		Level:       geoCaseMapLevelProvince,
+		Summary:     buildGeoCaseMapSummary(rows),
+		Regions:     aggregateGeoRegions(rows, geoCaseMapLevelProvince, ""),
 	}
-	_ = cache.SetJSON(cacheKey, result, geoCaseMapCacheTTL)
+	_ = cache.SetJSON(cacheKey, result, geoCaseMapOverviewCacheTTL)
+	return result, nil
+}
+
+func buildGeoCaseMapChildren(parentCode string, level string) (apimodel.GeoCaseMapChildrenResponse, error) {
+	normalizedLevel := normalizeGeoLevel(level)
+	normalizedParentCode := strings.TrimSpace(parentCode)
+	cacheKey := buildGeoCaseMapChildrenCacheKey(normalizedLevel, normalizedParentCode)
+
+	var cached apimodel.GeoCaseMapChildrenResponse
+	if found, err := cache.GetJSON(cacheKey, &cached); err == nil && found {
+		return cached, nil
+	}
+
+	rows, err := queryGeoCaseRows()
+	if err != nil {
+		return apimodel.GeoCaseMapChildrenResponse{}, err
+	}
+
+	parentName := resolveGeoParentName(rows, normalizedLevel, normalizedParentCode)
+	regions := aggregateGeoRegions(rows, normalizedLevel, normalizedParentCode)
+	result := apimodel.GeoCaseMapChildrenResponse{
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		Level:       normalizedLevel,
+		ParentCode:  normalizedParentCode,
+		ParentName:  parentName,
+		RegionCount: len(regions),
+		Regions:     regions,
+	}
+	_ = cache.SetJSON(cacheKey, result, geoCaseMapChildrenCacheTTL)
+	return result, nil
+}
+
+func buildGeoCaseRegionCases(regionCode string, window string, page int, pageSize int) (apimodel.GeoCaseMapRegionCasesResponse, error) {
+	normalizedRegionCode := strings.TrimSpace(regionCode)
+	normalizedWindow := normalizeGeoWindow(window)
+	normalizedPageSize := normalizeGeoRegionCasesPageSize(pageSize)
+	normalizedPage := page
+	if normalizedPage <= 0 {
+		normalizedPage = 1
+	}
+
+	cacheKey := buildGeoCaseRegionCasesCacheKey(normalizedRegionCode, normalizedWindow, normalizedPage, normalizedPageSize)
+	var cached apimodel.GeoCaseMapRegionCasesResponse
+	if found, err := cache.GetJSON(cacheKey, &cached); err == nil && found {
+		return cached, nil
+	}
+
+	rows, err := queryGeoCaseRows()
+	if err != nil {
+		return apimodel.GeoCaseMapRegionCasesResponse{}, err
+	}
+
+	now := time.Now()
+	items := make([]apimodel.GeoCaseMapCaseSummaryItem, 0)
+	regionName := ""
+	for _, row := range rows {
+		matchedName := matchGeoRegionName(row, normalizedRegionCode)
+		if matchedName == "" {
+			continue
+		}
+		if !geoCaseInWindow(row.CreatedAt, normalizedWindow, now) {
+			continue
+		}
+		if regionName == "" {
+			regionName = matchedName
+		}
+		items = append(items, apimodel.GeoCaseMapCaseSummaryItem{
+			RecordID:    strings.TrimSpace(row.RecordID),
+			Title:       strings.TrimSpace(row.Title),
+			CaseSummary: strings.TrimSpace(row.CaseSummary),
+			ScamType:    normalizeGeoScamType(row.ScamType),
+			RiskLevel:   strings.TrimSpace(row.RiskLevel),
+			CreatedAt:   row.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].CreatedAt == items[j].CreatedAt {
+			return items[i].RecordID > items[j].RecordID
+		}
+		return items[i].CreatedAt > items[j].CreatedAt
+	})
+
+	total := len(items)
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + normalizedPageSize - 1) / normalizedPageSize
+		if normalizedPage > totalPages {
+			normalizedPage = totalPages
+		}
+	} else {
+		normalizedPage = 1
+	}
+
+	start := 0
+	end := 0
+	if total > 0 {
+		start = (normalizedPage - 1) * normalizedPageSize
+		if start > total {
+			start = total
+		}
+		end = start + normalizedPageSize
+		if end > total {
+			end = total
+		}
+	}
+	pagedItems := items[start:end]
+
+	result := apimodel.GeoCaseMapRegionCasesResponse{
+		GeneratedAt: now.Format(time.RFC3339),
+		RegionCode:  normalizedRegionCode,
+		RegionName:  regionName,
+		Window:      normalizedWindow,
+		CaseCount:   total,
+		Page:        normalizedPage,
+		PageSize:    normalizedPageSize,
+		Total:       total,
+		TotalPages:  totalPages,
+		HasPrev:     totalPages > 0 && normalizedPage > 1,
+		HasNext:     totalPages > 0 && normalizedPage < totalPages,
+		Cases:       pagedItems,
+	}
+	_ = cache.SetJSON(cacheKey, result, geoCaseRegionCasesCacheTTL)
 	return result, nil
 }
 
@@ -242,18 +205,144 @@ func queryGeoCaseRows() ([]geoCaseJoinedRow, error) {
 	if database.DB == nil {
 		return nil, nil
 	}
+
 	rows := make([]geoCaseJoinedRow, 0)
 	err := database.DB.Table("history_cases AS hc").
 		Select(
+			"hc.record_id AS record_id, hc.title AS title, hc.case_summary AS case_summary, hc.risk_level AS risk_level, "+
 				"hc.user_id AS user_id, hc.scam_type AS scam_type, hc.created_at AS created_at, "+
-					"u.province_code AS province_code, u.province_name AS province_name, "+
-					"u.city_code AS city_code, u.city_name AS city_name, "+
-					"u.district_code AS district_code, u.district_name AS district_name",
+				"u.province_code AS province_code, u.province_name AS province_name, "+
+				"u.city_code AS city_code, u.city_name AS city_name, "+
+				"u.district_code AS district_code, u.district_name AS district_name",
 		).
 		Joins("JOIN users AS u ON CAST(u.id AS TEXT) = hc.user_id").
 		Where("hc.status = ?", "completed").
 		Scan(&rows).Error
 	return rows, err
+}
+
+func buildGeoCaseMapSummary(rows []geoCaseJoinedRow) apimodel.GeoCaseMapSummary {
+	userLocations := make(map[string]struct{})
+	provinces := make(map[string]struct{})
+	cities := make(map[string]struct{})
+
+	for _, row := range rows {
+		if strings.TrimSpace(row.ProvinceCode) != "" && strings.TrimSpace(row.UserID) != "" {
+			userLocations[strings.TrimSpace(row.UserID)] = struct{}{}
+			provinces[strings.TrimSpace(row.ProvinceCode)] = struct{}{}
+		}
+		if strings.TrimSpace(row.CityCode) != "" {
+			cities[strings.TrimSpace(row.CityCode)] = struct{}{}
+		}
+	}
+
+	return apimodel.GeoCaseMapSummary{
+		TotalUsersWithLocation: len(userLocations),
+		TotalCases:             len(rows),
+		ProvinceCount:          len(provinces),
+		CityCount:              len(cities),
+	}
+}
+
+func aggregateGeoRegions(rows []geoCaseJoinedRow, level string, parentCode string) []apimodel.GeoCaseMapRegionItem {
+	normalizedLevel := normalizeGeoLevel(level)
+	normalizedParentCode := strings.TrimSpace(parentCode)
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	last7dStart := todayStart.AddDate(0, 0, -6)
+	prev7dStart := last7dStart.AddDate(0, 0, -7)
+	last30dStart := todayStart.AddDate(0, 0, -29)
+	prev30dStart := last30dStart.AddDate(0, 0, -30)
+
+	aggregates := map[string]*geoRegionAggregate{}
+	for _, row := range rows {
+		regionCode, regionName, include := pickGeoRegion(row, normalizedLevel, normalizedParentCode)
+		if !include {
+			continue
+		}
+		aggregate := aggregates[regionCode]
+		if aggregate == nil {
+			nextAggregate := newGeoRegionAggregate(regionCode, regionName)
+			aggregate = &nextAggregate
+			aggregates[regionCode] = aggregate
+		}
+		applyGeoCaseToAggregate(aggregate, row.CreatedAt, normalizeGeoScamType(row.ScamType), now, todayStart, last7dStart, prev7dStart, last30dStart, prev30dStart)
+	}
+
+	items := make([]apimodel.GeoCaseMapRegionItem, 0, len(aggregates))
+	distributionToday := make([]int, 0, len(aggregates))
+	distribution7d := make([]int, 0, len(aggregates))
+	distribution30d := make([]int, 0, len(aggregates))
+	distributionAll := make([]int, 0, len(aggregates))
+	for _, aggregate := range aggregates {
+		distributionToday = append(distributionToday, aggregate.Today.Count)
+		distribution7d = append(distribution7d, aggregate.Last7d.Count)
+		distribution30d = append(distribution30d, aggregate.Last30d.Count)
+		distributionAll = append(distributionAll, aggregate.AllTime.Count)
+	}
+
+	for _, aggregate := range aggregates {
+		items = append(items, apimodel.GeoCaseMapRegionItem{
+			RegionCode: aggregate.RegionCode,
+			RegionName: aggregate.RegionName,
+			Stats: buildGeoRegionStats(
+				*aggregate,
+				geoRiskLevel(aggregate.Today.Count, distributionToday),
+				geoRiskLevel(aggregate.Last7d.Count, distribution7d),
+				geoRiskLevel(aggregate.Last30d.Count, distribution30d),
+				geoRiskLevel(aggregate.AllTime.Count, distributionAll),
+			),
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Stats.AllTime.Count == items[j].Stats.AllTime.Count {
+			return items[i].RegionCode < items[j].RegionCode
+		}
+		return items[i].Stats.AllTime.Count > items[j].Stats.AllTime.Count
+	})
+	return items
+}
+
+func pickGeoRegion(row geoCaseJoinedRow, level string, parentCode string) (string, string, bool) {
+	switch normalizeGeoLevel(level) {
+	case geoCaseMapLevelCity:
+		if strings.TrimSpace(row.ProvinceCode) != parentCode {
+			return "", "", false
+		}
+		code := strings.TrimSpace(row.CityCode)
+		name := strings.TrimSpace(row.CityName)
+		return code, name, code != "" && name != ""
+	case geoCaseMapLevelDistrict:
+		if strings.TrimSpace(row.CityCode) != parentCode {
+			return "", "", false
+		}
+		code := strings.TrimSpace(row.DistrictCode)
+		name := strings.TrimSpace(row.DistrictName)
+		return code, name, code != "" && name != ""
+	default:
+		code := strings.TrimSpace(row.ProvinceCode)
+		name := strings.TrimSpace(row.ProvinceName)
+		return code, name, code != "" && name != ""
+	}
+}
+
+func resolveGeoParentName(rows []geoCaseJoinedRow, level string, parentCode string) string {
+	normalizedLevel := normalizeGeoLevel(level)
+	normalizedParentCode := strings.TrimSpace(parentCode)
+	for _, row := range rows {
+		switch normalizedLevel {
+		case geoCaseMapLevelCity:
+			if strings.TrimSpace(row.ProvinceCode) == normalizedParentCode {
+				return strings.TrimSpace(row.ProvinceName)
+			}
+		case geoCaseMapLevelDistrict:
+			if strings.TrimSpace(row.CityCode) == normalizedParentCode {
+				return strings.TrimSpace(row.CityName)
+			}
+		}
+	}
+	return ""
 }
 
 func newGeoRegionAggregate(code string, name string) geoRegionAggregate {
@@ -271,6 +360,7 @@ func applyGeoCaseToAggregate(aggregate *geoRegionAggregate, createdAt time.Time,
 	if aggregate == nil {
 		return
 	}
+
 	created := createdAt.In(now.Location())
 	aggregate.AllTime.Count++
 	aggregate.AllTime.ScamTypeCount[scamType]++
@@ -386,6 +476,75 @@ func normalizeGeoScamType(raw string) string {
 	return trimmed
 }
 
+func normalizeGeoLevel(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case geoCaseMapLevelCity:
+		return geoCaseMapLevelCity
+	case geoCaseMapLevelDistrict:
+		return geoCaseMapLevelDistrict
+	default:
+		return geoCaseMapLevelProvince
+	}
+}
+
+func normalizeGeoWindow(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "today":
+		return "today"
+	case "last_30d":
+		return "last_30d"
+	case "all_time":
+		return "all_time"
+	default:
+		return "last_7d"
+	}
+}
+
+func normalizeGeoRegionCasesPageSize(raw int) int {
+	switch {
+	case raw <= 10:
+		return 10
+	case raw <= 20:
+		return 20
+	case raw <= 50:
+		return 50
+	default:
+		return 50
+	}
+}
+
+func matchGeoRegionName(row geoCaseJoinedRow, regionCode string) string {
+	normalizedCode := strings.TrimSpace(regionCode)
+	if normalizedCode == "" {
+		return ""
+	}
+	if strings.TrimSpace(row.DistrictCode) == normalizedCode {
+		return strings.TrimSpace(row.DistrictName)
+	}
+	if strings.TrimSpace(row.CityCode) == normalizedCode {
+		return strings.TrimSpace(row.CityName)
+	}
+	if strings.TrimSpace(row.ProvinceCode) == normalizedCode {
+		return strings.TrimSpace(row.ProvinceName)
+	}
+	return ""
+}
+
+func geoCaseInWindow(createdAt time.Time, window string, now time.Time) bool {
+	created := createdAt.In(now.Location())
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	switch normalizeGeoWindow(window) {
+	case "today":
+		return !created.Before(todayStart)
+	case "last_30d":
+		return !created.Before(todayStart.AddDate(0, 0, -29))
+	case "all_time":
+		return true
+	default:
+		return !created.Before(todayStart.AddDate(0, 0, -6))
+	}
+}
+
 func GeoCaseMapCacheVersion() string {
 	var version string
 	found, err := cache.GetJSON(geoCaseMapCacheVersionKey, &version)
@@ -399,6 +558,21 @@ func TouchGeoCaseMapCacheVersion() {
 	_ = cache.SetJSON(geoCaseMapCacheVersionKey, fmt.Sprintf("%d", time.Now().UnixNano()), 0)
 }
 
-func buildGeoCaseMapCacheKey() string {
-	return geoCaseMapCacheKeyPrefix + GeoCaseMapCacheVersion()
+func buildGeoCaseMapOverviewCacheKey() string {
+	return geoCaseMapOverviewCacheKeyPrefix + GeoCaseMapCacheVersion()
+}
+
+func buildGeoCaseMapChildrenCacheKey(level string, parentCode string) string {
+	return geoCaseMapChildrenCacheKeyPrefix + normalizeGeoLevel(level) + ":" + strings.TrimSpace(parentCode) + ":" + GeoCaseMapCacheVersion()
+}
+
+func buildGeoCaseRegionCasesCacheKey(regionCode string, window string, page int, pageSize int) string {
+	return fmt.Sprintf("%s%s:%s:%d:%d:%s",
+		geoCaseRegionCasesCacheKeyPrefix,
+		strings.TrimSpace(regionCode),
+		normalizeGeoWindow(window),
+		page,
+		pageSize,
+		GeoCaseMapCacheVersion(),
+	)
 }

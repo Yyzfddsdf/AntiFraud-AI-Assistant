@@ -53,6 +53,9 @@ go run ./cmd/api
 
 桌面端：
 
+- 当前定位为纯管理员控制台，只保留管理员分析、地理态势、用户管理、案件审核、案件库与独立 AI 聊天入口
+- 账号体系仍然统一保留注册/登录；非管理员登录桌面端后，可通过邀请码升级为管理员再进入控制台
+
 ```bash
 cd frontend/desktop-vue
 npm install
@@ -130,6 +133,10 @@ npm run dev
 - `cache:rate_limit:ip:<ip>:<window_ms>`：限流计数桶，TTL=`RateLimitWindow`
 - `cache:case_library:vector_records`：历史案件向量缓存（Hash）
 - `cache:case_library:vector_records_ready`：向量缓存就绪标记
+- `cache:case_library:geo_map:v2:version`：地理态势缓存版本号（无 TTL，用于统一失效）
+- `cache:case_library:geo_map:v2:overview:<version>`：全国省级总览缓存，TTL=`2` 分钟
+- `cache:case_library:geo_map:v2:children:<level>:<parent_code>:<version>`：城市/区县懒加载缓存，TTL=`2` 分钟
+- `cache:case_library:geo_map:v2:region_cases:<region_code>:<window>:<page>:<page_size>:<version>`：地区案件摘要分页缓存，TTL=`90` 秒
 - `chat:context:<user_id>`：聊天会话上下文，TTL=`5` 分钟
 
 说明：
@@ -610,6 +617,22 @@ flowchart TB
   - **人群视角锚点 (Target Hubs)**：将“目标人群”节点设为菱形大锚点，作为图谱的拓扑中心。
   - **视角切换交互**：支持点击人群锚点自动高亮关联的所有诈骗手法，实现“计算在类型，观察在人群”的混合分析逻辑。
   - **独立交互空间**：图谱以全屏模态框形式展现，避免滚轮缩放操作干扰主页面滚动。
+
+### 9.7.2 地理态势懒加载地图（更新）
+
+- 管理员地理态势接口已从“全国全量树”拆分为三级懒加载：
+  - `GET /api/scam/case-library/cases/geo-map`：仅返回全国省级总览
+  - `GET /api/scam/case-library/cases/geo-map/children`：按父级编码返回城市或区县列表
+  - `GET /api/scam/case-library/cases/geo-map/region-cases`：按地区返回案件摘要分页
+- 拆分目标：
+  - 避免一次响应携带“省-市-区县”整棵地区树
+  - 让前端只在进入某层级时请求该层级数据
+  - Redis 缓存从单个大对象拆成多个小对象，降低重建成本与传输体积
+- 当前 Redis 缓存策略：
+  - 省级总览缓存 `2` 分钟
+  - 城市/区县子级列表缓存 `2` 分钟
+  - 地区案件摘要分页缓存 `90` 秒
+  - 新增归档案件后统一更新 `geo_map:v2:version`，旧缓存自然失效
 
 ### 9.8 实时风险预警推送（WebSocket）
 

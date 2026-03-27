@@ -2,6 +2,7 @@ export const createDesktopTabChangeHandler = (deps) => {
   return (newTab) => {
     deps.syncRouteFromActiveTab();
 
+    if (newTab === 'chat') deps.fetchChatHistory();
     if (newTab === 'case_review') {
       deps.fetchPendingReviews();
     }
