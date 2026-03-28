@@ -286,11 +286,18 @@ export function useMobileApp() {
       simulationCurrentScore.value = Number(res.current_score) || 60;
       simulationPack.value = res.pack || simulationPack.value;
       const steps = Array.isArray(simulationPack.value?.steps) ? simulationPack.value.steps : [];
-      simulationCurrentStep.value = steps.length ? steps[0] : null;
+      simulationCurrentStep.value = res.next_step || (steps.length ? steps[0] : null);
       openSimulationExamView();
-      simulationAnswers.value = [];
-      simulationResult.value = null;
       await fetchSimulationSessions();
+      const currentSession = simulationSessionList.value.find((item) => String(item.pack_id || '').trim() === simulationPackId.value);
+      if (currentSession && Array.isArray(currentSession.answers)) {
+        simulationAnswers.value = currentSession.answers;
+        simulationResult.value = currentSession.result || simulationResult.value;
+        simulationPack.value = currentSession.pack || simulationPack.value;
+      } else {
+        simulationAnswers.value = [];
+        simulationResult.value = null;
+      }
       showToast('答题已开始');
     } finally {
       simulationSubmitting.value = false;
