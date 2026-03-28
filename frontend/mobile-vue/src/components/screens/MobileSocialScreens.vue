@@ -1,100 +1,122 @@
 <template>
-  <div v-show="state.activeTab === 'chat'" class="fixed inset-0 z-[1000] flex flex-col bg-white">
-    <div class="h-14 px-4 flex items-center justify-between border-b border-gray-100 shrink-0 bg-white/90 backdrop-blur-md pt-safe z-30">
-      <div class="flex items-center gap-2">
-        <button @click="state.activeTab = 'tasks'" class="text-slate-500 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>
-        <div class="flex flex-col">
-          <h2 class="text-sm font-bold text-slate-800">Sentinel AI</h2>
-          <span class="text-[10px] text-green-500 font-medium flex items-center gap-1">
-            <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-            Online
-          </span>
-        </div>
-      </div>
-      <button @click="state.clearChatHistory" class="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all" title="清空对话">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-      </button>
-    </div>
-
-    <div id="chat-container" class="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-3 space-y-4 bg-white scroll-smooth pb-4">
-      <div v-if="state.chatMessages.length === 0" class="flex flex-col items-center justify-center h-[56vh] text-center px-5 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-        <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/30">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-        </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-1">我是您的反诈助手</h3>
-        <p class="text-sm text-slate-500 max-w-[260px] leading-relaxed">可帮您识别诈骗信息、分析风险案例或提供安全建议。直接发送文字或图片即可。</p>
-      </div>
-
-      <div v-for="(msg, idx) in state.chatMessages" :key="idx" :class="['flex gap-3 group', msg.type === 'user' ? 'flex-row-reverse' : 'flex-row']">
-        <div class="shrink-0 flex flex-col items-center">
-          <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border border-white/20', msg.type === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white']">
-            <span v-if="msg.type === 'user'">你</span>
-            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+  <div v-show="state.activeTab === 'chat'" class="fixed inset-0 z-[1000] bg-white">
+    <div class="chat-shell animate-fade-in">
+      <div class="chat-frame">
+        <div class="chat-topbar pt-safe px-4">
+          <div class="flex items-center min-w-0">
+            <button @click="state.activeTab = 'tasks'" class="chat-topbar-action chat-topbar-icon" title="返回首页" aria-label="返回首页">
+              <i data-lucide="arrow-left" size="18"></i>
+            </button>
+          </div>
+          <div class="chat-topbar-title">
+            <div class="chat-topbar-eyebrow">用户问题助手回应</div>
+            <div class="chat-topbar-name">Sentinel AI</div>
+          </div>
+          <div class="flex items-center justify-end">
+            <button @click="state.clearChatHistory" class="chat-topbar-action chat-topbar-icon" title="清空对话" aria-label="清空对话">
+              <i data-lucide="trash-2" size="18"></i>
+            </button>
           </div>
         </div>
 
-        <div :class="['flex flex-col max-w-[86%] min-w-0', msg.type === 'user' ? 'items-end' : 'items-start']">
-          <div v-if="msg.type !== 'tool'" class="text-xs font-bold text-slate-400 mb-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {{ msg.type === 'user' ? '你' : '反诈助手' }}
-          </div>
+        <div id="chat-container" class="chat-stage hide-scrollbar">
+          <div class="chat-thread">
+            <div
+              v-for="(msg, idx) in state.chatMessages"
+              :key="idx"
+              :class="['chat-row', msg.type === 'user' ? 'chat-row--user' : msg.type === 'tool' ? 'chat-row--tool' : 'chat-row--ai']"
+            >
+              <div v-if="msg.type === 'tool'" class="chat-tool-note">
+                <span class="animate-pulse mr-1">*</span> {{ msg.content }}
+              </div>
+              <div
+                v-else
+                :class="[
+                  'chat-message',
+                  msg.type === 'error'
+                    ? 'chat-message--error'
+                    : msg.type === 'user'
+                      ? 'chat-message--user'
+                      : 'chat-message--ai'
+                ]"
+              >
+                <div v-if="msg.type === 'ai' && msg.rendered_content" class="chat-markdown" v-html="msg.rendered_content"></div>
+                <div v-else-if="msg.content" class="chat-markdown whitespace-pre-wrap">{{ msg.content }}</div>
+                <div v-if="msg.images && msg.images.length" :class="[msg.content ? 'mt-3' : '', 'grid grid-cols-2 gap-3']">
+                  <button
+                    v-for="(image, imageIdx) in msg.images"
+                    :key="`${idx}-${imageIdx}`"
+                    type="button"
+                    @click="state.openImage(image)"
+                    class="chat-inline-image"
+                  >
+                    <img :src="image" alt="chat image" class="w-full h-28 object-cover block">
+                  </button>
+                </div>
+              </div>
+            </div>
 
-          <div v-if="msg.type === 'tool'" class="flex items-center gap-2 text-[11px] font-mono text-slate-500 my-1 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 w-full">
-            <div class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-            <span class="truncate">{{ msg.content }}</span>
-          </div>
-
-          <div v-else :class="['relative px-3 py-2.5 text-[14px] leading-6 shadow-sm max-w-full overflow-hidden', msg.type === 'user' ? 'bg-[#f4f4f4] text-slate-800 rounded-2xl rounded-tr-sm' : msg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100 rounded-2xl rounded-tl-sm' : 'bg-transparent text-slate-800 p-0 shadow-none']">
-            <div v-if="msg.type === 'ai' && msg.rendered_content" class="break-words break-all max-w-full overflow-hidden markdown-body" v-html="msg.rendered_content"></div>
-            <div v-else-if="msg.content" class="whitespace-pre-wrap break-words break-all max-w-full overflow-hidden">{{ msg.content }}</div>
-            <div v-if="msg.images && msg.images.length" class="mt-2 grid grid-cols-2 gap-2">
-              <button v-for="(img, imgIdx) in msg.images" :key="`${idx}-${imgIdx}`" type="button" class="relative group/img rounded-xl overflow-hidden border border-black/5 shadow-sm transition-transform hover:scale-[1.02] active:scale-95" @click="state.openImage(img)">
-                <img :src="img" class="w-full h-28 object-cover bg-white">
-                <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors"></div>
-              </button>
+            <div v-if="state.isChatting" class="chat-row chat-row--ai">
+              <div class="chat-typing">
+                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
+                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
+                <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="state.isChatting" class="flex gap-3">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-sm shrink-0">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-        </div>
-        <div class="flex items-center h-7">
-          <div class="flex gap-1">
-            <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-0"></span>
-            <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-150"></span>
-            <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both] delay-300"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="shrink-0 bg-white border-t border-gray-100 p-3 z-40" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
-      <div v-if="state.chatImages.length" class="flex gap-2 overflow-x-auto pb-2 mb-1 px-1">
-        <div v-for="(img, idx) in state.chatImages" :key="idx" class="relative w-14 h-14 shrink-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
-          <img :src="img" class="w-full h-full object-cover">
-          <button @click="state.removeChatImage(idx)" class="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-red-500 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
-      </div>
-
-      <form @submit.prevent="state.sendChatMessage" class="relative max-w-3xl mx-auto">
-        <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-[22px] p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-          <button type="button" @click="state.triggerChatImagePicker" :disabled="state.isChatting" class="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-gray-200/50 transition-colors shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-          </button>
+        <div class="chat-composer-shell px-4" :style="{ paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))' }">
           <input id="chat-image-input" type="file" accept="image/*" multiple class="hidden" @change="state.handleChatImageSelect">
-          <textarea v-model="state.chatInput" placeholder="发送消息..." rows="1" class="w-full bg-transparent border-none outline-none text-[14px] text-slate-800 placeholder:text-slate-400 py-2 max-h-28 resize-none leading-6" @keydown.enter.prevent="!state.isChatting && (state.chatInput.trim() || state.chatImages.length) ? state.sendChatMessage() : null"></textarea>
-          <button type="submit" :disabled="(!state.chatInput.trim() && !state.chatImages.length) || state.isChatting" class="p-2.5 rounded-full bg-emerald-600 text-white disabled:opacity-20 disabled:bg-slate-300 transition-all shrink-0 hover:bg-emerald-700 shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
-          </button>
+          <div v-if="state.chatImages.length" class="chat-preview-strip hide-scrollbar">
+            <div v-for="(image, idx) in state.chatImages" :key="`chat-image-${idx}`" class="chat-preview-card">
+              <img :src="image" alt="selected chat image" class="w-full h-full object-cover">
+              <button type="button" @click="state.removeChatImage(idx)" class="chat-preview-remove">×</button>
+            </div>
+          </div>
+          <form
+            @submit.prevent="state.sendChatMessage"
+            :class="['container-ia-chat', { 'composer-ready': state.chatInput.trim() || state.chatImages.length > 0, 'composer-busy': state.isChatting }]"
+          >
+            <div class="container-upload-files">
+              <label
+                :for="state.isChatting ? null : 'chat-image-input'"
+                :class="['upload-file', { 'upload-file--disabled': state.isChatting }]"
+                title="添加图片"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                    <circle cx="9" cy="9" r="2"></circle>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                  </g>
+                </svg>
+              </label>
+            </div>
+            <input
+              v-model="state.chatInput"
+              type="text"
+              placeholder="Ask Anything..."
+              class="input-text"
+              :disabled="state.isChatting"
+              :required="state.chatImages.length === 0"
+              @keydown.enter.prevent="!state.isChatting && (state.chatInput.trim() || state.chatImages.length) ? state.sendChatMessage() : null"
+            >
+            <button
+              type="submit"
+              :disabled="(!state.chatInput.trim() && state.chatImages.length === 0) || state.isChatting"
+              class="label-text"
+              title="发送"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 11.5L19 4l-4.5 16l-2.5-6l-6-2.5z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.5 14L19 4"></path>
+              </svg>
+            </button>
+          </form>
+          <p class="chat-footnote">内容由 AI 生成，请仔细甄别</p>
         </div>
-        <div class="text-center mt-2">
-          <p class="text-[10px] text-slate-400">Sentinel AI 可能会产生错误信息，请核实重要信息。</p>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 
@@ -326,10 +348,475 @@
 </template>
 
 <script setup>
+import { nextTick, onMounted, onUpdated } from 'vue';
+
 defineProps({
   state: {
     type: Object,
     required: true
   }
 });
+
+const refreshLucideIcons = () => {
+  nextTick(() => {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  });
+};
+
+onMounted(refreshLucideIcons);
+onUpdated(refreshLucideIcons);
 </script>
+
+<style scoped>
+.chat-markdown :deep(p) {
+  margin: 0;
+}
+
+.chat-markdown :deep(p + p),
+.chat-markdown :deep(ul),
+.chat-markdown :deep(ol),
+.chat-markdown :deep(pre),
+.chat-markdown :deep(blockquote),
+.chat-markdown :deep(h1),
+.chat-markdown :deep(h2),
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  margin-top: 0.6rem;
+}
+
+.chat-markdown :deep(h1),
+.chat-markdown :deep(h2),
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.chat-markdown :deep(h1) {
+  font-size: 1.05rem;
+}
+
+.chat-markdown :deep(h2) {
+  font-size: 1rem;
+}
+
+.chat-markdown :deep(h3),
+.chat-markdown :deep(h4) {
+  font-size: 0.95rem;
+}
+
+.chat-markdown :deep(ul),
+.chat-markdown :deep(ol) {
+  padding-left: 1.2rem;
+}
+
+.chat-markdown :deep(li + li) {
+  margin-top: 0.2rem;
+}
+
+.chat-markdown :deep(blockquote) {
+  border-left: 3px solid rgba(100, 116, 139, 0.35);
+  padding-left: 0.75rem;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.chat-markdown :deep(code) {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.chat-markdown :deep(pre) {
+  overflow-x: auto;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.6rem;
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+}
+
+.chat-markdown :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.chat-markdown :deep(a) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-markdown :deep(hr) {
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  margin-top: 0.75rem;
+}
+
+.chat-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.chat-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+.chat-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 1rem;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.chat-topbar-title {
+  text-align: center;
+  min-width: 0;
+}
+
+.chat-topbar-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.92);
+}
+
+.chat-topbar-name {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.chat-topbar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  padding: 0.2rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+
+.chat-topbar-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+}
+
+.chat-topbar-action:hover,
+.chat-topbar-action:focus-visible {
+  color: #0f172a;
+  background: transparent;
+}
+
+.chat-stage {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1.2rem 1rem 1rem;
+  background: #ffffff;
+}
+
+.chat-thread {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.chat-row {
+  display: flex;
+}
+
+.chat-row--user {
+  justify-content: flex-end;
+}
+
+.chat-row--ai {
+  justify-content: flex-start;
+}
+
+.chat-row--tool {
+  justify-content: center;
+}
+
+.chat-tool-note {
+  font-size: 0.72rem;
+  font-family: Consolas, 'Courier New', monospace;
+  color: #94a3b8;
+  padding: 0.3rem 0.5rem;
+}
+
+.chat-message {
+  max-width: 100%;
+  line-height: 1.9;
+  color: #0f172a;
+}
+
+.chat-message--ai {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.chat-message--user {
+  max-width: min(76%, 24rem);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  color: #334155;
+  text-align: right;
+}
+
+.chat-message--error {
+  max-width: min(84%, 30rem);
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  background: rgba(254, 242, 242, 0.95);
+  border: 1px solid rgba(254, 202, 202, 0.95);
+  color: #b91c1c;
+}
+
+.chat-inline-image {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(148, 163, 184, 0.12);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.chat-inline-image:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(148, 163, 184, 0.18);
+}
+
+.chat-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0;
+  color: #94a3b8;
+}
+
+.chat-composer-shell {
+  flex-shrink: 0;
+  padding-top: 1rem;
+  background: #ffffff;
+}
+
+.chat-preview-strip {
+  width: 100%;
+  margin: 0 auto 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  overflow-x: auto;
+}
+
+.chat-preview-card {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(148, 163, 184, 0.12);
+}
+
+.chat-preview-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  font-size: 0.72rem;
+  transition: background-color 0.2s ease;
+}
+
+.chat-preview-remove:hover {
+  background: #ef4444;
+}
+
+.container-ia-chat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.container-upload-files {
+  position: absolute;
+  left: 0;
+  display: flex;
+  color: #aaaaaa;
+  transition: all 0.5s;
+}
+
+.upload-file {
+  margin: 5px;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.5s;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-file:hover,
+.upload-file:focus-visible {
+  color: #4c4c4c;
+  transform: scale(1.1);
+}
+
+.upload-file--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+.input-text {
+  max-width: calc(100% - 72px);
+  width: 100%;
+  margin-left: 72px;
+  padding: 0.75rem 1rem;
+  padding-right: 46px;
+  border-radius: 50px;
+  border: none;
+  outline: none;
+  background-color: #e9e9e9;
+  color: #4c4c4c;
+  font-size: 14px;
+  line-height: 18px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 500;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.05);
+  z-index: 3;
+}
+
+.input-text::placeholder {
+  color: #959595;
+}
+
+.input-text::selection {
+  background-color: #4c4c4c;
+  color: #e9e9e9;
+}
+
+.container-ia-chat:focus-within .input-text,
+.container-ia-chat.composer-ready .input-text {
+  max-width: calc(100% - 42px);
+  margin-left: 42px;
+}
+
+.container-ia-chat:focus-within .container-upload-files,
+.container-ia-chat.composer-ready .container-upload-files {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  filter: blur(5px);
+}
+
+.input-text:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.label-text {
+  position: absolute;
+  top: 50%;
+  right: 0.25rem;
+  transform: translateY(-50%) scale(0.25);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.05);
+  z-index: 4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  color: #e9e9e9;
+  background: linear-gradient(to top right, #9147ff, #ff4141);
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.5);
+  border-radius: 50px;
+}
+
+.container-ia-chat:focus-within .label-text,
+.container-ia-chat.composer-ready .label-text {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+.label-text:hover,
+.label-text:focus-visible {
+  transform-origin: top center;
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 1);
+}
+
+.label-text:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+.label-text:disabled {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.chat-footnote {
+  width: 100%;
+  margin: 0.45rem auto 0;
+  text-align: center;
+  font-size: 0.65rem;
+  color: #c0c7d2;
+  letter-spacing: 0.04em;
+}
+</style>
