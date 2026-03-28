@@ -145,197 +145,186 @@
     </div>
   </div>
 
-  <div v-show="state.activeTab === 'family'" class="bg-slate-50 pb-24">
+  <div v-show="state.activeTab === 'family'" class="bg-white pb-24 min-h-screen">
     <!-- Header -->
-    <div class="sticky top-0 z-50 bg-white border-b border-slate-100 pt-safe">
-      <div class="flex items-center justify-center px-4 h-14 relative">
-        <h2 class="text-[17px] font-bold text-slate-900 tracking-tight">家庭守护</h2>
+    <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl pt-safe">
+      <div class="flex items-center justify-center px-4 h-12 relative border-b border-slate-50">
+        <h2 class="text-[16px] font-bold text-slate-800 tracking-tight">家庭守护</h2>
       </div>
     </div>
 
-    <div class="px-4 py-5 space-y-4">
-      <div v-if="state.familyLoading" class="bg-white rounded-[24px] p-6 text-center shadow-sm border border-slate-100/60">
+    <div class="px-4 py-4 space-y-4">
+      <div v-if="state.familyLoading" class="bg-[#F9FAFB] rounded-[20px] p-6 text-center border border-slate-100/50 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
         <div class="flex flex-col items-center justify-center">
-          <svg class="animate-spin w-6 h-6 text-emerald-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          <span class="text-[13px] font-bold text-slate-500">正在加载家庭数据...</span>
+          <svg class="animate-spin w-5 h-5 text-slate-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span class="text-[12px] font-medium text-slate-400 tracking-wide">正在加载数据...</span>
         </div>
       </div>
 
       <div v-else-if="!state.familyHasGroup" class="space-y-4">
-        <div class="w-16 h-16 bg-white shadow-sm border border-slate-100/60 rounded-[20px] flex items-center justify-center mx-auto mb-2 text-emerald-500">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        <div class="w-14 h-14 bg-[#F9FAFB] shadow-[0_2px_10px_rgba(0,0,0,0.01)] rounded-[16px] flex items-center justify-center mx-auto mb-3 text-slate-700 border border-slate-100/50">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
+        <div class="bg-[#F9FAFB] rounded-[20px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-slate-100/50">
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-              <h3 class="font-extrabold text-[15px] text-slate-900">收到的邀请</h3>
-            </div>
-            <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{{ state.familyReceivedInvitations.length }} 条</span>
+            <h3 class="font-bold text-[15px] text-slate-800 tracking-tight">收到的邀请</h3>
+            <span class="text-[10px] font-medium text-slate-500 bg-[#E5E7EB]/50 px-2 py-0.5 rounded-md">{{ state.familyReceivedInvitations.length }}</span>
           </div>
-          <div v-if="state.familyReceivedLoading && state.familyReceivedInvitations.length === 0" class="text-xs font-bold text-slate-400 py-3 text-center">正在加载邀请...</div>
-          <div v-else-if="state.familyReceivedInvitations.length === 0" class="text-[11px] font-bold text-slate-400 py-6 text-center bg-slate-50/50 rounded-[16px] border border-slate-100 border-dashed">当前没有收到新的家庭邀请</div>
+          <div v-if="state.familyReceivedLoading && state.familyReceivedInvitations.length === 0" class="text-[11px] text-slate-400 py-3 text-center">加载中...</div>
+          <div v-else-if="state.familyReceivedInvitations.length === 0" class="text-[11px] text-slate-400 py-6 text-center bg-white rounded-[16px] border border-slate-100/50">暂无邀请</div>
           <div v-else class="space-y-3">
-            <div v-for="invitation in state.familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-[20px] border border-emerald-100 bg-emerald-50/30 p-4 relative overflow-hidden group">
-              <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-100/30 rounded-bl-full opacity-50"></div>
+            <div v-for="invitation in state.familyReceivedInvitations" :key="`received-${invitation.id}`" class="rounded-[16px] bg-white p-4 relative overflow-hidden group border border-slate-100/50 shadow-sm">
               <div class="flex items-start justify-between gap-3 relative z-10">
                 <div class="min-w-0">
-                  <div class="text-[15px] font-black text-slate-900 tracking-tight">{{ invitation.family_name || '家庭邀请' }}</div>
-                  <div class="text-[11px] font-bold text-slate-500 mt-1.5 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> {{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</div>
-                  <div class="text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-1.5">
-                    <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">角色: {{ invitation.role }}</span>
-                    <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">关系: {{ invitation.relation || '未填写' }}</span>
+                  <div class="text-[14px] font-bold text-slate-800 tracking-tight mb-1">{{ invitation.family_name || '家庭邀请' }}</div>
+                  <div class="text-[11px] text-slate-500 flex items-center gap-1.5"><svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> {{ invitation.inviter_name || invitation.inviter_email || invitation.inviter_phone || '未知' }}</div>
+                  <div class="text-[10px] text-slate-400 mt-2 flex items-center gap-2">
+                    <span class="bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-slate-100">角色: {{ invitation.role }}</span>
+                    <span class="bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-slate-100">关系: {{ invitation.relation || '未填写' }}</span>
                   </div>
                 </div>
-                <span :class="['shrink-0 text-[10px] font-black px-2 py-1 rounded-md tracking-widest', invitation.status === 'pending' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'bg-slate-100 text-slate-500']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
+                <span :class="['shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-md', invitation.status === 'pending' ? 'bg-slate-800 text-white' : 'bg-[#E5E7EB]/50 text-slate-500']">{{ invitation.status === 'pending' ? '待处理' : invitation.status }}</span>
               </div>
-              <div class="mt-4 bg-white rounded-xl border border-slate-100/80 p-3 flex items-center justify-between relative z-10 shadow-sm">
-                <div class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">邀请码</div>
-                <div class="font-mono text-[13px] font-black text-emerald-700 tracking-[0.1em]">{{ invitation.invite_code }}</div>
+              <div class="mt-4 bg-[#F9FAFB] rounded-[12px] p-3 flex items-center justify-between border border-slate-100/50">
+                <div class="text-[10px] tracking-widest text-slate-400">邀请码</div>
+                <div class="font-mono text-[13px] font-bold text-slate-700 tracking-widest">{{ invitation.invite_code }}</div>
               </div>
-              <button @click="state.acceptFamilyInvitation(invitation.invite_code, invitation.id)" :disabled="invitation.status !== 'pending' || state.familyAcceptingInvitations[invitation.id]" class="w-full mt-3 h-12 rounded-xl bg-slate-900 text-white text-[13px] font-bold shadow-md active:scale-[0.98] transition-all disabled:opacity-50 relative z-10">
+              <button @click="state.acceptFamilyInvitation(invitation.invite_code, invitation.id)" :disabled="invitation.status !== 'pending' || state.familyAcceptingInvitations[invitation.id]" class="w-full mt-3 h-10 rounded-[12px] bg-slate-800 text-white text-[13px] font-bold shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
                 {{ state.familyAcceptingInvitations[invitation.id] ? '加入中...' : '接受邀请' }}
               </button>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-            <h3 class="font-extrabold text-[15px] text-slate-900">创建新家庭</h3>
-          </div>
+        <div class="bg-[#F9FAFB] rounded-[20px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-slate-100/50">
+          <h3 class="font-bold text-[15px] text-slate-800 tracking-tight mb-4">创建新家庭</h3>
           <div class="relative mb-4">
-            <input v-model="state.familyCreateForm.name" type="text" placeholder="给家庭起个名字" class="w-full h-12 pl-4 pr-4 rounded-[16px] bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-[13px] font-bold text-slate-900 placeholder-slate-400 outline-none transition-all">
+            <input v-model="state.familyCreateForm.name" type="text" placeholder="输入家庭名称" class="w-full h-12 pl-4 pr-3 rounded-[12px] bg-white border border-slate-100 focus:border-slate-300 focus:ring-1 focus:ring-slate-200 text-[13px] text-slate-800 placeholder-slate-400 outline-none transition-all shadow-sm">
           </div>
-          <button @click="state.createFamily" class="w-full h-12 rounded-[16px] bg-blue-600 text-white text-[14px] font-bold shadow-md active:scale-[0.98] transition-all">创建</button>
+          <button @click="state.createFamily" class="w-full h-12 rounded-[12px] bg-slate-800 text-white text-[13px] font-bold shadow-sm active:scale-[0.98] transition-all">创建</button>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
-          <div class="flex items-center gap-2 mb-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></div>
-            <h3 class="font-extrabold text-[15px] text-slate-900">邀请码加入</h3>
-          </div>
-          <p class="text-[11px] font-bold text-slate-400 mb-4">输入家人发来的邀请码，快速加入已有家庭</p>
+        <div class="bg-[#F9FAFB] rounded-[20px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-slate-100/50">
+          <h3 class="font-bold text-[15px] text-slate-800 tracking-tight mb-1.5">邀请码加入</h3>
+          <p class="text-[11px] text-slate-400 mb-4">输入家人发来的邀请码，快速加入</p>
           <div class="relative mb-4">
-            <input v-model="state.familyAcceptForm.invite_code" type="text" placeholder="输入家庭邀请码" class="w-full h-12 pl-4 pr-4 rounded-[16px] bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 text-[13px] font-bold text-slate-900 placeholder-slate-400 uppercase tracking-[0.16em] outline-none transition-all">
+            <input v-model="state.familyAcceptForm.invite_code" type="text" placeholder="输入邀请码" class="w-full h-12 pl-4 pr-3 rounded-[12px] bg-white border border-slate-100 focus:border-slate-300 focus:ring-1 focus:ring-slate-200 text-[13px] text-slate-800 placeholder-slate-400 uppercase tracking-widest outline-none transition-all shadow-sm">
           </div>
-          <button @click="state.acceptFamilyInvitation" class="w-full h-12 rounded-[16px] bg-slate-900 text-white text-[14px] font-bold shadow-md active:scale-[0.98] transition-all">加入家庭</button>
+          <button @click="state.acceptFamilyInvitation" class="w-full h-12 rounded-[12px] bg-slate-800 text-white text-[13px] font-bold shadow-sm active:scale-[0.98] transition-all">加入</button>
         </div>
       </div>
 
       <div v-else class="space-y-4">
         <!-- Family Overview Card -->
-        <div class="rounded-[28px] overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 text-white p-6 shadow-xl shadow-emerald-500/20 relative active:scale-[0.98] transition-transform">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl pointer-events-none"></div>
-          <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-emerald-400/20 rounded-tr-full blur-xl pointer-events-none"></div>
+        <div class="rounded-[24px] bg-[#F0FCFA] p-5 shadow-[0_2px_15px_rgba(0,0,0,0.02)] border border-[#D9F5F0] relative active:scale-[0.99] transition-transform overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-white rounded-bl-full opacity-40 pointer-events-none"></div>
           
-          <div class="flex justify-between items-start gap-3 mb-6 relative z-10">
+          <div class="flex justify-between items-start gap-3 mb-5 relative z-10">
             <div class="min-w-0">
-              <h3 class="font-black text-[22px] tracking-tight truncate drop-shadow-sm">{{ state.familyOverview.family.name }}</h3>
-              <p class="mt-2 text-[11px] font-bold text-emerald-50/90 flex items-center gap-2 tracking-wide uppercase">
-                <span class="bg-black/10 px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/5">成员 {{ state.familyMembers.length }} 人</span>
-                <span class="bg-black/10 px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/5" v-if="state.familyUnreadCount > 0">未读 {{ state.familyUnreadCount }}</span>
+              <h3 class="font-bold text-[20px] text-slate-800 tracking-tight truncate">{{ state.familyOverview.family.name }}</h3>
+              <p class="mt-1.5 text-[11px] font-medium text-slate-500 flex items-center gap-2">
+                <span class="bg-white/90 px-2 py-0.5 rounded-md border border-[#D9F5F0] shadow-sm">成员 {{ state.familyMembers.length }}</span>
+                <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md border border-rose-100 shadow-sm" v-if="state.familyUnreadCount > 0">未读 {{ state.familyUnreadCount }}</span>
               </p>
             </div>
-            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 shadow-sm shrink-0">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm border border-[#D9F5F0]">
+              <i data-lucide="users" class="text-[#14B8A6]" size="16"></i>
             </div>
           </div>
           
-          <div class="rounded-[16px] border border-white/20 bg-black/15 backdrop-blur-md px-4 py-3 mb-5 relative z-10 flex items-center justify-between">
+          <div class="rounded-[16px] bg-white px-4 py-3 mb-5 relative z-10 flex items-center justify-between shadow-sm border border-[#D9F5F0]">
             <div>
-              <div class="text-[10px] uppercase tracking-[0.2em] text-white/70 font-black mb-1">家庭专属邀请码</div>
-              <p class="font-mono text-[15px] font-black tracking-widest text-white drop-shadow-sm">{{ state.familyOverview.family.invite_code || '暂无邀请码' }}</p>
+              <div class="text-[10px] tracking-widest text-slate-400 mb-0.5">专属邀请码</div>
+              <p class="font-mono text-[14px] font-bold tracking-widest text-slate-700">{{ state.familyOverview.family.invite_code || '暂无邀请码' }}</p>
             </div>
-            <button @click="state.activeTab = 'family_invite'" class="h-8 px-3 rounded-xl bg-white/20 text-[11px] font-bold flex items-center justify-center backdrop-blur-md border border-white/10 active:bg-white/30 transition-colors">
+            <button @click="state.activeTab = 'family_invite'" class="h-8 px-3 rounded-[10px] bg-[#E8FAF6] text-[#0F766E] text-[11px] font-bold flex items-center justify-center border border-[#CDEFE8] active:bg-[#DDF6F1] transition-colors">
               管理
             </button>
           </div>
           
-          <div class="flex -space-x-3 overflow-hidden py-1 relative z-10">
-            <div v-for="member in state.familyMembers" :key="member.user_id" class="w-10 h-10 rounded-full border-[2.5px] border-emerald-600 bg-white flex items-center justify-center text-teal-700 font-black text-[13px] relative shadow-sm">
+          <div class="flex -space-x-2.5 overflow-hidden py-0.5 relative z-10">
+            <div v-for="member in state.familyMembers" :key="member.user_id" class="w-8 h-8 rounded-full border-2 border-[#F0FCFA] bg-white flex items-center justify-center text-slate-600 font-bold text-[11px] relative shadow-sm">
               {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
-              <div v-if="member.risk_status === 'high'" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full shadow-sm"></div>
+              <div v-if="member.risk_status === 'high'" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-500 border-2 border-[#F0FCFA] rounded-full"></div>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-              <h3 class="font-extrabold text-[15px] text-slate-900">家庭成员</h3>
+        <!-- 定制化成员下拉菜单（淡青色卡片） -->
+        <div class="bg-[#F0FCFA] rounded-[24px] p-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-[#E0F8F5] transition-all duration-300">
+          <button @click="isMembersExpanded = !isMembersExpanded" class="w-full px-3.5 py-2.5 flex items-center justify-between outline-none active:scale-[0.99] transition-transform">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-[12px] bg-[#DFF7F4] flex items-center justify-center text-[#14B8A6] shadow-inner">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+              </div>
+              <div class="text-left">
+                <h3 class="font-bold text-[14px] text-slate-800 tracking-tight">成员列表</h3>
+                <p class="text-[10px] font-medium text-slate-500 mt-0.5">共 {{ state.familyMembers.length }} 名成员</p>
+              </div>
             </div>
-            <span class="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{{ state.familyMembers.length }} 人</span>
-          </div>
-          <div class="space-y-3">
-            <div v-for="member in state.familyMembers" :key="member.member_id || member.user_id" class="flex items-center gap-3 p-3 rounded-[16px] bg-slate-50/50 border border-slate-100/50 active:bg-slate-50 transition-colors group">
-              <div class="w-11 h-11 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center font-black text-[15px] text-slate-700 shrink-0">
+            <div :class="['w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-400 transition-transform duration-300', isMembersExpanded ? 'rotate-180' : '']">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </button>
+          
+          <div v-if="isMembersExpanded" class="px-1.5 pb-1.5 pt-2 space-y-1.5 animate-fade-in">
+            <div v-for="member in state.familyMembers" :key="member.member_id || member.user_id" class="flex items-center gap-3 bg-white p-2.5 rounded-[16px] shadow-[0_1px_5px_rgba(0,0,0,0.02)] border border-[#F0FCFA]">
+              <div class="w-9 h-9 rounded-full bg-[#F0FCFA] flex items-center justify-center font-bold text-[12px] text-[#14B8A6] shrink-0 border border-[#E0F8F5]">
                 {{ member.username ? member.username.substring(0,1).toUpperCase() : 'U' }}
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 mb-0.5">
-                  <p class="text-[14px] font-extrabold text-slate-900 truncate">{{ member.username }}</p>
-                  <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-100/80 text-emerald-700">{{ member.role }}</span>
+                  <p class="text-[13px] font-bold text-slate-800 truncate">{{ member.username }}</p>
+                  <span class="text-[9px] font-medium px-1.5 py-0.5 rounded md bg-[#F0FCFA] text-[#14B8A6]">{{ member.role }}</span>
                 </div>
-                <p class="text-[11px] font-bold text-slate-400">{{ member.relation || '未设置关系' }} <span class="mx-1 opacity-50">·</span> {{ member.email || member.phone || '无联系方式' }}</p>
+                <p class="text-[10px] text-slate-400">{{ member.relation || '未设置关系' }} <span class="mx-1 opacity-30">|</span> {{ member.email || member.phone || '无联系方式' }}</p>
               </div>
             </div>
-            <div v-if="state.familyMembers.length === 0" class="text-center py-8 text-slate-400 text-[12px] font-bold bg-slate-50/50 rounded-[16px] border border-slate-100 border-dashed">暂无家庭成员</div>
+            <div v-if="state.familyMembers.length === 0" class="text-center py-4 text-slate-400 text-[11px] bg-white rounded-[16px]">暂无家庭成员</div>
           </div>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
+        <div class="bg-[#F9FAFB] rounded-[24px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-slate-100/50">
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-              <h3 class="font-extrabold text-[15px] text-slate-900">守护关系</h3>
-            </div>
-            <span class="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{{ state.familyGuardianLinks.length }} 条</span>
+            <h3 class="font-bold text-[15px] text-slate-800 tracking-tight">守护关系</h3>
+            <span class="text-[10px] font-medium text-slate-500 bg-white px-2 py-0.5 rounded-md shadow-sm border border-slate-100">{{ state.familyGuardianLinks.length }}</span>
           </div>
           <div class="space-y-3">
-            <div v-for="link in state.familyGuardianLinks" :key="link.id" class="p-3.5 rounded-[16px] bg-slate-50/50 border border-slate-100/50 flex items-center justify-between gap-3">
-              <div>
+            <div v-for="link in state.familyGuardianLinks" :key="link.id" class="p-3.5 rounded-[16px] bg-white flex items-center justify-between gap-2 border border-slate-100/50 shadow-sm">
+              <div class="min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="text-[13px] font-extrabold text-slate-800">{{ link.guardian_name }}</span>
-                  <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                  <span class="text-[13px] font-extrabold text-slate-800">{{ link.member_name }}</span>
+                  <span class="text-[13px] font-bold text-slate-700 truncate">{{ link.guardian_name }}</span>
+                  <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                  <span class="text-[13px] font-bold text-slate-700 truncate">{{ link.member_name }}</span>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400">{{ link.guardian_email }} / {{ link.member_email }}</p>
+                <p class="text-[10px] text-slate-400 truncate">{{ link.guardian_email }} / {{ link.member_email }}</p>
               </div>
-              <span class="text-[9px] font-black px-2 py-1 rounded bg-cyan-100 text-cyan-700 tracking-widest uppercase">守护中</span>
+              <span class="text-[9px] font-medium px-2 py-1 rounded-md bg-[#F9FAFB] border border-slate-100 text-slate-500 shrink-0">守护中</span>
             </div>
-            <div v-if="state.familyGuardianLinks.length === 0" class="text-center py-8 text-slate-400 text-[12px] font-bold bg-slate-50/50 rounded-[16px] border border-slate-100 border-dashed">当前还没有守护关系</div>
+            <div v-if="state.familyGuardianLinks.length === 0" class="text-center py-6 text-slate-400 text-[11px] bg-white rounded-[16px] border border-slate-100/50">暂无守护关系</div>
           </div>
         </div>
 
-        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/60">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-            <h3 class="font-extrabold text-[15px] text-slate-900">最新动态</h3>
-          </div>
+        <div class="bg-[#F9FAFB] rounded-[24px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] border border-slate-100/50">
+          <h3 class="font-bold text-[15px] text-slate-800 tracking-tight mb-4">最新动态</h3>
           <div class="space-y-3">
-            <div v-if="state.familyNotifications.length === 0" class="text-center py-8 text-slate-400 text-[12px] font-bold bg-slate-50/50 rounded-[16px] border border-slate-100 border-dashed">无家庭动态</div>
-            <div v-for="note in state.familyNotifications" :key="note.id" class="p-3.5 rounded-[16px] bg-slate-50/50 border border-slate-100/50 relative overflow-hidden group">
-              <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-400"></div>
-              <div class="flex items-start gap-3 pl-2">
-                <div class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0 text-rose-500">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <div v-if="state.familyNotifications.length === 0" class="text-center py-6 text-slate-400 text-[11px] bg-white rounded-[16px] border border-slate-100/50">无最新动态</div>
+            <div v-for="note in state.familyNotifications" :key="note.id" class="p-3.5 rounded-[16px] bg-white relative overflow-hidden group border border-slate-100/50 shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full bg-[#F9FAFB] border border-slate-100 flex items-center justify-center shrink-0 text-slate-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-black rounded tracking-widest uppercase">{{ note.risk_level || '高危' }}</span>
-                    <span class="text-[10px] font-bold text-slate-400">{{ state.formatTime(note.event_at) }}</span>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[13px] font-bold text-slate-800 truncate pr-2">{{ note.title || '事件预警' }}</span>
+                    <span class="text-[10px] text-slate-400 shrink-0">{{ state.formatTime(note.event_at) }}</span>
                   </div>
-                  <p class="text-[14px] font-extrabold text-slate-900 leading-snug">{{ note.title || '高风险案件预警' }}</p>
-                  <p class="text-[12px] font-medium text-slate-500 mt-1.5 leading-relaxed line-clamp-2">{{ note.case_summary || note.summary }}</p>
-                  <div class="flex items-center gap-2 mt-2.5 text-[10px] font-bold text-slate-500 bg-white px-2 py-1.5 rounded-lg border border-slate-100/60 shadow-sm">
-                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    <span>成员: {{ note.target_name }}</span>
-                    <div v-if="note.scam_type" class="w-1 h-1 rounded-full bg-slate-300"></div>
-                    <span v-if="note.scam_type" class="truncate">类型: {{ note.scam_type }}</span>
+                  <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2 mb-2">{{ note.case_summary || note.summary }}</p>
+                  <div class="flex items-center gap-1.5 text-[10px] text-slate-500 flex-wrap">
+                    <span class="bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-slate-100 flex items-center gap-1"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>{{ note.target_name }}</span>
+                    <span v-if="note.scam_type" class="bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-slate-100 truncate max-w-[80px]">{{ note.scam_type }}</span>
+                    <span class="bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100/50 text-rose-500 font-medium">{{ note.risk_level || '高危' }}</span>
                   </div>
                 </div>
               </div>
@@ -348,14 +337,17 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUpdated } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
-defineProps({
+const props = defineProps({
   state: {
     type: Object,
     required: true
   }
 });
+
+const state = props.state;
+const isMembersExpanded = ref(false);
 
 const refreshLucideIcons = () => {
   nextTick(() => {
@@ -366,7 +358,17 @@ const refreshLucideIcons = () => {
 };
 
 onMounted(refreshLucideIcons);
-onUpdated(refreshLucideIcons);
+watch(
+  () => [
+    state.activeTab,
+    state.recentRiskAlerts?.length || 0,
+    state.familyReceivedInvitations?.length || 0,
+    state.familyMembers?.length || 0,
+    state.familyGuardianLinks?.length || 0,
+    state.familyNotifications?.length || 0
+  ],
+  refreshLucideIcons
+);
 </script>
 
 <style scoped>
