@@ -114,57 +114,113 @@
         </h3>
         <button type="button" class="text-[11px] font-bold text-slate-400" @click="state.activeTab = 'history'">全部</button>
       </div>
-      <div class="bg-slate-50 rounded-[24px] py-[40px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200/60">
+
+      <div v-if="recentOngoingTasks.length" class="space-y-3">
+        <article
+          v-for="item in recentOngoingTasks"
+          :key="item.task_id"
+          class="bg-white rounded-[20px] p-4 shadow-sm border border-slate-100/70 active:scale-[0.98] transition-transform cursor-pointer"
+          @click="state.viewTaskDetail(item.task_id)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-2 flex-wrap">
+                <span :class="state.getStatusClass(item.status).replace('rounded-full', 'rounded-lg tracking-wide')">{{ state.getStatusLabel(item.status) }}</span>
+                <span class="text-[10px] text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded-md">{{ String(item.task_id || '').slice(0, 8) }}</span>
+              </div>
+              <h4 class="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2">{{ item.title || '多模态风险检测任务' }}</h4>
+              <div class="mt-3 flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                <span>{{ state.formatTime(item.created_at).slice(5, 16) }}</span>
+                <div class="w-1 h-1 rounded-full bg-slate-300"></div>
+                <span>{{ item.scam_type || '等待识别类型' }}</span>
+              </div>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div v-else class="bg-slate-50 rounded-[24px] py-[40px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200/60">
         <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mb-3">
           <i data-lucide="inbox" size="24"></i>
         </div>
-        <p class="text-[12px] text-slate-400 font-medium tracking-tight">暂无检测记录</p>
+        <p class="text-[12px] text-slate-400 font-medium tracking-tight">暂无进行中的任务</p>
       </div>
     </section>
   </div>
 
-  <div v-if="state.activeTab === 'history'" class="bg-slate-50 pb-8">
-    <!-- Header -->
-    <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100/80 pt-safe">
+  <div v-if="state.activeTab === 'history'" class="history-screen min-h-full pb-8">
+    <div class="sticky top-0 z-50 bg-white border-b border-slate-100 pt-safe">
       <div class="flex items-center justify-between px-4 h-14">
         <button @click="state.activeTab = 'tasks'" class="w-10 h-10 flex items-center justify-center -ml-2 active:opacity-50 transition-opacity">
           <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
         </button>
-        <h2 class="text-[17px] font-bold text-slate-900 tracking-tight">历史档案</h2>
+        <h2 class="text-[17px] font-bold text-slate-900 tracking-tight" style="font-family: Outfit, 'Plus Jakarta Sans', sans-serif;">历史档案</h2>
         <div class="w-10 flex justify-end">
           <span class="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-full">{{ state.history.length }}</span>
         </div>
       </div>
     </div>
     
-    <!-- List -->
-    <div class="px-4 py-5 space-y-4">
-      <div v-for="item in state.history" :key="item.record_id" class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/50 active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden" @click="state.viewHistoryDetail(item)">
-        <div class="absolute top-0 right-0 w-16 h-16 opacity-10 pointer-events-none rounded-bl-full" :class="state.getRiskClass(item.risk_level).includes('red') ? 'bg-red-500' : (state.getRiskClass(item.risk_level).includes('yellow') ? 'bg-amber-500' : (state.getRiskClass(item.risk_level).includes('green') ? 'bg-emerald-500' : 'bg-slate-400'))"></div>
-        <div class="flex items-start justify-between gap-3 relative z-10">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-2.5">
-              <span v-if="item.risk_level" :class="['px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest uppercase', state.getRiskClass(item.risk_level).replace('rounded-full', '')]">{{ state.normalizeRiskLevelText(item.risk_level) }}</span>
-              <span class="text-[10px] text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded-md">{{ String(item.record_id || '').slice(0, 8) }}</span>
-            </div>
-            <h3 class="text-[15px] font-bold text-slate-900 leading-snug line-clamp-2 pr-2">{{ item.title || '无标题检测记录' }}</h3>
-            <div class="mt-3 flex items-center gap-2.5 text-[11px] text-slate-500 font-medium">
-              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ state.formatTime(item.created_at).slice(5, 16) }}</span>
-              <div class="w-1 h-1 rounded-full bg-slate-300"></div>
-              <span class="text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded-md">{{ item.scam_type || '未知类型' }}</span>
-            </div>
+    <div class="px-3.5 pt-3 pb-5 space-y-3">
+      <section class="history-overview-card">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="text-[18px] font-black text-slate-950 tracking-tight leading-tight" style="font-family: Outfit, 'Plus Jakarta Sans', sans-serif;">风险记录档案库</div>
+            <p class="mt-1 text-[11px] leading-5 text-slate-500">保留近期检测记录与风险判定，便于回看与复盘。</p>
           </div>
-          <button @click.stop="state.deleteHistoryCase(item)" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 active:bg-rose-50 active:text-rose-500 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-          </button>
+          <div class="history-overview-icon">
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V5a4 4 0 018 0v2m-9 0h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2z"></path></svg>
+          </div>
         </div>
-      </div>
-      
-      <div v-if="state.history.length === 0" class="flex flex-col items-center justify-center py-24 text-center">
-        <div class="w-20 h-20 bg-white shadow-sm border border-slate-100 rounded-full flex items-center justify-center mb-5">
+
+        <div class="grid grid-cols-2 gap-2.5 mt-4">
+          <div class="history-overview-metric">
+            <span class="text-[11px] font-bold text-slate-400">档案总数</span>
+            <span class="text-[24px] font-black text-slate-950 leading-none mt-1.5">{{ state.history.length }}</span>
+          </div>
+          <div class="history-overview-metric">
+            <span class="text-[11px] font-bold text-slate-400">高危记录</span>
+            <span class="text-[24px] font-black text-slate-950 leading-none mt-1.5">{{ historyHighRiskCount }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="state.history.length" class="space-y-3">
+        <article
+          v-for="item in state.history"
+          :key="item.record_id"
+          class="history-record-card"
+          @click="state.viewHistoryDetail(item)"
+        >
+          <div class="history-record-accent" :class="getHistoryAccentClass(item.risk_level)"></div>
+          <div class="flex items-start justify-between gap-3 relative z-10">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-2.5 flex-wrap">
+                <span v-if="item.risk_level" class="history-risk-badge" :class="getHistoryRiskBadgeClass(item.risk_level)">{{ state.normalizeRiskLevelText(item.risk_level) }}</span>
+                <span class="history-meta-chip">{{ String(item.record_id || '').slice(0, 8) }}</span>
+                <span class="history-meta-chip">{{ item.scam_type || '未知类型' }}</span>
+              </div>
+              <h3 class="text-[14px] font-extrabold text-slate-900 leading-snug line-clamp-2 pr-2 tracking-tight">{{ item.title || '无标题检测记录' }}</h3>
+              <div class="mt-2.5 flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ state.formatTime(item.created_at).slice(5, 16) }}</span>
+              </div>
+            </div>
+            <button @click.stop="state.deleteHistoryCase(item)" class="history-delete-btn">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <div v-else class="history-empty-card">
+        <div class="history-empty-icon">
           <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
         </div>
-        <p class="text-[16px] font-bold text-slate-900">暂无历史档案</p>
+        <p class="text-[16px] font-bold text-slate-900 tracking-tight">暂无历史档案</p>
         <p class="text-xs text-slate-400 mt-1.5">您的检测记录将在这里安全保存</p>
       </div>
     </div>
@@ -340,6 +396,34 @@ const props = defineProps({
 
 const state = props.state;
 const selectedRegionWindow = ref('week');
+
+const historyHighRiskCount = computed(() => {
+  const history = Array.isArray(state.history) ? state.history : [];
+  return history.filter((item) => String(item?.risk_level || '').trim() === '高').length;
+});
+
+const getHistoryAccentClass = (riskLevel) => {
+  const normalized = String(riskLevel || '').trim();
+  if (normalized === '高') return 'is-high';
+  if (normalized === '中') return 'is-medium';
+  if (normalized === '低') return 'is-low';
+  return 'is-neutral';
+};
+
+const getHistoryRiskBadgeClass = (riskLevel) => {
+  const normalized = String(riskLevel || '').trim();
+  if (normalized === '高') return 'is-high';
+  if (normalized === '中') return 'is-medium';
+  if (normalized === '低') return 'is-low';
+  return 'is-neutral';
+};
+
+const recentOngoingTasks = computed(() => {
+  const tasks = Array.isArray(state.tasks) ? state.tasks : [];
+  return tasks
+    .filter((item) => ['pending', 'processing'].includes(String(item?.status || '').trim()))
+    .slice(0, 3);
+});
 
 const homepageTrendAnalysis = computed(() => state.riskData?.analysis || null);
 
@@ -566,6 +650,155 @@ onUpdated(refreshLucideIcons);
 </script>
 
 <style scoped>
+.history-screen {
+  background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+}
+
+.history-overview-card,
+.history-record-card,
+.history-empty-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.34);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.028);
+  backdrop-filter: blur(12px);
+}
+
+.history-overview-card {
+  padding: 15px;
+  animation: riskCardEnter 0.5s ease both;
+}
+
+.history-overview-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.34);
+}
+
+.history-overview-metric {
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.3);
+}
+
+.history-record-card {
+  padding: 14px 14px 14px 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: riskCardEnter 0.56s ease both;
+}
+
+.history-record-card:active {
+  transform: scale(0.985);
+}
+
+.history-record-accent {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  width: 3px;
+  height: calc(100% - 28px);
+  border-radius: 0 999px 999px 0;
+  background: rgba(148, 163, 184, 0.28);
+}
+
+.history-record-accent.is-high {
+  background: linear-gradient(180deg, rgba(251, 113, 133, 0.92) 0%, rgba(244, 63, 94, 0.65) 100%);
+}
+
+.history-record-accent.is-medium {
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.9) 0%, rgba(245, 158, 11, 0.62) 100%);
+}
+
+.history-record-accent.is-low {
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.9) 0%, rgba(16, 185, 129, 0.6) 100%);
+}
+
+.history-risk-badge,
+.history-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.history-risk-badge.is-high {
+  color: #be123c;
+  background: rgba(255, 241, 242, 0.96);
+}
+
+.history-risk-badge.is-medium {
+  color: #b45309;
+  background: rgba(255, 251, 235, 0.96);
+}
+
+.history-risk-badge.is-low {
+  color: #047857;
+  background: rgba(236, 253, 245, 0.96);
+}
+
+.history-risk-badge.is-neutral,
+.history-meta-chip {
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.history-delete-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.36);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.history-delete-btn:active {
+  color: #e11d48;
+  background: rgba(255, 241, 242, 0.96);
+  border-color: rgba(253, 164, 175, 0.48);
+}
+
+.history-empty-card {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.history-empty-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.34);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.024);
+  margin-bottom: 16px;
+}
+
 .risk-trend-screen {
   background: #f8fafc;
 }

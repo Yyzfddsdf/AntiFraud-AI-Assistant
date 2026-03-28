@@ -1,6 +1,6 @@
 <template>
-  <div v-if="state.activeTab === 'submit'" data-mobile-scroll="submit-page" class="bg-slate-50 pt-3 pb-28">
-    <div class="px-5 mb-4">
+  <div v-if="state.activeTab === 'submit'" data-mobile-scroll="submit-page" class="fixed inset-x-0 overflow-y-auto overflow-x-hidden bg-slate-50 z-20" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain; top: 0; bottom: calc(4.5rem + env(safe-area-inset-bottom));">
+    <div class="px-5 pt-4 mb-4">
       <h2 class="text-2xl font-black text-slate-900 tracking-tight">智能检测</h2>
       <p class="text-xs font-bold text-slate-500 mt-1">提交可疑信息，AI 护航实时为您排查风险</p>
     </div>
@@ -80,36 +80,34 @@
     </div>
   </div>
 
-  <div v-if="state.activeTab === 'simulation_quiz' && state.simulationViewMode === 'overview'" data-mobile-scroll="simulation-overview" class="fixed inset-x-0 overflow-y-auto overflow-x-hidden bg-slate-50 z-20" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain; top: 0; bottom: calc(4.5rem + env(safe-area-inset-bottom));">
-    <div class="fixed inset-x-0 z-40 bg-white/90 backdrop-blur-lg px-4 pb-3 border-b border-slate-100 shadow-sm" style="top: 0; padding-top: calc(env(safe-area-inset-top) + 0.5rem);">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button @click="state.activeTab = 'tasks'" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-transform" aria-label="返回">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          </button>
-          <h2 class="text-xl font-black text-slate-900 tracking-tight">实景防骗演练</h2>
-        </div>
+  <div v-if="state.activeTab === 'simulation_quiz' && state.simulationViewMode === 'overview'" data-mobile-scroll="simulation-overview" class="simulation-overview fixed inset-x-0 overflow-y-auto overflow-x-hidden z-20" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain; top: 0; bottom: calc(4.5rem + env(safe-area-inset-bottom));">
+    <div class="fixed inset-x-0 z-40 bg-white border-b border-slate-100 px-4 pb-3" style="top: 0; padding-top: calc(env(safe-area-inset-top) + 0.5rem);">
+      <div class="flex items-center gap-3 min-w-0">
+        <button @click="state.activeTab = 'tasks'" class="simulation-header__back" aria-label="返回">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="simulation-header__title">诈骗演练</h2>
       </div>
     </div>
 
-    <div class="p-4 space-y-5" style="margin-top: calc(env(safe-area-inset-top) + 3.5rem);">
+    <div class="p-4 space-y-4" style="margin-top: calc(env(safe-area-inset-top) + 3.45rem);">
       <section>
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-slate-800 ml-1">定制演练场景</h3>
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h3 class="text-sm font-bold text-slate-800">定制演练场景</h3>
         </div>
-        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-4">
+        <div class="bg-white rounded-[24px] p-4 shadow-sm border border-slate-100 space-y-4">
           <div class="space-y-3">
             <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
-              <input v-model="state.simulationForm.caseType" type="text" placeholder="场景（如：冒充公检法、更新软件）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-700 placeholder-slate-400">
+              <input v-model="state.simulationForm.caseType" type="text" placeholder="场景（如：冒充公检法、更新软件）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-slate-700 placeholder-slate-400">
             </div>
             <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
               </div>
-              <input v-model="state.simulationForm.targetPersona" type="text" placeholder="目标身份（如：老人、学生）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-700 placeholder-slate-400">
+              <input v-model="state.simulationForm.targetPersona" type="text" placeholder="目标身份（如：老人、学生）" class="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-slate-700 placeholder-slate-400">
             </div>
           </div>
 
@@ -119,73 +117,66 @@
             <button @click="state.simulationForm.difficulty = 'hard'" :class="['h-9 rounded-lg text-xs font-bold transition-all', state.simulationForm.difficulty === 'hard' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500']">困难</button>
           </div>
 
-          <button @click="state.generateSimulationPack" :disabled="state.simulationGenerating" class="w-full h-12 rounded-xl bg-slate-900 text-white text-[15px] font-bold shadow-md active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2">
-            <svg v-if="state.simulationGenerating" class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <button @click="state.generateSimulationPack" :disabled="state.simulationGenerating" class="w-full h-11 rounded-xl bg-slate-900 text-white text-[14px] font-bold active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2">
+            <svg v-if="state.simulationGenerating" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             <span>{{ state.simulationGenerating ? '正在智能生成...' : '生成专属演练' }}</span>
           </button>
         </div>
       </section>
 
       <section>
-        <div class="flex items-center justify-between mb-3 px-1">
-          <h3 class="text-sm font-bold text-slate-800">待挑战题库</h3>
-          <button @click="state.fetchSimulationPacks" class="text-xs text-emerald-600 font-bold flex items-center gap-1 active:opacity-50">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            刷新
-          </button>
+        <div class="simulation-section-head">
+          <h3 class="simulation-section-head__title">待挑战题库</h3>
+          <button @click="state.fetchSimulationPacks" class="simulation-refresh-btn">刷新</button>
         </div>
         <div class="space-y-3">
-          <div v-for="item in state.simulationPackList" :key="`m-pack-${item.pack_id}`" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col gap-3">
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">{{ item.case_type }}</span>
-                <span :class="['px-2 py-0.5 rounded-md text-[10px] font-bold', item.difficulty === 'hard' ? 'bg-rose-50 text-rose-600' : item.difficulty === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600']">{{ item.difficulty === 'hard' ? '困难' : item.difficulty === 'medium' ? '中等' : '简单' }}</span>
-              </div>
-              <h4 class="text-[15px] font-bold text-slate-900 leading-snug">{{ item.title }}</h4>
+          <article v-for="item in state.simulationPackList" :key="`m-pack-${item.pack_id}`" class="simulation-list-card">
+            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span class="simulation-tag">{{ item.case_type }}</span>
+              <span class="simulation-tag" :class="difficultyTagClass(item.difficulty)">{{ difficultyLabel(item.difficulty) }}</span>
             </div>
-            <button @click="state.startSimulationSession(item.pack_id)" :disabled="state.simulationSubmitting" class="w-full h-10 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-bold active:bg-emerald-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
+            <h4 class="text-[15px] font-bold text-slate-900 leading-snug">{{ item.title }}</h4>
+            <button @click="state.startSimulationSession(item.pack_id)" :disabled="state.simulationSubmitting" class="simulation-secondary-btn mt-3">
               开始挑战
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </button>
-          </div>
-          <div v-if="!state.simulationPackList.length" class="text-xs text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-100 border-dashed">
+          </article>
+          <div v-if="!state.simulationPackList.length" class="simulation-empty-card">
             暂无待挑战的演练
           </div>
         </div>
       </section>
 
       <section>
-        <div class="flex items-center justify-between mb-3 px-1">
-          <h3 class="text-sm font-bold text-slate-800">演练记录</h3>
-          <button @click="state.fetchSimulationSessions" class="text-xs text-emerald-600 font-bold active:opacity-50">刷新</button>
+        <div class="simulation-section-head">
+          <h3 class="simulation-section-head__title">演练记录</h3>
+          <button @click="state.fetchSimulationSessions" class="simulation-refresh-btn">刷新</button>
         </div>
         <div class="space-y-3">
-          <div v-for="item in state.simulationSessionList" :key="`m-session-${item.pack_id}`" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-3">
-            <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-black text-lg" :class="item.score >= 80 ? 'bg-emerald-100 text-emerald-600' : item.score >= 60 ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'">
-              {{ item.score }}
-            </div>
+          <article v-for="item in state.simulationSessionList" :key="`m-session-${item.pack_id}`" class="simulation-list-card simulation-list-card--session">
+            <div class="simulation-score-badge" :class="sessionScoreClass(item.score)">{{ item.score }}</div>
             <div class="flex-1 min-w-0">
               <h4 class="text-sm font-bold text-slate-900 truncate">{{ item.title || '未知演练' }}</h4>
               <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
-                <span>评级: {{ item.level || '未评分' }}</span>
+                <span>评级：{{ item.level || '未评分' }}</span>
                 <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                <span :class="item.status === 'completed' ? 'text-emerald-500' : 'text-amber-500'">{{ item.status === 'completed' ? '已完成' : '未完成' }}</span>
+                <span :class="sessionStatusClass(item.status)">{{ item.status === 'completed' ? '已完成' : '未完成' }}</span>
               </div>
             </div>
-            <button v-if="item.status !== 'completed'" @click="state.startSimulationSession(item.pack_id)" class="w-8 h-8 shrink-0 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center active:scale-90 transition-transform">
+            <button v-if="item.status !== 'completed'" @click="state.startSimulationSession(item.pack_id)" class="simulation-icon-btn">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </button>
-            <button v-else @click="state.deleteSimulationSession(item.pack_id)" class="w-8 h-8 shrink-0 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center active:scale-90 transition-transform">
+            <button v-else @click="state.deleteSimulationSession(item.pack_id)" class="simulation-icon-btn simulation-icon-btn--muted">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
-          </div>
-          <div v-if="!state.simulationSessionList.length" class="text-xs text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-100 border-dashed">
+          </article>
+          <div v-if="!state.simulationSessionList.length" class="simulation-empty-card">
             暂无演练记录
           </div>
         </div>
       </section>
 
-      <div class="h-6 shrink-0"></div>
+      <div class="h-5 shrink-0"></div>
     </div>
   </div>
 
@@ -272,15 +263,327 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   state: {
     type: Object,
     required: true
   }
 });
+
+const difficultyLabel = (difficulty) => {
+  if (difficulty === 'hard') return '困难';
+  if (difficulty === 'medium') return '中等';
+  return '简单';
+};
+
+const difficultyTagClass = (difficulty) => {
+  if (difficulty === 'hard') return 'is-hard';
+  if (difficulty === 'medium') return 'is-medium';
+  return 'is-easy';
+};
+
+const sessionScoreClass = (score) => {
+  const numericScore = Number(score) || 0;
+  if (numericScore >= 80) return 'is-strong';
+  if (numericScore >= 60) return 'is-mid';
+  return 'is-weak';
+};
+
+const sessionStatusClass = (status) => String(status || '').trim() === 'completed' ? 'text-emerald-600' : 'text-amber-600';
 </script>
 
 <style scoped>
+.simulation-overview {
+  background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+}
+
+.simulation-header__back,
+.simulation-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.simulation-icon-btn--muted {
+  color: #94a3b8;
+}
+
+.simulation-header__title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  font-family: Outfit, 'Plus Jakarta Sans', sans-serif;
+}
+
+.simulation-header__subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.simulation-hero-card,
+.simulation-list-card,
+.simulation-empty-card {
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.42);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.03);
+}
+
+.simulation-hero-card {
+  padding: 16px;
+}
+
+.simulation-hero-card__title {
+  margin-top: 4px;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  font-family: Outfit, 'Plus Jakarta Sans', sans-serif;
+}
+
+.simulation-hero-card__text {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.simulation-hero-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.simulation-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.simulation-input-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.52);
+  min-height: 46px;
+}
+
+.simulation-input-shell__icon {
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.simulation-input-shell__input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px 0 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 14px;
+  color: #334155;
+}
+
+.simulation-input-shell__input::placeholder {
+  color: #94a3b8;
+}
+
+.simulation-difficulty-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.simulation-difficulty-chip {
+  height: 40px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.55);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.simulation-difficulty-chip.is-active.is-easy {
+  color: #047857;
+  background: rgba(236, 253, 245, 0.92);
+  border-color: rgba(110, 231, 183, 0.65);
+}
+
+.simulation-difficulty-chip.is-active.is-medium {
+  color: #b45309;
+  background: rgba(255, 251, 235, 0.94);
+  border-color: rgba(252, 211, 77, 0.65);
+}
+
+.simulation-difficulty-chip.is-active.is-hard {
+  color: #be123c;
+  background: rgba(255, 241, 242, 0.94);
+  border-color: rgba(251, 113, 133, 0.55);
+}
+
+.simulation-primary-btn,
+.simulation-secondary-btn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+}
+
+.simulation-primary-btn {
+  color: #ffffff;
+  background: #0f172a;
+}
+
+.simulation-secondary-btn {
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.75);
+}
+
+.simulation-primary-btn:active,
+.simulation-secondary-btn:active,
+.simulation-header__back:active,
+.simulation-icon-btn:active {
+  transform: scale(0.985);
+}
+
+.simulation-primary-btn:disabled,
+.simulation-secondary-btn:disabled {
+  opacity: 0.6;
+}
+
+.simulation-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.simulation-section-head__title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.simulation-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.simulation-list-card {
+  padding: 14px;
+}
+
+.simulation-list-card--session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.simulation-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.55);
+}
+
+.simulation-tag.is-easy {
+  color: #047857;
+  background: rgba(236, 253, 245, 0.92);
+}
+
+.simulation-tag.is-medium {
+  color: #b45309;
+  background: rgba(255, 251, 235, 0.94);
+}
+
+.simulation-tag.is-hard {
+  color: #be123c;
+  background: rgba(255, 241, 242, 0.94);
+}
+
+.simulation-score-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.simulation-score-badge.is-strong {
+  background: rgba(236, 253, 245, 0.96);
+  color: #047857;
+}
+
+.simulation-score-badge.is-mid {
+  background: rgba(255, 251, 235, 0.96);
+  color: #b45309;
+}
+
+.simulation-score-badge.is-weak {
+  background: rgba(255, 241, 242, 0.96);
+  color: #be123c;
+}
+
+.simulation-empty-card {
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
 .mobile-upload-card {
   position: relative;
   aspect-ratio: 1;

@@ -5,7 +5,7 @@
   <MobileAuthScreen v-if="authReady && !isAuthenticated" :state="authState"></MobileAuthScreen>
 
   <div v-else :class="['flex-1 min-h-0 flex flex-col', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
-    <MobileAppHeader v-if="!['history', 'risk_trend', 'simulation_quiz'].includes(activeTab)" :state="headerState"></MobileAppHeader>
+    <MobileAppHeader v-if="!['history', 'risk_trend', 'simulation_quiz', 'submit'].includes(activeTab)" :state="headerState"></MobileAppHeader>
 
     <main :class="['flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative', ['history', 'risk_trend', 'simulation_quiz'].includes(activeTab) ? 'pb-0' : 'pb-28', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
       <MobileDashboardScreens :state="dashboardScreensState"></MobileDashboardScreens>
