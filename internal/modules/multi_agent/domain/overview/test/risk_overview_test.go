@@ -50,10 +50,10 @@ func TestBuildRiskOverviewFromHistory_Day(t *testing.T) {
 	currentWindowEnd := startOfUTCDayForTest(now)
 	previousWindowStart := currentWindowStart.AddDate(0, 0, -7)
 	previousWindowEnd := currentWindowStart.AddDate(0, 0, -1)
-	if result.Analysis.CurrentBucket != currentWindowStart.Format("2006-01-02")+" ~ "+currentWindowEnd.Format("2006-01-02") || result.Analysis.PreviousBucket != previousWindowStart.Format("2006-01-02")+" ~ "+previousWindowEnd.Format("2006-01-02") {
+	if result.Analysis.CurrentWindow != currentWindowStart.Format("2006-01-02")+" ~ "+currentWindowEnd.Format("2006-01-02") || result.Analysis.PreviousWindow != previousWindowStart.Format("2006-01-02")+" ~ "+previousWindowEnd.Format("2006-01-02") {
 		t.Fatalf("unexpected analysis buckets: %+v", result.Analysis)
 	}
-	if result.Analysis.OverallTrend != "平稳" {
+	if result.Analysis.OverallTrend != "上升" {
 		t.Fatalf("unexpected overall trend: %+v", result.Analysis)
 	}
 	if result.Analysis.HighRiskTrend != "上升" {
@@ -71,7 +71,7 @@ func TestBuildRiskOverviewFromHistory_InsufficientData(t *testing.T) {
 	}
 
 	result := overview.BuildRiskOverviewFromHistory("u-2", history, overview.IntervalDay)
-	if result.Analysis.OverallTrend != "上升" {
+	if result.Analysis.OverallTrend != "平稳" {
 		t.Fatalf("unexpected overall trend: %+v", result.Analysis)
 	}
 	if result.Analysis.HighRiskTrend != "平稳" {
@@ -94,14 +94,17 @@ func TestBuildRiskOverviewFromHistory_WindowComparison(t *testing.T) {
 	currentWindowEnd := startOfUTCDayForTest(now)
 	previousWindowStart := currentWindowStart.AddDate(0, 0, -7)
 	previousWindowEnd := currentWindowStart.AddDate(0, 0, -1)
-	if result.Analysis.PreviousBucket != previousWindowStart.Format("2006-01-02")+" ~ "+previousWindowEnd.Format("2006-01-02") {
+	if result.Analysis.PreviousWindow != previousWindowStart.Format("2006-01-02")+" ~ "+previousWindowEnd.Format("2006-01-02") {
 		t.Fatalf("unexpected previous window: %+v", result.Analysis)
 	}
-	if result.Analysis.CurrentBucket != currentWindowStart.Format("2006-01-02")+" ~ "+currentWindowEnd.Format("2006-01-02") {
+	if result.Analysis.CurrentWindow != currentWindowStart.Format("2006-01-02")+" ~ "+currentWindowEnd.Format("2006-01-02") {
 		t.Fatalf("unexpected current window: %+v", result.Analysis)
 	}
 	if result.Analysis.HighRiskTrend != "上升" {
 		t.Fatalf("unexpected high risk trend: %+v", result.Analysis)
+	}
+	if result.Analysis.OverallTrend != "上升" {
+		t.Fatalf("overall trend should rise when high risk count rises: %+v", result.Analysis)
 	}
 }
 

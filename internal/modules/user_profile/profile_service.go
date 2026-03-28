@@ -190,8 +190,8 @@ func (s *Service) BuildUserRiskInfo(userID string, interval string) (UserRiskInf
 		LowRiskCaseRatio:  calculateRatio(riskCaseCount["低"], totalCaseCount),
 		RiskTrendAnalysis: UserRiskTrendAnalysis{
 			Interval:       riskOverview.Interval,
-			CurrentBucket:  riskOverview.Analysis.CurrentBucket,
-			PreviousBucket: riskOverview.Analysis.PreviousBucket,
+			CurrentWindow:  riskOverview.Analysis.CurrentWindow,
+			PreviousWindow: riskOverview.Analysis.PreviousWindow,
 			OverallTrend:   riskOverview.Analysis.OverallTrend,
 			HighRiskTrend:  riskOverview.Analysis.HighRiskTrend,
 			Summary:        riskOverview.Analysis.Summary,

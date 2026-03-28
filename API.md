@@ -1013,11 +1013,11 @@ curl -X POST "http://<HOST>/api/scam/image/quick-analyze" \
     "total": 10
   },
   "analysis": {
-    "current_bucket": "2026-03-01 ~ 2026-03-07",
-    "previous_bucket": "2026-02-22 ~ 2026-02-28",
+    "current_window": "2026-03-15 ~ 2026-03-28",
+    "previous_window": "2026-03-01 ~ 2026-03-14",
     "overall_trend": "上升",
     "high_risk_trend": "上升",
-    "summary": "基于最近7天与上一窗口的对比，高风险案件上升（1→2），整体风险上升（3→4）。"
+    "summary": "基于最近14天与上一窗口的对比，高风险案件上升（1→2），整体风险上升（风险压力 7→10）。"
   },
   "trend": [
     {
@@ -1045,13 +1045,15 @@ curl -X POST "http://<HOST>/api/scam/image/quick-analyze" \
   - 后端仅返回**存在历史案件**的时间桶。若某时间段内无案件，对应的 `time_bucket` 项将不会出现在 `trend` 数组中（即“稀疏数据”）。
   - 后端**不进行自动补零**。若前端图表（如折线图）需要展示连续的时间轴，需由前端根据 `interval` 自行计算完整的时间序列并进行补零填充。
 - `analysis` 为轻量趋势判断，当前基于最近两个“活跃窗口”做比较：
-  - `day`：最近 `7` 天 vs 上一个 `7` 天
-  - `week`：最近 `2` 周 vs 上一个 `2` 周
-  - `month`：最近 `1` 个月 vs 上一个 `1` 个月
-  - `overall_trend`：比较两个窗口的 `total`
-  - `high_risk_trend`：比较两个窗口的 `high`
+  - `day`：滚动窗口。按 **UTC 自然日** 对齐，取“最近 `7` 个完整自然日” vs “再往前 `7` 个完整自然日”。
+  - `week`：滚动窗口。按 **UTC 自然日** 对齐，取“最近 `14` 个完整自然日” vs “再往前 `14` 个完整自然日”。
+  - `month`：滚动窗口。按 **UTC 自然日** 对齐，取“最近 `30` 个完整自然日” vs “再往前 `30` 个完整自然日”。
+  - `overall_trend`：优先看两个窗口的高风险数量变化；若高风险未变化，再比较窗口“风险压力分”（`high*3 + medium*2 + low*1`），并叠加绝对/相对阈值过滤小波动
+  - `high_risk_trend`：比较两个窗口的 `high`，并叠加绝对/相对阈值过滤小波动
   - 取值示例：`上升` / `下降` / `平稳` / `暂无足够数据` / `暂无数据`
+- 当当前窗口的高风险数量高于上一窗口时，`overall_trend` 会直接判定为 `上升`，避免“当天新增高风险但整体仍显示平稳”的误导。
 - 若最近窗口内没有任何案件，则直接返回：`近期无案件`，不再继续做趋势升降判断。
+- 上述窗口全部按 **UTC** 计算，并统一按自然日滚动窗口比较。
 
 ### 近期无案件响应示例
 
@@ -1064,8 +1066,8 @@ curl -X POST "http://<HOST>/api/scam/image/quick-analyze" \
     "total": 10
   },
   "analysis": {
-    "current_bucket": "2026-03-03 ~ 2026-03-09",
-    "previous_bucket": "2026-02-24 ~ 2026-03-02",
+    "current_window": "2026-03-22 ~ 2026-03-28",
+    "previous_window": "2026-03-15 ~ 2026-03-21",
     "overall_trend": "近期无案件",
     "high_risk_trend": "近期无案件",
     "summary": "最近7天内暂无新增案件，暂不进行风险趋势判断。"
@@ -1085,13 +1087,11 @@ curl -X POST "http://<HOST>/api/scam/image/quick-analyze" \
   - `day`：`YYYY-MM-DD`
   - `week`：`YYYY-Www`（ISO 周，例如 `2026-W10`）
   - `month`：`YYYY-MM`
-- `current_bucket` / `previous_bucket` 格式：
-  - 不是单个时间桶，而是“分析窗口标签”
-  - 由窗口起止两个桶拼接而成：`<start_bucket> ~ <end_bucket>`
-  - 其中每个桶本身仍沿用 `time_bucket` 的格式规则：
-    - `day`：如 `2026-03-03 ~ 2026-03-09`
-    - `week`：如 `2026-W07 ~ 2026-W10`
-    - `month`：如 `2026-01 ~ 2026-03`
+- `current_window` / `previous_window` 格式：
+  - 统一使用自然日范围字符串：`YYYY-MM-DD ~ YYYY-MM-DD`
+  - `day`：如 `2026-03-22 ~ 2026-03-28`
+  - `week`：如 `2026-03-15 ~ 2026-03-28`
+  - `month`：如 `2026-02-28 ~ 2026-03-29`
 
 ### 常见失败响应
 
@@ -1506,7 +1506,7 @@ data:{"type":"done","reason":"stop"}
     {
       "role": "tool",
       "tool_call_id": "chatcmpl-tool-9948fb773791ad7c",
-      "content": "{\"user\":{\"user_name\":\"用户1\",\"age\":28,\"occupation\":\"企业职员\",\"recent_tags\":[\"近期频繁网购\"],\"total_case_count\":1,\"historical_score\":18,\"high_risk_case_ratio\":0,\"mid_risk_case_ratio\":0,\"low_risk_case_ratio\":1,\"risk_trend_analysis\":{\"interval\":\"day\",\"current_bucket\":\"2026-03-10~2026-03-16\",\"previous_bucket\":\"2026-03-03~2026-03-09\",\"overall_trend\":\"持平\",\"high_risk_trend\":\"持平\",\"summary\":\"基于最近7天与上一窗口的对比，高风险案件持平（0→0），整体风险持平（1→1）。\"}}}"
+      "content": "{\"user\":{\"user_name\":\"用户1\",\"age\":28,\"occupation\":\"企业职员\",\"recent_tags\":[\"近期频繁网购\"],\"total_case_count\":1,\"historical_score\":18,\"high_risk_case_ratio\":0,\"mid_risk_case_ratio\":0,\"low_risk_case_ratio\":1,\"risk_trend_analysis\":{\"interval\":\"day\",\"current_window\":\"2026-03-10 ~ 2026-03-16\",\"previous_window\":\"2026-03-03 ~ 2026-03-09\",\"overall_trend\":\"平稳\",\"high_risk_trend\":\"平稳\",\"summary\":\"基于最近7天与上一窗口的对比，高风险案件平稳（0→0），整体风险平稳（风险压力 1→1）。\"}}}"
     },
     {
       "role": "assistant",

@@ -576,15 +576,17 @@ flowchart TB
   - 风险变化趋势：按时间桶聚合（`day/week/month`）统计每个时间段的 `high/medium/low/total`。
   - 风险等级统计：返回用户历史总体 `high/medium/low/total` 数量，便于快速判断风险结构。
 - 在统计结果之上，新增轻量中文趋势分析：
-  - `overall_trend`：最近两个活跃窗口的整体风险变化（比较 `total`）
-  - `high_risk_trend`：最近两个活跃窗口的高风险变化（比较 `high`）
+  - `overall_trend`：最近两个活跃窗口的整体风险变化。优先看高风险数量变化；若高风险未变化，再比较风险压力分（`high*3 + medium*2 + low*1`），并用阈值过滤小波动
+  - `high_risk_trend`：最近两个活跃窗口的高风险变化（比较 `high`，并用阈值过滤小波动）
   - `summary`：直接面向用户展示的中文总结语
 - 当前窗口规则：
-  - `day`：最近 `7` 天 vs 上一个 `7` 天
-  - `week`：最近 `2` 周 vs 上一个 `2` 周
-  - `month`：最近 `1` 个月 vs 上一个 `1` 个月
+  - `day`：滚动窗口。按 UTC 自然日对齐，取最近 `7` 个完整自然日 vs 再往前 `7` 个完整自然日
+  - `week`：滚动窗口。按 UTC 自然日对齐，取最近 `14` 个完整自然日 vs 再往前 `14` 个完整自然日
+  - `month`：滚动窗口。按 UTC 自然日对齐，取最近 `30` 个完整自然日 vs 再往前 `30` 个完整自然日
+- 当当前窗口高风险数量高于上一窗口时，`overall_trend` 直接判为 `上升`，避免新增高风险被整体总量阈值掩盖。
+- 总结：`day` / `week` / `month` 全部按自然日滚动窗口比较。
 - `trend[].time_bucket` 仍然是单个时间桶；
-- `analysis.current_bucket` / `analysis.previous_bucket` 则是窗口标签，格式为 `<start_bucket> ~ <end_bucket>`，其中每个桶沿用对应 `time_bucket` 的格式规则。
+- `analysis.current_window` / `analysis.previous_window` 则统一为自然日范围字符串，格式为 `YYYY-MM-DD ~ YYYY-MM-DD`。
 - 若最近窗口内没有案件，则直接返回 `近期无案件`，不继续做趋势升降判断。
 - 接口：`GET /api/scam/multimodal/history/overview?interval=day|week|month`
 - 设计目标：与案件明细查询解耦，总览接口可独立扩展为报表、看板、告警订阅等上层业务能力。

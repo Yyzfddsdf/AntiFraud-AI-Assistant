@@ -40,8 +40,8 @@ type UpdateProfileInput struct {
 
 type UserRiskTrendAnalysis struct {
 	Interval       string `json:"interval"`
-	CurrentBucket  string `json:"current_bucket"`
-	PreviousBucket string `json:"previous_bucket,omitempty"`
+	CurrentWindow  string `json:"current_window"`
+	PreviousWindow string `json:"previous_window,omitempty"`
 	OverallTrend   string `json:"overall_trend"`
 	HighRiskTrend  string `json:"high_risk_trend"`
 	Summary        string `json:"summary"`

@@ -34,8 +34,8 @@ type RiskTrendPoint struct {
 
 // RiskTrendAnalysis 表示对最近两个活跃统计窗口的轻量趋势判断。
 type RiskTrendAnalysis struct {
-	CurrentBucket  string `json:"current_bucket"`
-	PreviousBucket string `json:"previous_bucket,omitempty"`
+	CurrentWindow  string `json:"current_window"`
+	PreviousWindow string `json:"previous_window,omitempty"`
 	OverallTrend   string `json:"overall_trend"`
 	HighRiskTrend  string `json:"high_risk_trend"`
 	Summary        string `json:"summary"`
@@ -137,8 +137,8 @@ func buildTrendAnalysis(history []state.CaseHistoryRecord, interval string) Risk
 	currentStats := aggregateHistoryWindow(history, currentWindow.Start, currentWindow.End)
 	if currentStats.Total == 0 {
 		return RiskTrendAnalysis{
-			CurrentBucket:  currentWindow.Label,
-			PreviousBucket: previousWindow.Label,
+			CurrentWindow:  currentWindow.Label,
+			PreviousWindow: previousWindow.Label,
 			OverallTrend:   "近期无案件",
 			HighRiskTrend:  "近期无案件",
 			Summary:        fmt.Sprintf("最近%s内暂无新增案件，暂不进行风险趋势判断。", currentWindow.HumanLabel),
@@ -146,23 +146,25 @@ func buildTrendAnalysis(history []state.CaseHistoryRecord, interval string) Risk
 	}
 
 	previousStats := aggregateHistoryWindow(history, previousWindow.Start, previousWindow.End)
-	overallTrend := classifyTrend(currentStats.Total, previousStats.Total)
-	highRiskTrend := classifyTrend(currentStats.High, previousStats.High)
+	currentPressure := riskPressureScore(currentStats)
+	previousPressure := riskPressureScore(previousStats)
+	overallTrend := classifyOverallTrend(currentStats, previousStats)
+	highRiskTrend := classifyHighRiskTrend(currentStats.High, previousStats.High)
 
 	return RiskTrendAnalysis{
-		CurrentBucket:  currentWindow.Label,
-		PreviousBucket: previousWindow.Label,
+		CurrentWindow:  currentWindow.Label,
+		PreviousWindow: previousWindow.Label,
 		OverallTrend:   overallTrend,
 		HighRiskTrend:  highRiskTrend,
 		Summary: fmt.Sprintf(
-			"基于最近%s与上一窗口的对比，高风险案件%s（%d→%d），整体风险%s（%d→%d）。",
+			"基于最近%s与上一窗口的对比，高风险案件%s（%d→%d），整体风险%s（风险压力 %d→%d）。",
 			currentWindow.HumanLabel,
 			highRiskTrend,
 			previousStats.High,
 			currentStats.High,
 			overallTrend,
-			previousStats.Total,
-			currentStats.Total,
+			previousPressure,
+			currentPressure,
 		),
 	}
 }
@@ -196,13 +198,13 @@ func currentAnalysisWindowBounds(now time.Time, interval string) (time.Time, tim
 	utcNow := now.UTC()
 	switch interval {
 	case IntervalWeek:
-		end := startOfUTCISOWeek(utcNow).AddDate(0, 0, 7)
+		end := startOfUTCDay(utcNow).AddDate(0, 0, 1)
 		start := end.AddDate(0, 0, -14)
-		return start, end, "2周"
+		return start, end, "14天"
 	case IntervalMonth:
-		end := startOfUTCMonth(utcNow).AddDate(0, 1, 0)
-		start := startOfUTCMonth(utcNow)
-		return start, end, "1个月"
+		end := startOfUTCDay(utcNow).AddDate(0, 0, 1)
+		start := end.AddDate(0, 0, -30)
+		return start, end, "30天"
 	default:
 		end := startOfUTCDay(utcNow).AddDate(0, 0, 1)
 		start := end.AddDate(0, 0, -7)
@@ -232,8 +234,8 @@ func aggregateHistoryWindow(history []state.CaseHistoryRecord, start time.Time, 
 
 func buildWindowRangeLabel(start time.Time, end time.Time, interval string) string {
 	endInclusive := end.Add(-time.Nanosecond)
-	startLabel := buildTimeBucket(start, interval)
-	endLabel := buildTimeBucket(endInclusive, interval)
+	startLabel := start.UTC().Format("2006-01-02")
+	endLabel := endInclusive.UTC().Format("2006-01-02")
 	if startLabel == endLabel {
 		return startLabel
 	}
@@ -245,28 +247,78 @@ func startOfUTCDay(t time.Time) time.Time {
 	return time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func startOfUTCISOWeek(t time.Time) time.Time {
-	dayStart := startOfUTCDay(t)
-	weekday := int(dayStart.Weekday())
-	if weekday == 0 {
-		weekday = 7
-	}
-	return dayStart.AddDate(0, 0, -(weekday - 1))
-}
+func classifyOverallTrend(current RiskStats, previous RiskStats) string {
+	currentPressure := riskPressureScore(current)
+	previousPressure := riskPressureScore(previous)
 
-func startOfUTCMonth(t time.Time) time.Time {
-	utc := t.UTC()
-	return time.Date(utc.Year(), utc.Month(), 1, 0, 0, 0, 0, time.UTC)
-}
-
-func classifyTrend(current, previous int) string {
-	if current > previous {
+	if current.High > previous.High {
 		return "上升"
 	}
-	if current < previous {
+
+	if current.High < previous.High && currentPressure < previousPressure {
 		return "下降"
 	}
-	return "平稳"
+
+	if previous.Total == 0 {
+		if current.High >= 2 || currentPressure >= 10 {
+			return "上升"
+		}
+		return "平稳"
+	}
+
+	return classifyTrendWithThreshold(currentPressure, previousPressure, 3, 0.25)
+}
+
+func classifyHighRiskTrend(currentHigh, previousHigh int) string {
+	if previousHigh == 0 {
+		if currentHigh > 0 {
+			return "上升"
+		}
+		return "平稳"
+	}
+
+	return classifyTrendWithThreshold(currentHigh, previousHigh, 1, 0.2)
+}
+
+func classifyTrendWithThreshold(current, previous, minAbsDelta int, minRelativeDelta float64) string {
+	delta := current - previous
+	if delta == 0 {
+		return "平稳"
+	}
+
+	absDelta := absInt(delta)
+	if absDelta < minAbsDelta {
+		return "平稳"
+	}
+
+	baseline := maxInt(previous, 1)
+	relativeDelta := float64(absDelta) / float64(baseline)
+	if relativeDelta < minRelativeDelta {
+		return "平稳"
+	}
+
+	if delta > 0 {
+		return "上升"
+	}
+	return "下降"
+}
+
+func riskPressureScore(stats RiskStats) int {
+	return stats.High*3 + stats.Medium*2 + stats.Low
+}
+
+func absInt(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func buildTimeBucket(t time.Time, interval string) string {

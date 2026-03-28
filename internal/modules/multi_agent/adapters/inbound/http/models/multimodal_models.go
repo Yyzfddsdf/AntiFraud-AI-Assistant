@@ -119,8 +119,8 @@ type MultimodalRiskTrendItem struct {
 
 // MultimodalRiskTrendAnalysis 风险趋势中文分析结果。
 type MultimodalRiskTrendAnalysis struct {
-	CurrentBucket  string `json:"current_bucket"`
-	PreviousBucket string `json:"previous_bucket,omitempty"`
+	CurrentWindow  string `json:"current_window"`
+	PreviousWindow string `json:"previous_window,omitempty"`
 	OverallTrend   string `json:"overall_trend"`
 	HighRiskTrend  string `json:"high_risk_trend"`
 	Summary        string `json:"summary"`
