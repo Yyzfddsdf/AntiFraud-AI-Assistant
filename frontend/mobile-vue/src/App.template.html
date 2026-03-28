@@ -4,10 +4,10 @@
 
   <MobileAuthScreen v-if="authReady && !isAuthenticated" :state="authState"></MobileAuthScreen>
 
-  <div v-else class="flex-1 min-h-0 flex flex-col bg-slate-50">
+  <div v-else :class="['flex-1 min-h-0 flex flex-col', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
     <MobileAppHeader v-if="activeTab !== 'simulation_quiz'" :state="headerState"></MobileAppHeader>
 
-    <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 relative bg-slate-50">
+    <main :class="['flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 relative', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
       <MobileDashboardScreens :state="dashboardScreensState"></MobileDashboardScreens>
       <MobileSocialScreens :state="socialScreensState"></MobileSocialScreens>
       <MobileProfileScreens :state="profileScreensState"></MobileProfileScreens>

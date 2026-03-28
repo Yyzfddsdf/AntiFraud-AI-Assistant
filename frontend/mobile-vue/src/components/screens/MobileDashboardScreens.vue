@@ -1,129 +1,126 @@
 <template>
-  <div v-show="state.activeTab === 'tasks'" class="pb-safe space-y-4 pt-3">
-    <div class="px-4 relative z-20">
-      <div class="relative overflow-hidden w-full rounded-3xl shadow-sm border border-slate-100" style="min-height: 160px;">
-        <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: 'translateX(-' + state.currentBannerIndex * 100 + '%)' }">
-          <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/background.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
-          <div class="w-full flex-shrink-0" style="background-image: url('/assets/images/2.png'); background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; min-height: 160px;"></div>
+  <div v-show="state.activeTab === 'tasks'" class="bg-white pb-[24px]">
+    <section class="px-5 mt-[16px]">
+      <div class="bg-slate-50 border border-slate-100 rounded-[32px] px-[20px] py-[20px] flex items-center justify-between overflow-hidden relative">
+        <div class="relative z-10">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+            <span class="text-[10px] font-bold text-primary uppercase tracking-tight">System Secured</span>
+          </div>
+          <h2 class="text-[20px] font-bold text-slate-800 leading-tight">全域实时守护中</h2>
+          <p class="text-[12px] text-slate-400 mt-1">累计检测 {{ state.riskStatsSummary.total }} 次风险内容</p>
         </div>
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-          <button @click="state.currentBannerIndex = 0" :class="['w-1.5 h-1.5 rounded-full transition-all duration-300', state.currentBannerIndex === 0 ? 'w-4 bg-white' : 'bg-white/50']"></button>
-          <button @click="state.currentBannerIndex = 1" :class="['w-1.5 h-1.5 rounded-full transition-all duration-300', state.currentBannerIndex === 1 ? 'w-4 bg-white' : 'bg-white/50']"></button>
-        </div>
-      </div>
-    </div>
 
-    <div class="px-4 relative z-20">
-      <div class="bg-white rounded-3xl shadow-sm border border-slate-100/50 p-4 grid grid-cols-5 gap-x-1 gap-y-3">
-        <div @click="state.activeTab = 'chat'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
-          <div class="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+        <div class="relative w-20 h-20 flex items-center justify-center">
+          <div class="absolute inset-0 bg-primary/10 rounded-full safe-pulse"></div>
+          <div class="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-primary/20">
+            <i data-lucide="check" class="text-primary" size="28"></i>
           </div>
-          <span class="text-[11px] font-bold text-slate-700">AI助手</span>
-        </div>
-        <div @click="state.activeTab = 'history'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
-          <div class="w-11 h-11 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 group-hover:bg-teal-100 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-          </div>
-          <span class="text-[11px] font-bold text-slate-700">历史</span>
-        </div>
-        <div @click="state.activeTab = 'risk_trend'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
-          <div class="w-11 h-11 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 group-hover:bg-cyan-100 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-          </div>
-          <span class="text-[11px] font-bold text-slate-700">趋势</span>
-        </div>
-        <div @click="state.activeTab = 'family'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
-          <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-          </div>
-          <span class="text-[11px] font-bold text-slate-700">守护</span>
-        </div>
-        <div @click="state.activeTab = 'simulation_quiz'" class="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform group">
-          <div class="w-11 h-11 rounded-2xl bg-fuchsia-50 flex items-center justify-center text-fuchsia-600 group-hover:bg-fuchsia-100 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-          <span class="text-[11px] font-bold text-slate-700">演练</span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="px-4 grid grid-cols-2 gap-3">
-      <div class="bg-white rounded-3xl p-4 h-[104px] border border-slate-100 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-transform">
-        <div class="absolute -top-6 -right-6 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
-        <div class="absolute top-3 right-3 text-emerald-500 bg-emerald-100/50 p-1.5 rounded-xl">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <section class="px-5 mt-[24px]">
+      <div class="grid grid-cols-5 gap-2">
+        <div class="flex flex-col items-center gap-2 cursor-pointer" @click="state.activeTab = 'chat'">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-[16px] flex items-center justify-center shadow-sm border border-emerald-100/50">
+            <i data-lucide="bot" size="20"></i>
+          </div>
+          <span class="text-[11px] font-medium text-slate-600">AI助手</span>
         </div>
-        <div class="flex flex-col justify-end h-full relative z-10">
-          <div class="text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">今日检测</div>
-          <div class="text-[28px] font-black text-slate-900 leading-none">{{ state.todayRiskStatsSummary.total }}</div>
-        </div>
-      </div>
-      <div class="bg-white rounded-3xl p-4 h-[104px] border border-slate-100 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-transform">
-        <div class="absolute -top-6 -right-6 w-24 h-24 bg-rose-50 rounded-full group-hover:scale-110 transition-transform"></div>
-        <div class="absolute top-3 right-3 text-rose-500 bg-rose-100/50 p-1.5 rounded-xl">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-        </div>
-        <div class="flex flex-col justify-end h-full relative z-10">
-          <div class="text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">高危预警</div>
-          <div class="text-[28px] font-black text-slate-900 leading-none">{{ state.todayRiskStatsSummary.high }}</div>
-        </div>
-      </div>
-    </div>
 
-    <div class="px-4">
-      <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-1 h-4 rounded-full bg-emerald-500"></div>
-            <h3 class="font-bold text-[15px] text-slate-900">风险趋势</h3>
+        <div class="flex flex-col items-center gap-2 cursor-pointer" @click="state.activeTab = 'history'">
+          <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-[16px] flex items-center justify-center shadow-sm border border-blue-100/50">
+            <i data-lucide="calendar" size="20"></i>
           </div>
-          <button @click="state.activeTab = 'risk_trend'" class="text-[13px] text-emerald-600 font-bold active:opacity-70 flex items-center gap-0.5">详情 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+          <span class="text-[11px] font-medium text-slate-600">历史</span>
         </div>
-        <div v-if="state.riskData && state.riskData.analysis" class="rounded-[20px] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white relative">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-2xl rounded-full mix-blend-screen pointer-events-none"></div>
-          <div class="px-4 py-4 border-b border-white/5 relative z-10">
-            <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
-              AI Insight
-            </div>
-            <h4 class="mt-2 text-[15px] font-black tracking-tight leading-snug">{{ state.getRiskTrendHeadline(state.riskData.analysis) }}</h4>
-            <p class="mt-1.5 text-xs leading-relaxed text-slate-300">{{ state.riskData.analysis.summary }}</p>
+
+        <div class="flex flex-col items-center gap-2 cursor-pointer" @click="state.activeTab = 'risk_trend'">
+          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-[16px] flex items-center justify-center shadow-sm border border-amber-100/50">
+            <i data-lucide="line-chart" size="20"></i>
           </div>
-          <div class="px-4 py-3 grid grid-cols-2 gap-3 bg-black/20 relative z-10">
-            <div>
-              <div class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">整体走势</div>
-              <div class="mt-1 text-sm font-black text-white">{{ state.formatRiskTrendDescriptor(state.riskData.analysis.overall_trend) }}</div>
-            </div>
-            <div>
-              <div class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">高危信号</div>
-              <div class="mt-1 text-sm font-black text-white">{{ state.formatRiskTrendDescriptor(state.riskData.analysis.high_risk_trend, 'high') }}</div>
-            </div>
+          <span class="text-[11px] font-medium text-slate-600">趋势</span>
+        </div>
+
+        <div class="flex flex-col items-center gap-2 cursor-pointer" @click="state.activeTab = 'family'">
+          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-[16px] flex items-center justify-center shadow-sm border border-indigo-100/50">
+            <i data-lucide="heart" size="20"></i>
           </div>
+          <span class="text-[11px] font-medium text-slate-600">守护</span>
+        </div>
+
+        <div class="flex flex-col items-center gap-2" @click="state.activeTab = 'simulation_quiz'">
+          <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-[16px] flex items-center justify-center shadow-sm border border-rose-100/50 cursor-pointer active:scale-95 transition-transform">
+            <i data-lucide="play-circle" size="20"></i>
+          </div>
+          <span class="text-[11px] font-bold text-slate-600">演练</span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="px-4 pb-6">
+    <section class="px-5 mt-[24px] grid grid-cols-2 gap-3">
+      <div class="px-[16px] py-[16px] bg-white border border-slate-100 rounded-[24px] shadow-sm">
+        <div class="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-2">
+          <i data-lucide="search" size="14"></i>
+        </div>
+        <div class="text-[22px] font-bold text-slate-900 leading-none">{{ state.riskStatsSummary.total }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">总检测数量</div>
+      </div>
+
+      <div class="px-[16px] py-[16px] bg-white border border-slate-100 rounded-[24px] shadow-sm">
+        <div class="w-7 h-7 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center mb-2">
+          <i data-lucide="alert-octagon" size="14"></i>
+        </div>
+        <div class="text-[22px] font-bold text-slate-900 leading-none">{{ state.riskStatsSummary.high }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">高危预警</div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-[24px]">
       <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-1 h-4 rounded-full bg-emerald-500"></div>
-          <h3 class="font-bold text-[15px] text-slate-900">最近任务</h3>
-        </div>
-        <button @click="state.activeTab = 'history'" class="text-[13px] text-slate-400 font-bold active:opacity-70 flex items-center gap-0.5">全部 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+        <h3 class="text-[15px] font-bold text-slate-800 flex items-center gap-2">
+          <span class="w-1 h-4 bg-primary rounded-full"></span>
+          风险趋势
+        </h3>
+        <button type="button" class="text-[11px] font-bold text-primary" @click="state.activeTab = 'risk_trend'">详情 ></button>
       </div>
-      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-        <div v-for="(task, index) in state.tasks.slice(0, 3)" :key="task.task_id" class="p-4 cursor-pointer active:bg-slate-50 transition-colors" :class="index !== state.tasks.slice(0, 3).length - 1 ? 'border-b border-slate-50' : ''" @click="state.viewTaskDetail(task.task_id)">
-          <div class="flex justify-between items-start mb-1.5">
-            <span :class="state.getStatusClass(task.status)">{{ state.getStatusLabel(task.status) }}</span>
-            <span class="text-[11px] font-medium text-slate-400">{{ state.formatTime(task.created_at) }}</span>
+
+      <div class="premium-gradient rounded-[28px] px-[20px] py-[20px] text-white relative overflow-hidden">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="px-2 py-0.5 bg-indigo-500/30 rounded-md text-[9px] font-bold uppercase tracking-wider border border-indigo-500/40">AI Insight</div>
+        </div>
+        <h4 class="text-[16px] font-bold mb-2">AI 研判：整体风险平稳</h4>
+        <p class="text-[11px] text-slate-400 leading-relaxed mb-4">基于大数据分析，当前欺诈指数处于低位，建议保持日常防范习惯。</p>
+        
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+          <div>
+            <p class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">整体走势</p>
+            <p class="text-[12px] font-semibold text-emerald-400">持续回落</p>
           </div>
-          <h4 class="font-bold text-[14px] truncate text-slate-900">{{ task.title || '未命名任务' }}</h4>
-          <p class="text-xs text-slate-500 mt-1 line-clamp-1 leading-relaxed">{{ task.summary || '等待分析...' }}</p>
+          <div>
+            <p class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">当前风险</p>
+            <p class="text-[12px] font-semibold text-white">低风险</p>
+          </div>
         </div>
-        <div v-if="state.tasks.length === 0" class="text-center py-8 text-slate-400 text-sm font-medium">暂无检测记录</div>
       </div>
-    </div>
+    </section>
+
+    <section class="px-5 mt-[24px]">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-[15px] font-bold text-slate-800 flex items-center gap-2">
+          <span class="w-1 h-4 bg-primary rounded-full"></span>
+          最近任务
+        </h3>
+        <button type="button" class="text-[11px] font-bold text-slate-400" @click="state.activeTab = 'history'">全部</button>
+      </div>
+      <div class="bg-slate-50 rounded-[24px] py-[40px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200/60">
+        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mb-3">
+          <i data-lucide="inbox" size="24"></i>
+        </div>
+        <p class="text-[12px] text-slate-400 font-medium tracking-tight">暂无检测记录</p>
+      </div>
+    </section>
   </div>
 
   <div v-if="state.activeTab === 'history'" class="bg-slate-50 pb-24">
@@ -309,10 +306,23 @@
 </template>
 
 <script setup>
+import { nextTick, onMounted, onUpdated } from 'vue';
+
 defineProps({
   state: {
     type: Object,
     required: true
   }
 });
+
+const refreshLucideIcons = () => {
+  nextTick(() => {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  });
+};
+
+onMounted(refreshLucideIcons);
+onUpdated(refreshLucideIcons);
 </script>

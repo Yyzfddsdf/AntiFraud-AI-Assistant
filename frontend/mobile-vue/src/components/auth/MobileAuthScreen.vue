@@ -18,7 +18,7 @@
       </div>
 
       <!-- Auth Card -->
-      <div class="bg-white/80 backdrop-blur-2xl rounded-[32px] p-6 sm:p-8 shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-white/60">
+      <div class="bg-white/80 backdrop-blur-2xl rounded-[32px] px-[24px] py-[24px] sm:px-[32px] sm:py-[32px] shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-white/60">
         <!-- Tabs -->
         <div class="flex gap-8 mb-8 border-b border-slate-100 pb-0 justify-center relative">
           <button @click="state.authMode = 'login'" :class="['pb-3 text-[17px] font-[800] transition-all relative', state.authMode === 'login' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600']">
@@ -31,58 +31,58 @@
           </button>
         </div>
 
-        <form @submit.prevent="state.handleAuth" class="space-y-4">
+        <form @submit.prevent="state.handleAuth" class="space-y-[16px]">
           
           <!-- Registration Fields -->
           <div v-if="state.authMode === 'register'" class="space-y-4">
             <div>
-              <input v-model="state.form.username" type="text" class="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="设置用户名" required>
+              <input v-model="state.form.username" type="text" class="w-full bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="设置用户名" required>
             </div>
             <div>
-              <input v-model="state.form.email" type="email" class="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="邮箱地址" required>
+              <input v-model="state.form.email" type="email" class="w-full bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="邮箱地址" required>
             </div>
           </div>
 
           <!-- Login Methods Toggle -->
-          <div v-if="state.authMode === 'login'" class="flex gap-2 p-1 bg-slate-100/80 rounded-2xl mb-2">
-            <button type="button" @click="state.loginMethod = 'password'" :class="['flex-1 text-[13px] font-bold py-2.5 rounded-xl transition-all', state.loginMethod === 'password' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">密码登录</button>
-            <button type="button" @click="state.loginMethod = 'sms'" :class="['flex-1 text-[13px] font-bold py-2.5 rounded-xl transition-all', state.loginMethod === 'sms' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">验证码登录</button>
+          <div v-if="state.authMode === 'login'" class="flex gap-2 p-1 bg-slate-100/80 rounded-[16px] mb-2">
+            <button type="button" @click="state.loginMethod = 'password'" :class="['flex-1 text-[13px] font-bold py-2.5 rounded-[12px] transition-all', state.loginMethod === 'password' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">密码登录</button>
+            <button type="button" @click="state.loginMethod = 'sms'" :class="['flex-1 text-[13px] font-bold py-2.5 rounded-[12px] transition-all', state.loginMethod === 'sms' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700']">验证码登录</button>
           </div>
 
           <!-- Password Login Field -->
           <div v-if="state.authMode === 'login' && state.loginMethod === 'password'">
-            <input v-model="state.form.account" type="text" class="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="邮箱或手机号" required>
+            <input v-model="state.form.account" type="text" class="w-full bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none" placeholder="邮箱或手机号" required>
           </div>
 
           <!-- Phone Field -->
           <div v-if="state.authMode === 'register' || state.loginMethod === 'sms'">
-            <input v-model="state.form.phone" type="tel" class="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-wide" placeholder="11位手机号" required>
+            <input v-model="state.form.phone" type="tel" class="w-full bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-wide" placeholder="11位手机号" required>
           </div>
 
           <!-- Password Field -->
           <div v-if="state.authMode === 'register' || state.loginMethod === 'password'">
-            <input v-model="state.form.password" type="password" class="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-widest" placeholder="输入密码" required>
+            <input v-model="state.form.password" type="password" class="w-full bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-widest" placeholder="输入密码" required>
           </div>
 
           <!-- SMS Code Field -->
-          <div v-if="state.shouldShowSMSCodeSection" class="flex gap-3">
-            <input v-model="state.form.smsCode" type="text" class="flex-1 bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none text-center tracking-[0.2em] font-mono" placeholder="短信验证码" required>
-            <button type="button" @click="state.sendSMSCode" :disabled="!state.canSendSMSCode" class="shrink-0 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-[13px] font-bold text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:text-slate-400 transition-colors">
+          <div v-if="state.shouldShowSMSCodeSection" class="grid grid-cols-[minmax(0,1fr)_112px] gap-3 items-stretch">
+            <input v-model="state.form.smsCode" type="text" class="min-w-0 bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none text-center tracking-[0.2em] font-mono" placeholder="短信验证码" required>
+            <button type="button" @click="state.sendSMSCode" :disabled="!state.canSendSMSCode" class="h-[56px] min-w-[112px] px-3 rounded-[16px] bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-[13px] leading-[1.2] font-bold text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:text-slate-400 transition-colors text-center">
               {{ state.smsCodeButtonText }}
             </button>
           </div>
 
           <!-- Captcha Field -->
-          <div v-if="state.requiresGraphCaptcha" class="flex gap-3">
-            <input v-model="state.form.captchaCode" type="text" class="flex-1 bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-widest uppercase font-mono" placeholder="图形验证码" required>
-            <div @click="state.fetchCaptcha" class="w-28 bg-slate-100 rounded-2xl overflow-hidden shrink-0 border border-slate-100/50 cursor-pointer active:opacity-80 transition-opacity">
+          <div v-if="state.requiresGraphCaptcha" class="grid grid-cols-[minmax(0,1fr)_144px] gap-3 items-center">
+            <input v-model="state.form.captchaCode" type="text" class="min-w-0 bg-slate-50/80 border border-slate-100 rounded-[16px] px-5 py-4 text-slate-800 text-[15px] placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 focus:bg-white transition-all outline-none tracking-widest uppercase font-mono" placeholder="图形验证码" required>
+            <div @click="state.fetchCaptcha" class="w-[144px] min-w-[144px] h-[48px] bg-white rounded-[16px] overflow-hidden shrink-0 border border-slate-100/50 cursor-pointer active:opacity-80 transition-opacity self-center">
               <img :src="state.captchaImage" class="w-full h-full object-cover mix-blend-multiply" v-if="state.captchaImage">
               <div v-else class="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-medium">获取中...</div>
             </div>
           </div>
 
           <!-- Submit Button -->
-          <button type="submit" :disabled="state.loading" class="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 active:from-emerald-600 active:to-teal-600 text-white rounded-2xl py-4 font-[800] text-[16px] shadow-[0_8px_20px_rgba(16,185,129,0.25)] transition-all flex items-center justify-center disabled:opacity-70 disabled:shadow-none">
+          <button type="submit" :disabled="state.loading" class="w-full mt-[24px] bg-gradient-to-r from-emerald-500 to-teal-500 active:from-emerald-600 active:to-teal-600 text-white rounded-[16px] py-[16px] font-[800] text-[16px] shadow-[0_8px_20px_rgba(16,185,129,0.25)] transition-all flex items-center justify-center disabled:opacity-70 disabled:shadow-none">
             <span v-if="state.loading" class="animate-spin mr-2 w-5 h-5 border-2 border-white/30 border-t-white rounded-full"></span>
             {{ state.authSubmitLabel }}
           </button>

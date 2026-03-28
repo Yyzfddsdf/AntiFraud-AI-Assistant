@@ -11,6 +11,8 @@
   <script src="/assets/vendor/vis-network.min.js"></script>
   <script src="/assets/vendor/marked.min.js"></script>
   <script src="/assets/js/tailwind-config.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="/assets/fonts/plus-jakarta-sans/plus-jakarta-sans.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
   <style>
@@ -47,6 +49,14 @@
     .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
     .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
+    .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+    .premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #334155 100%); }
+    .safe-pulse { animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.5; }
+      50% { transform: scale(1.05); opacity: 0.2; }
+      100% { transform: scale(0.95); opacity: 0.5; }
+    }
     .markdown-body h1 { font-size: 17px; font-weight: 700; margin: 14px 0 10px; color: #1e293b; }
     .markdown-body h2 { font-size: 15px; font-weight: 700; margin: 12px 0 8px; color: #1e293b; }
     .markdown-body h3 { font-size: 14px; font-weight: 600; margin: 10px 0 6px; color: #334155; }
@@ -98,7 +108,7 @@
     .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.6rem !important; }
   </style>
 </head>
-<body class="h-full overflow-hidden text-slate-900 font-sans">
+<body class="h-full overflow-hidden text-slate-900" style="font-family: Inter, 'Plus Jakarta Sans', sans-serif;">
   <div id="app" class="h-full"></div>
   <script type="module" src="/src/main.js"></script>
 </body>

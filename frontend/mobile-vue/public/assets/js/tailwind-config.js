@@ -2,6 +2,10 @@ tailwind.config = {
     theme: {
         extend: {
             colors: {
+                primary: '#10b981',
+                danger: '#ef4444',
+                warning: '#f59e0b',
+                surface: '#f8fafc',
                 brand: {
                     50: '#fafafa',
                     100: '#f5f5f5',
