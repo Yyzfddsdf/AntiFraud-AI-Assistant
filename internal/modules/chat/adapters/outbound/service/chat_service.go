@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 
 const conversationTTL = 5 * time.Minute
 
-const responsesMessageRoleDeveloper = "developer"
 const DefaultConversationKeyPrefix = "chat:context:"
 const AdminConversationKeyPrefix = "admin:chat:context:"
 
@@ -133,23 +133,16 @@ func BuildMessagesForUserWithPrefix(conversationKeyPrefix string, systemPrompt s
 // StreamReply 使用全流式回合处理：首轮即 stream=true，边接收边向前端推送内容；
 // 若出现 tool_calls，则在参数拼接完成后执行工具并继续下一轮流式请求。
 func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput string, userImageURLs []string, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (string, []ConversationMessage, error) {
-	responseInput := chatMessagesToResponsesInput(messages)
+	resolved := append([]openai.ChatCompletionMessage{}, messages...)
 	recorded := make([]ConversationMessage, 0)
-	normalizedUserImageURLs := normalizeImageURLs(userImageURLs)
 
 	const maxRounds = 8
 	for round := 0; round < maxRounds; round++ {
-		roundResult, err := s.streamAssistantRound(ctx, responseInput, emit)
+		assistantMessage, err := s.streamAssistantRound(ctx, resolved, emit)
 		if err != nil {
 			return "", nil, err
 		}
-
-		assistantToolCalls := responseFunctionCallsToOpenAIToolCalls(roundResult.FunctionCalls)
-		assistantMessage := openai.ChatCompletionMessage{
-			Role:      openai.ChatMessageRoleAssistant,
-			Content:   roundResult.Content,
-			ToolCalls: assistantToolCalls,
-		}
+		resolved = append(resolved, assistantMessage)
 
 		if len(assistantMessage.ToolCalls) == 0 {
 			if emit != nil {
@@ -163,7 +156,7 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 			turnMessages = append(turnMessages, ConversationMessage{
 				Role:      openai.ChatMessageRoleUser,
 				Content:   strings.TrimSpace(userInput),
-				ImageURLs: normalizedUserImageURLs,
+				ImageURLs: normalizeImageURLs(userImageURLs),
 			})
 			turnMessages = append(turnMessages, recorded...)
 			turnMessages = append(turnMessages, ConversationMessage{
@@ -179,42 +172,31 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 			ToolCalls: openAIToolCallsToConversation(assistantMessage.ToolCalls),
 		})
 
-		if strings.TrimSpace(assistantMessage.Content) != "" {
-			responseInput = append(responseInput, newResponsesAssistantMessage(assistantMessage.Content))
-		}
-
-		for _, call := range roundResult.FunctionCalls {
-			toolCall := responseFunctionCallToOpenAIToolCall(call)
-			if strings.TrimSpace(toolCall.ID) == "" || strings.TrimSpace(toolCall.Function.Name) == "" {
-				continue
-			}
-
-			toolPayload := s.handleToolCall(ctx, userID, toolCall)
+		for _, call := range assistantMessage.ToolCalls {
+			toolPayload := s.handleToolCall(ctx, userID, call)
 			if emit != nil {
 				_ = emit(map[string]interface{}{
 					"type": "tool_call",
-					"tool": toolCall.Function.Name,
-					"id":   toolCall.ID,
+					"tool": call.Function.Name,
+					"id":   call.ID,
 				})
 				_ = emit(map[string]interface{}{
-					"type": "tool_result",
-					"tool": toolCall.Function.Name,
-					"id":   toolCall.ID,
+					"type":   "tool_result",
+					"tool":   call.Function.Name,
+					"id":     call.ID,
+					"result": toolPayload,
 				})
 			}
 
 			payloadBytes, _ := json.Marshal(toolPayload)
-			responseInput = append(responseInput,
-				normalizeResponseFunctionCall(call),
-				openai.ResponseFunctionCallOutput{
-					Type:   "function_call_output",
-					CallID: toolCall.ID,
-					Output: string(payloadBytes),
-				},
-			)
+			resolved = append(resolved, openai.ChatCompletionMessage{
+				Role:       openai.ChatMessageRoleTool,
+				ToolCallID: call.ID,
+				Content:    string(payloadBytes),
+			})
 			recorded = append(recorded, ConversationMessage{
 				Role:       openai.ChatMessageRoleTool,
-				ToolCallID: toolCall.ID,
+				ToolCallID: call.ID,
 				Content:    string(payloadBytes),
 			})
 		}
@@ -223,67 +205,59 @@ func (s *ChatService) StreamReply(ctx context.Context, userID string, userInput 
 	return "", nil, fmt.Errorf("resolve tool calls exceeded max rounds: %d", maxRounds)
 }
 
-type responseRoundResult struct {
-	Content       string
-	FunctionCalls []openai.ResponseFunctionCall
-}
-
-func (s *ChatService) streamAssistantRound(ctx context.Context, input []any, emit func(event map[string]interface{}) error) (responseRoundResult, error) {
-	stream, err := s.client.StreamResponse(ctx, openai.ResponsesRequest{
-		Model: s.model,
-		Input: input,
-		Tools: responseToolsFromChatTools(s.resolveTools()),
+func (s *ChatService) streamAssistantRound(ctx context.Context, messages []openai.ChatCompletionMessage, emit func(event map[string]interface{}) error) (openai.ChatCompletionMessage, error) {
+	stream, err := s.client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
+		Model:       s.model,
+		Messages:    messages,
+		Tools:       s.resolveTools(),
+		ToolChoice:  "auto",
+		Stream:      true,
+		MaxTokens:   2048,
+		Temperature: 0.7,
+		TopP:        1.0,
 	})
 	if err != nil {
-		return responseRoundResult{}, fmt.Errorf("create responses stream failed: %w", err)
+		return openai.ChatCompletionMessage{}, fmt.Errorf("create chat stream failed: %w", err)
 	}
 	defer stream.Close()
 
 	var contentBuilder strings.Builder
-	outputItems := make([]map[string]any, 0)
-	var completedResponse map[string]any
+	toolCallCollector := newStreamToolCallCollector()
 
-	for stream.Next() {
-		eventType, payload, parseErr := parseResponseStreamEvent(stream.Current())
-		if parseErr != nil {
-			return responseRoundResult{}, fmt.Errorf("parse responses stream event failed: %w", parseErr)
+	for {
+		resp, recvErr := stream.Recv()
+		if recvErr != nil {
+			if recvErr == io.EOF {
+				break
+			}
+			return openai.ChatCompletionMessage{}, fmt.Errorf("recv stream failed: %w", recvErr)
 		}
 
-		switch eventType {
-		case "response.output_text.delta":
-			delta, _ := payload["delta"].(string)
-			if delta == "" {
-				continue
-			}
-			contentBuilder.WriteString(delta)
+		if len(resp.Choices) == 0 {
+			continue
+		}
+
+		delta := resp.Choices[0].Delta
+		if delta.Content != "" {
+			contentBuilder.WriteString(delta.Content)
 			if emit != nil {
 				if err := emit(map[string]interface{}{
 					"type":    "content",
-					"content": delta,
+					"content": delta.Content,
 				}); err != nil {
-					return responseRoundResult{}, err
+					return openai.ChatCompletionMessage{}, err
 				}
 			}
-		case "response.output_item.done":
-			item, ok := payload["item"].(map[string]any)
-			if ok {
-				outputItems = append(outputItems, item)
-			}
-		case "response.completed":
-			response, ok := payload["response"].(map[string]any)
-			if ok {
-				completedResponse = response
-			}
+		}
+		if len(delta.ToolCalls) > 0 {
+			toolCallCollector.Append(delta.ToolCalls)
 		}
 	}
-	if err := stream.Err(); err != nil {
-		return responseRoundResult{}, fmt.Errorf("recv responses stream failed: %w", err)
-	}
 
-	content, functionCalls := parseResponsesOutput(completedResponse, outputItems, contentBuilder.String())
-	return responseRoundResult{
-		Content:       content,
-		FunctionCalls: functionCalls,
+	return openai.ChatCompletionMessage{
+		Role:      openai.ChatMessageRoleAssistant,
+		Content:   contentBuilder.String(),
+		ToolCalls: toolCallCollector.ToolCalls(),
 	}, nil
 }
 
@@ -304,272 +278,82 @@ func (s *ChatService) handleToolCall(ctx context.Context, userID string, call op
 	return result.Payload
 }
 
-func responseToolsFromChatTools(tools []openai.Tool) []any {
-	result := make([]any, 0, len(tools)+1)
-	result = append(result, openai.WebSearchTool{
-		Type:              "web_search",
-		SearchContextSize: "medium",
-	})
+type streamToolCallCollector struct {
+	calls   map[int]*openai.ToolCall
+	order   []int
+	lastIdx int
+	hasLast bool
+}
 
-	for _, tool := range tools {
-		if tool.Function == nil {
-			continue
+func newStreamToolCallCollector() *streamToolCallCollector {
+	return &streamToolCallCollector{
+		calls: map[int]*openai.ToolCall{},
+		order: make([]int, 0),
+	}
+}
+
+func (c *streamToolCallCollector) Append(deltas []openai.ChatCompletionStreamToolCallDelta) {
+	for _, delta := range deltas {
+		idx := c.resolveIndex(delta.Index)
+		call := c.ensure(idx)
+
+		if strings.TrimSpace(delta.ID) != "" {
+			call.ID = delta.ID
 		}
-		result = append(result, openai.FunctionTool{
-			Type:        openai.ToolTypeFunction,
-			Name:        strings.TrimSpace(tool.Function.Name),
-			Description: strings.TrimSpace(tool.Function.Description),
-			Parameters:  tool.Function.Parameters,
-		})
+		if strings.TrimSpace(delta.Type) != "" {
+			call.Type = delta.Type
+		}
+		if delta.Function != nil {
+			if strings.TrimSpace(delta.Function.Name) != "" {
+				call.Function.Name = delta.Function.Name
+			}
+			if delta.Function.Arguments != "" {
+				call.Function.Arguments += delta.Function.Arguments
+			}
+		}
+	}
+}
+
+func (c *streamToolCallCollector) ToolCalls() []openai.ToolCall {
+	result := make([]openai.ToolCall, 0, len(c.order))
+	for _, idx := range c.order {
+		call := *c.calls[idx]
+		if strings.TrimSpace(call.Type) == "" {
+			call.Type = openai.ToolTypeFunction
+		}
+		if strings.TrimSpace(call.ID) == "" {
+			call.ID = fmt.Sprintf("tool_call_%d", idx)
+		}
+		result = append(result, call)
 	}
 	return result
 }
 
-func chatMessagesToResponsesInput(messages []openai.ChatCompletionMessage) []any {
-	result := make([]any, 0, len(messages))
-	for _, message := range messages {
-		role := strings.TrimSpace(message.Role)
-		switch role {
-		case openai.ChatMessageRoleSystem:
-			if strings.TrimSpace(message.Content) != "" {
-				result = append(result, newResponsesInputMessage(responsesMessageRoleDeveloper, message.Content))
-			}
-		case openai.ChatMessageRoleUser:
-			if responseMessage, ok := newResponsesUserMessage(message); ok {
-				result = append(result, responseMessage)
-			}
-		case openai.ChatMessageRoleAssistant:
-			if strings.TrimSpace(message.Content) != "" {
-				result = append(result, newResponsesAssistantMessage(message.Content))
-			}
-			for _, toolCall := range message.ToolCalls {
-				if call, ok := openAIToolCallToResponseFunctionCall(toolCall); ok {
-					result = append(result, call)
-				}
-			}
-		case openai.ChatMessageRoleTool:
-			if strings.TrimSpace(message.ToolCallID) == "" {
-				continue
-			}
-			result = append(result, openai.ResponseFunctionCallOutput{
-				Type:   "function_call_output",
-				CallID: strings.TrimSpace(message.ToolCallID),
-				Output: message.Content,
-			})
-		}
+func (c *streamToolCallCollector) resolveIndex(index *int) int {
+	if index != nil {
+		c.lastIdx = *index
+		c.hasLast = true
+		return *index
 	}
-	return result
+	if c.hasLast {
+		return c.lastIdx
+	}
+	if len(c.order) > 0 {
+		return c.order[len(c.order)-1]
+	}
+	return 0
 }
 
-func newResponsesInputMessage(role string, text string) openai.Message {
-	trimmedText := strings.TrimSpace(text)
-	return openai.Message{
-		Type: "message",
-		Role: role,
-		Content: []any{
-			openai.InputText{
-				Type: "input_text",
-				Text: trimmedText,
-			},
-		},
+func (c *streamToolCallCollector) ensure(index int) *openai.ToolCall {
+	if call, ok := c.calls[index]; ok {
+		return call
 	}
-}
-
-func newResponsesUserMessage(message openai.ChatCompletionMessage) (openai.Message, bool) {
-	content := make([]any, 0, len(message.MultiContent)+1)
-	if len(message.MultiContent) > 0 {
-		for _, part := range message.MultiContent {
-			switch strings.TrimSpace(part.Type) {
-			case "text":
-				trimmedText := strings.TrimSpace(part.Text)
-				if trimmedText == "" {
-					continue
-				}
-				content = append(content, openai.InputText{
-					Type: "input_text",
-					Text: trimmedText,
-				})
-			case "image_url":
-				if part.ImageURL == nil {
-					continue
-				}
-				imageURL := strings.TrimSpace(part.ImageURL.URL)
-				if imageURL == "" {
-					continue
-				}
-				content = append(content, openai.InputImage{
-					Type:     "input_image",
-					ImageURL: imageURL,
-				})
-			}
-		}
-	} else {
-		trimmedText := strings.TrimSpace(message.Content)
-		if trimmedText != "" {
-			content = append(content, openai.InputText{
-				Type: "input_text",
-				Text: trimmedText,
-			})
-		}
-	}
-
-	if len(content) == 0 {
-		return openai.Message{}, false
-	}
-
-	return openai.Message{
-		Type:    "message",
-		Role:    openai.ChatMessageRoleUser,
-		Content: content,
-	}, true
-}
-
-func newResponsesAssistantMessage(text string) openai.Message {
-	return openai.Message{
-		Type: "message",
-		Role: openai.ChatMessageRoleAssistant,
-		Content: []any{
-			openai.OutputText{
-				Type: "output_text",
-				Text: text,
-			},
-		},
-	}
-}
-
-func openAIToolCallToResponseFunctionCall(call openai.ToolCall) (openai.ResponseFunctionCall, bool) {
-	id := strings.TrimSpace(call.ID)
-	name := strings.TrimSpace(call.Function.Name)
-	if id == "" || name == "" {
-		return openai.ResponseFunctionCall{}, false
-	}
-	return openai.ResponseFunctionCall{
-		Type:      "function_call",
-		CallID:    id,
-		Name:      name,
-		Arguments: call.Function.Arguments,
-	}, true
-}
-
-func normalizeResponseFunctionCall(call openai.ResponseFunctionCall) openai.ResponseFunctionCall {
-	call.Type = "function_call"
-	call.CallID = strings.TrimSpace(call.CallID)
-	call.Name = strings.TrimSpace(call.Name)
-	return call
-}
-
-func responseFunctionCallsToOpenAIToolCalls(items []openai.ResponseFunctionCall) []openai.ToolCall {
-	result := make([]openai.ToolCall, 0, len(items))
-	for _, item := range items {
-		toolCall := responseFunctionCallToOpenAIToolCall(item)
-		if strings.TrimSpace(toolCall.ID) == "" || strings.TrimSpace(toolCall.Function.Name) == "" {
-			continue
-		}
-		result = append(result, toolCall)
-	}
-	return result
-}
-
-func responseFunctionCallToOpenAIToolCall(call openai.ResponseFunctionCall) openai.ToolCall {
-	normalized := normalizeResponseFunctionCall(call)
-	return openai.ToolCall{
-		ID:   normalized.CallID,
+	call := &openai.ToolCall{
 		Type: openai.ToolTypeFunction,
-		Function: openai.FunctionCall{
-			Name:      normalized.Name,
-			Arguments: normalized.Arguments,
-		},
 	}
-}
-
-func parseResponseStreamEvent(event openai.StreamEvent) (string, map[string]any, error) {
-	payload := map[string]any{}
-	if len(event.Data) > 0 {
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
-			return "", nil, err
-		}
-	}
-
-	eventType := strings.TrimSpace(event.Event)
-	if eventType == "" {
-		if payloadType, _ := payload["type"].(string); payloadType != "" {
-			eventType = payloadType
-		}
-	}
-	return eventType, payload, nil
-}
-
-func parseResponsesOutput(completedResponse map[string]any, outputItems []map[string]any, streamedText string) (string, []openai.ResponseFunctionCall) {
-	if completedResponse != nil {
-		text, calls := parseResponsesPayload(completedResponse)
-		if text != "" || len(calls) > 0 {
-			if text == "" {
-				text = streamedText
-			}
-			return text, calls
-		}
-	}
-
-	text, calls := parseResponsesOutputItems(outputItems)
-	if text == "" {
-		text = streamedText
-	}
-	return text, calls
-}
-
-func parseResponsesPayload(payload map[string]any) (string, []openai.ResponseFunctionCall) {
-	if payload == nil {
-		return "", nil
-	}
-
-	text, _ := payload["output_text"].(string)
-	outputItems, _ := payload["output"].([]any)
-	parsedText, calls := parseResponsesAnyOutputItems(outputItems)
-	if text == "" {
-		text = parsedText
-	}
-	return text, calls
-}
-
-func parseResponsesOutputItems(items []map[string]any) (string, []openai.ResponseFunctionCall) {
-	wrapped := make([]any, 0, len(items))
-	for _, item := range items {
-		wrapped = append(wrapped, item)
-	}
-	return parseResponsesAnyOutputItems(wrapped)
-}
-
-func parseResponsesAnyOutputItems(items []any) (string, []openai.ResponseFunctionCall) {
-	var textBuilder strings.Builder
-	functionCalls := make([]openai.ResponseFunctionCall, 0)
-
-	for _, rawItem := range items {
-		item, ok := rawItem.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		switch strings.TrimSpace(stringValue(item["type"])) {
-		case "message":
-			textBuilder.WriteString(parseResponsesMessageText(item))
-		case "function_call":
-			callID := strings.TrimSpace(stringValue(item["call_id"]))
-			name := strings.TrimSpace(stringValue(item["name"]))
-			if callID == "" || name == "" {
-				continue
-			}
-			functionCalls = append(functionCalls, openai.ResponseFunctionCall{
-				Type:      "function_call",
-				CallID:    callID,
-				Name:      name,
-				Arguments: stringValue(item["arguments"]),
-			})
-		case "web_search_call":
-			continue
-		}
-	}
-
-	return textBuilder.String(), functionCalls
+	c.calls[index] = call
+	c.order = append(c.order, index)
+	return call
 }
 
 func buildUserChatMessage(text string, imageURLs []string) (openai.ChatCompletionMessage, bool) {

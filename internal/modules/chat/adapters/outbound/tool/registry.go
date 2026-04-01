@@ -20,12 +20,14 @@ var userChatToolRegistry = []openai.Tool{
 	ChatQueryUserCaseHistoryTool,
 	ChatSearchUserHistoryTool,
 	ChatSearchSimilarCasesTool,
+	ChatWebSearchTool,
 }
 
 var adminChatToolRegistry = []openai.Tool{
 	AdminQueryRegionTopScamTypesTool,
 	AdminQueryRegionCaseRankingTool,
 	ChatSearchSimilarCasesTool,
+	ChatWebSearchTool,
 }
 
 var chatToolBlacklist = map[string]struct{}{}
@@ -36,12 +38,14 @@ var userChatToolHandlers = map[string]ChatToolHandler{
 	ChatQueryUserCaseHistoryToolName: &ChatQueryUserCaseHistoryHandler{},
 	ChatSearchUserHistoryToolName:    &ChatSearchUserHistoryHandler{},
 	ChatSearchSimilarCasesToolName:   &ChatSearchSimilarCasesHandler{},
+	ChatWebSearchToolName:            &ChatWebSearchHandler{},
 }
 
 var adminChatToolHandlers = map[string]ChatToolHandler{
 	AdminQueryRegionTopScamTypesToolName: &AdminQueryRegionTopScamTypesHandler{},
 	AdminQueryRegionCaseRankingToolName:  &AdminQueryRegionCaseRankingHandler{},
 	ChatSearchSimilarCasesToolName:       &ChatSearchSimilarCasesHandler{},
+	ChatWebSearchToolName:                &ChatWebSearchHandler{},
 }
 
 func ChatTools() []openai.Tool {
