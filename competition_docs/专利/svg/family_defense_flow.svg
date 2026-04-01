@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    
+    <linearGradient id="nodeGradAlt" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    
+    <linearGradient id="alertGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .node-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #FFFFFF; }
+    .line-text { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 500; fill: #334155; }
+    .decision-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #3B82F6; }
+    .line { stroke: #94A3B8; stroke-width: 3; fill: none; }
+  </style>
+
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 家庭联防流程图</text>
+  <text x="600" y="80" text-anchor="middle" class="subtitle">展示基于归档观察者模式的高风险识别与跨用户强提醒闭环</text>
+
+  <!-- Node 1: Event Trigger -->
+  <rect x="200" y="150" width="220" height="60" rx="8" fill="url(#nodeGradAlt)" filter="url(#shadow)"/>
+  <text x="310" y="186" text-anchor="middle" class="node-text">历史分析归档完成</text>
+  <path d="M 420 180 L 550 180" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Decision 1: High Risk? -->
+  <polygon points="650,140 750,180 650,220 550,180" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="650" y="185" text-anchor="middle" class="decision-text">是高危风险(High)?</text>
+  
+  <path d="M 650 220 L 650 300" class="line" marker-end="url(#arrow)"/>
+  <text x="670" y="260" text-anchor="middle" class="line-text" fill="#EF4444">Yes</text>
+
+  <!-- Decision 2: Guard Relation? -->
+  <polygon points="650,300 750,340 650,380 550,340" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="650" y="345" text-anchor="middle" class="decision-text">存在守护关系配置?</text>
+
+  <path d="M 550 340 L 450 340 L 450 490" class="line" marker-end="url(#arrow)"/>
+  <text x="480" y="330" text-anchor="middle" class="line-text" fill="#10B981">Yes (已绑定)</text>
+
+  <!-- Insert DB -->
+  <rect x="350" y="490" width="200" height="60" rx="8" fill="url(#nodeGrad)" filter="url(#shadow)"/>
+  <text x="450" y="526" text-anchor="middle" class="node-text">写入家庭通知队列表</text>
+  
+  <path d="M 550 520 L 650 520" class="line" marker-end="url(#arrow)"/>
+
+  <!-- WS Connect -->
+  <polygon points="750,480 850,520 750,560 650,520" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="750" y="525" text-anchor="middle" class="decision-text">守护人在线 (WS)?</text>
+
+  <path d="M 750 560 L 750 630" class="line" marker-end="url(#arrow)"/>
+  <text x="770" y="600" text-anchor="middle" class="line-text" fill="#10B981">Yes</text>
+
+  <path d="M 850 520 L 950 520 L 950 600" class="line" marker-end="url(#arrow)"/>
+  <text x="965" y="560" text-anchor="middle" class="line-text" fill="#EF4444">No (离线)</text>
+
+  <!-- Online Notify -->
+  <rect x="650" y="630" width="200" height="80" rx="8" fill="url(#alertGrad)" filter="url(#shadow)"/>
+  <text x="750" y="665" text-anchor="middle" class="node-text">WS前台直接弹窗警报</text>
+  <text x="750" y="685" text-anchor="middle" class="node-text" font-size="14">“您的家人遭受...”</text>
+
+  <!-- Offline Cache -->
+  <rect x="850" y="600" width="200" height="60" rx="8" fill="#FFFFFF" stroke="#64748B" stroke-width="2" filter="url(#shadow)"/>
+  <text x="950" y="636" text-anchor="middle" class="line-text">下次登录拉取通知列表</text>
+
+</svg>

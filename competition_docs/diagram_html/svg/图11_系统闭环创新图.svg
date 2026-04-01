@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-surface" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F8FAFC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F1F5F9;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrow-emerald" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10B981"/>
+    </marker>
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22.33C16.59 21.05 20 16.19 20 11V5L12 2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <style>
+    .bg { fill: #F8FAFC; }
+    .title { font-family: "PingFang SC", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
+    .loop-bg { fill: url(#grad-surface); stroke: #E2E8F0; stroke-width: 1.5; filter: url(#shadow); }
+    .loop-title { font-family: "PingFang SC", sans-serif; font-size: 20px; font-weight: 800; fill: #1E293B; }
+    .card { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.5; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.03)); }
+    .card-title { font-family: "PingFang SC", sans-serif; font-size: 14px; font-weight: 800; fill: #1E293B; }
+    .card-desc { font-family: "PingFang SC", sans-serif; font-size: 11px; fill: #64748B; }
+    .flow-line { stroke: #10B981; stroke-width: 3; stroke-dasharray: 8 4; fill: none; stroke-linecap: round; }
+  </style>
+
+  <rect width="1000" height="800" class="bg"/>
+  <text x="500" y="55" text-anchor="middle" class="title">“数据驱动-知识进化”系统闭环创新模型</text>
+
+  <!-- Central Loop Diagram Backdrop -->
+  <circle cx="500" cy="425" r="300" class="loop-bg" stroke-dasharray="12 6"/>
+
+  <!-- Centered Label -->
+  <g transform="translate(400, 395)">
+    <rect width="200" height="60" rx="30" fill="url(#grad-indigo)" filter="url(#shadow)"/>
+    <text x="100" y="38" text-anchor="middle" class="loop-title" fill="#FFFFFF" font-size="18">持续演化闭环</text>
+  </g>
+  <text x="500" y="475" text-anchor="middle" class="card-desc" font-weight="800" fill="#6366F1">SELF-EVOLVING SYSTEM CORE</text>
+
+  <!-- Circular Arrow Links -->
+  <path d="M 600 160 Q 800 160 810 380" class="flow-line" marker-end="url(#arrow-emerald)"/>
+  <path d="M 810 475 Q 800 690 600 690" class="flow-line" marker-end="url(#arrow-emerald)"/>
+  <path d="M 400 690 Q 200 690 190 475" class="flow-line" marker-end="url(#arrow-emerald)"/>
+  <path d="M 190 380 Q 200 160 400 160" class="flow-line" marker-end="url(#arrow-emerald)"/>
+
+  <!-- Top Point: Terminal Input (Blue Domain) -->
+  <g transform="translate(400, 120)">
+    <rect width="200" height="85" rx="16" class="card" stroke="#3B82F6" stroke-width="2"/>
+    <use href="#icon-shield" x="15" y="15" width="18" height="18" fill="#3B82F6"/>
+    <text x="110" y="38" text-anchor="middle" class="card-title" fill="#1D4ED8">1. 用户终端感知</text>
+    <text x="110" y="65" text-anchor="middle" class="card-desc">多模态全场景内容采集</text>
+  </g>
+
+  <!-- Right Point: AI Engine (Indigo Domain) -->
+  <g transform="translate(710, 385)">
+    <rect width="200" height="85" rx="16" class="card" stroke="#6366F1" stroke-width="2.5"/>
+    <use href="#icon-shield" x="15" y="15" width="18" height="18" fill="#6366F1"/>
+    <text x="110" y="38" text-anchor="middle" class="card-title" fill="#4338CA">2. AI 编排分析</text>
+    <text x="110" y="65" text-anchor="middle" class="card-desc">逻辑判研、报告生成</text>
+  </g>
+
+  <!-- Bottom Point: Governance (Amber Domain) -->
+  <g transform="translate(400, 650)">
+    <rect width="200" height="85" rx="16" class="card" stroke="#F59E0B" stroke-width="2"/>
+    <use href="#icon-shield" x="15" y="15" width="18" height="18" fill="#F59E0B"/>
+    <text x="110" y="38" text-anchor="middle" class="card-title" fill="#92400E">3. 治理与专家审核</text>
+    <text x="110" y="65" text-anchor="middle" class="card-desc">可疑案例标记并沉淀入库</text>
+  </g>
+
+  <!-- Left Point: Knowledge (Emerald Domain) -->
+  <g transform="translate(90, 385)">
+    <rect width="200" height="85" rx="16" class="card" stroke="#10B981" stroke-width="2"/>
+    <use href="#icon-shield" x="15" y="15" width="18" height="18" fill="#10B981"/>
+    <text x="110" y="38" text-anchor="middle" class="card-title" fill="#065F46">4. 知识图谱演进</text>
+    <text x="110" y="65" text-anchor="middle" class="card-desc">RAG 向量化与反诈知识生长</text>
+  </g>
+
+</svg>

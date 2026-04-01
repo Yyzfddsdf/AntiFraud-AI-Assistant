@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+
+    <linearGradient id="rejectGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#94A3B8" />
+      <stop offset="100%" stop-color="#64748B" />
+    </linearGradient>
+    
+    <linearGradient id="successGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .node-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #FFFFFF; }
+    .line-text { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 500; fill: #334155; }
+    .decision-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #3B82F6; }
+    .line { stroke: #94A3B8; stroke-width: 3; fill: none; }
+  </style>
+
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 管理员案件案例审核流程图</text>
+  <text x="600" y="80" text-anchor="middle" class="subtitle">展示典型案件提取、人工判定入库与知识缓存重建机制</text>
+
+  <rect x="100" y="150" width="220" height="60" rx="8" fill="url(#nodeGrad)" filter="url(#shadow)"/>
+  <text x="210" y="186" text-anchor="middle" class="node-text">主智能体归档典型案件</text>
+
+  <path d="M 320 180 L 450 180" class="line" marker-end="url(#arrow)"/>
+
+  <rect x="450" y="130" width="300" height="100" rx="16" fill="#FFFFFF" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="2"/>
+  <text x="600" y="170" text-anchor="middle" class="decision-text">待审核案例池 (Pending DB)</text>
+  <text x="600" y="200" text-anchor="middle" class="line-text" fill="#64748B">等待后台管理员接手</text>
+
+  <path d="M 600 230 L 600 320" class="line" marker-end="url(#arrow)"/>
+
+  <rect x="450" y="320" width="300" height="60" rx="8" fill="url(#nodeGrad)" filter="url(#shadow)"/>
+  <text x="600" y="356" text-anchor="middle" class="node-text">管理员浏览、补充类型标签与法律依据</text>
+
+  <path d="M 600 380 L 600 450" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Decision -->
+  <polygon points="600,450 700,490 600,530 500,490" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="600" y="495" text-anchor="middle" class="decision-text">审核判定?</text>
+
+  <!-- Path Reject -->
+  <path d="M 500 490 L 350 490 L 350 560" class="line" marker-end="url(#arrow)"/>
+  <text x="425" y="480" text-anchor="middle" class="line-text" fill="#EF4444">Reject (驳回)</text>
+
+  <rect x="250" y="560" width="200" height="60" rx="8" fill="url(#rejectGrad)" filter="url(#shadow)"/>
+  <text x="350" y="596" text-anchor="middle" class="node-text">从待审队中物理删除</text>
+
+  <!-- Path Approve -->
+  <path d="M 700 490 L 850 490 L 850 560" class="line" marker-end="url(#arrow)"/>
+  <text x="775" y="480" text-anchor="middle" class="line-text" fill="#10B981">Approve (通过)</text>
+
+  <rect x="750" y="560" width="200" height="80" rx="8" fill="url(#successGrad)" filter="url(#shadow)"/>
+  <text x="850" y="596" text-anchor="middle" class="node-text">转入正式知识案例库</text>
+  <text x="850" y="620" text-anchor="middle" class="node-text" font-size="14">(生成最终向量 Embedding)</text>
+
+  <path d="M 850 640 L 850 690" class="line" marker-end="url(#arrow)"/>
+
+  <rect x="700" y="690" width="300" height="60" rx="8" fill="url(#nodeGrad)" filter="url(#shadow)"/>
+  <text x="850" y="726" text-anchor="middle" class="node-text">触发 Redis 历史图谱向量库重启缓存</text>
+
+  <path d="M 700 720 L 580 720 L 580 620 L 350 620" class="line" marker-end="url(#arrow)"/>
+  <text x="465" y="710" text-anchor="middle" class="line-text">清理原待审区记录</text>
+</svg>

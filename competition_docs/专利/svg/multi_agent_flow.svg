@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#EFF6FF" />
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="cardShadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+    
+    <linearGradient id="successGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    
+    <linearGradient id="infoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .node-title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 600; fill: #FFFFFF; }
+    .card-title { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #1E293B; }
+    .card-text { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 500; fill: #64748B; }
+    .line { stroke: #94A3B8; stroke-width: 3; fill: none; }
+    .line-thick { stroke: #3B82F6; stroke-width: 4; fill: none; stroke-dasharray: 6; }
+  </style>
+
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 多智能体分层协同流程图</text>
+  <text x="600" y="80" text-anchor="middle" class="subtitle">展示多模态并发取证与主智能体聚合决策框架</text>
+
+  <!-- Input Data Node -->
+  <rect x="500" y="120" width="200" height="60" rx="30" fill="url(#primaryGrad)" filter="url(#shadow)"/>
+  <text x="600" y="156" text-anchor="middle" class="node-title">全模态输入源</text>
+
+  <!-- Distribute arrows -->
+  <path d="M 600 180 L 600 210 L 150 210 L 150 240" class="line" marker-end="url(#arrow)"/>
+  <path d="M 600 180 L 600 210 L 450 210 L 450 240" class="line" marker-end="url(#arrow)"/>
+  <path d="M 600 180 L 600 210 L 750 210 L 750 240" class="line" marker-end="url(#arrow)"/>
+  <path d="M 600 180 L 600 210 L 1050 210 L 1050 240" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Sub-agents -->
+  <rect x="50" y="240" width="200" height="120" rx="16" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" filter="url(#cardShadow)"/>
+  <rect x="50" y="240" width="200" height="40" rx="16" fill="url(#primaryGrad)"/>
+  <rect x="50" y="260" width="200" height="20" fill="url(#primaryGrad)"/>
+  <text x="150" y="266" text-anchor="middle" class="node-title">文本清洗引擎</text>
+  <text x="150" y="310" text-anchor="middle" class="card-text">敏感词过滤与截取</text>
+  <text x="150" y="335" text-anchor="middle" class="card-text">原始意图压缩</text>
+
+  <rect x="350" y="240" width="200" height="120" rx="16" fill="#FFFFFF" stroke="#10B981" stroke-width="2" filter="url(#cardShadow)"/>
+  <rect x="350" y="240" width="200" height="40" rx="16" fill="url(#successGrad)"/>
+  <rect x="350" y="260" width="200" height="20" fill="url(#successGrad)"/>
+  <text x="450" y="266" text-anchor="middle" class="node-title">图像子智能体 (Vision)</text>
+  <text x="450" y="310" text-anchor="middle" class="card-text">OCR提取 / 假公文识别</text>
+  <text x="450" y="335" text-anchor="middle" class="card-text">伪造UI/金额判定</text>
+
+  <rect x="650" y="240" width="200" height="120" rx="16" fill="#FFFFFF" stroke="#06B6D4" stroke-width="2" filter="url(#cardShadow)"/>
+  <rect x="650" y="240" width="200" height="40" rx="16" fill="url(#infoGrad)"/>
+  <rect x="650" y="260" width="200" height="20" fill="url(#infoGrad)"/>
+  <text x="750" y="266" text-anchor="middle" class="node-title">声音子智能体 (Audio)</text>
+  <text x="750" y="310" text-anchor="middle" class="card-text">STT 话术转录映射</text>
+  <text x="750" y="335" text-anchor="middle" class="card-text">机械音检测/情绪分析</text>
+
+  <rect x="950" y="240" width="200" height="120" rx="16" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="2" filter="url(#cardShadow)"/>
+  <rect x="950" y="240" width="200" height="40" rx="16" fill="#8B5CF6"/>
+  <rect x="950" y="260" width="200" height="20" fill="#8B5CF6"/>
+  <text x="1050" y="266" text-anchor="middle" class="node-title">视频子智能体 (Video)</text>
+  <text x="1050" y="310" text-anchor="middle" class="card-text">抽帧画面验证识别</text>
+  <text x="1050" y="335" text-anchor="middle" class="card-text">引导行为动态捕捉</text>
+
+  <!-- Insights collect arrows -->
+  <path d="M 150 360 L 150 390 L 600 390 L 600 420" class="line" marker-end="url(#arrow)"/>
+  <path d="M 450 360 L 450 390 L 600 390" class="line"/>
+  <path d="M 750 360 L 750 390 L 600 390" class="line"/>
+  <path d="M 1050 360 L 1050 390 L 600 390" class="line"/>
+
+  <!-- Insights Struct -->
+  <rect x="500" y="420" width="200" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="600" y="450" text-anchor="middle" class="card-title">序列化关联洞察 (Insights)</text>
+
+  <path d="M 600 470 L 600 520" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Main Agent Container -->
+  <rect x="350" y="520" width="500" height="180" rx="20" fill="#FFFFFF" filter="url(#shadow)" stroke="#4F46E5" stroke-width="3"/>
+  <rect x="350" y="520" width="500" height="50" rx="20" fill="url(#primaryGrad)"/>
+  <rect x="350" y="550" width="500" height="20" fill="url(#primaryGrad)"/>
+  <text x="600" y="553" text-anchor="middle" class="node-title">🧠 Core Main Agent (聚合决策器)</text>
+
+  <rect x="400" y="590" width="180" height="40" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="490" y="615" text-anchor="middle" class="card-text">🗃️ 知识引擎 (Global RAG)</text>
+
+  <rect x="620" y="590" width="180" height="40" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="710" y="615" text-anchor="middle" class="card-text">👤 个人历史记忆 (Memories)</text>
+
+  <rect x="400" y="640" width="400" height="40" rx="6" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+  <text x="600" y="665" text-anchor="middle" class="card-text" fill="#D97706">🎯 动态阈值量化与逻辑纠偏</text>
+
+  <path d="M 600 700 L 600 750" class="line-thick" marker-end="url(#arrow)"/>
+  <rect x="500" y="750" width="200" height="50" rx="25" fill="#10B981" filter="url(#shadow)"/>
+  <text x="600" y="781" text-anchor="middle" class="node-title">下发最终结构化报告</text>
+</svg>
