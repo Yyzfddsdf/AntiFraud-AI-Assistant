@@ -1,8 +1,9 @@
 import argparse
 import datetime as dt
 import os
-import zipfile
 import re
+import struct
+import zipfile
 from xml.sax.saxutils import escape
 
 
@@ -12,15 +13,13 @@ CP_NS = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties
 DC_NS = "http://purl.org/dc/elements/1.1/"
 DCTERMS_NS = "http://purl.org/dc/terms/"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
-VT_NS = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
-WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 PIC_NS = "http://schemas.openxmlformats.org/drawingml/2006/picture"
-ASVG_NS = "http://schemas.microsoft.com/office/drawing/2016/SVG/main"
+A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Convert markdown-like text to DOCX with SVG/PNG/Table support.")
+    parser = argparse.ArgumentParser(description="Convert markdown-like text to DOCX with PNG support.")
     parser.add_argument("--input", required=True, help="Source markdown path.")
     parser.add_argument("--output", required=True, help="Target docx path.")
     parser.add_argument("--title", required=True, help="Document title.")
@@ -30,9 +29,7 @@ def parse_args():
 
 def parse_inline_markdown(text):
     parts = []
-    # Strip spaces
-    text = text.strip()
-    tokens = re.split(r"(\*\*.*?\*\*)", text)
+    tokens = re.split(r"(\*\*.*?\*\*)", text.strip())
     for token in tokens:
         if token.startswith("**") and token.endswith("**"):
             parts.append({"text": token[2:-2], "bold": True})
@@ -44,9 +41,8 @@ def parse_inline_markdown(text):
 def make_run_xml(text, *, bold=False, size=24, font="宋体"):
     if not text:
         return ""
-    text_esc = escape(text)
-    bold_xml = "<w:b/><w:bCs/>" if bold else ""
     preserve = " xml:space=\"preserve\"" if text.startswith(" ") or text.endswith(" ") else ""
+    bold_xml = "<w:b/><w:bCs/>" if bold else ""
     return (
         f"<w:r>"
         f"<w:rPr>"
@@ -54,30 +50,25 @@ def make_run_xml(text, *, bold=False, size=24, font="宋体"):
         f"<w:rFonts w:ascii=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:eastAsia=\"{font}\" w:cs=\"Times New Roman\"/>"
         f"<w:sz w:val=\"{size}\"/><w:szCs w:val=\"{size}\"/>"
         f"</w:rPr>"
-        f"<w:t{preserve}>{text_esc}</w:t>"
+        f"<w:t{preserve}>{escape(text)}</w:t>"
         f"</w:r>"
     )
 
 
 def make_p_content(text, size=24, font="宋体"):
-    chunks = parse_inline_markdown(text)
-    xml = ""
-    for c in chunks:
-        xml += make_run_xml(c["text"], bold=c["bold"], size=size, font=font)
-    return xml
+    return "".join(make_run_xml(c["text"], bold=c["bold"], size=size, font=font) for c in parse_inline_markdown(text))
 
 
-def make_paragraph(text="", *, bold=False, size=24, spacing_before=0, spacing_after=0,
-                   line=360, left=0, first_line=0, center=False):
-    jc_xml = f"<w:jc w:val=\"{'center' if center else 'left'}\"/>"
+def make_paragraph(text="", *, bold=False, size=24, spacing_before=0, spacing_after=0, line=360, left=0, first_line=0, center=False):
     indent_xml = ""
     if left or first_line:
         attrs = []
-        if left: attrs.append(f"w:left=\"{left}\"")
-        if first_line: attrs.append(f"w:firstLine=\"{first_line}\"")
+        if left:
+            attrs.append(f"w:left=\"{left}\"")
+        if first_line:
+            attrs.append(f"w:firstLine=\"{first_line}\"")
         indent_xml = f"<w:ind {' '.join(attrs)}/>"
-        
-    content_xml = make_p_content(text, size=size)
+    jc_xml = f"<w:jc w:val=\"{'center' if center else 'left'}\"/>"
     return (
         f"<w:p>"
         f"<w:pPr>"
@@ -85,7 +76,7 @@ def make_paragraph(text="", *, bold=False, size=24, spacing_before=0, spacing_af
         f"{indent_xml}"
         f"{jc_xml}"
         f"</w:pPr>"
-        f"{content_xml}"
+        f"{make_p_content(text, size=size, font='宋体' if not bold else '黑体') if text else ''}"
         f"</w:p>"
     )
 
@@ -94,13 +85,10 @@ def make_heading(text, level, first_h1=False):
     if first_h1:
         return make_paragraph(text, bold=True, size=44, center=True, spacing_before=400, spacing_after=400)
     sizes = {1: 32, 2: 28, 3: 24, 4: 24}
-    size = sizes.get(level, 24)
-    # Headings: no first line indent, some spacing
-    return make_paragraph(text, bold=True, size=size, spacing_before=240, spacing_after=120, line=400, first_line=0)
+    return make_paragraph(text, bold=True, size=sizes.get(level, 24), spacing_before=240, spacing_after=120, line=400)
 
 
 def make_table(rows):
-    # rows is list of lists
     tbl_pr = (
         "<w:tblPr>"
         "<w:tblW w:w=\"0\" w:type=\"auto\"/>"
@@ -115,27 +103,21 @@ def make_table(rows):
         "</w:tblBorders>"
         "</w:tblPr>"
     )
-    
     tr_xml = ""
-    for idx, row in enumerate(rows):
+    for row in rows:
         tc_xml = ""
         for cell in row:
-            # Use smaller font for tables
             content = make_p_content(cell.strip(), size=21)
             tc_xml += (
-                f"<w:tc><w:tcPr><w:tcW w:w=\"0\" w:type=\"auto\"/></w:tcPr>"
+                "<w:tc><w:tcPr><w:tcW w:w=\"0\" w:type=\"auto\"/></w:tcPr>"
                 f"<w:p><w:pPr><w:spacing w:line=\"240\" w:lineRule=\"auto\"/><w:jc w:val=\"left\"/></w:pPr>{content}</w:p>"
-                f"</w:tc>"
+                "</w:tc>"
             )
         tr_xml += f"<w:tr>{tc_xml}</w:tr>"
-        
-    # Wrap table in spacing paragraphs
-    before = "<w:p><w:pPr><w:spacing w:after=\"120\"/></w:pPr></w:p>"
-    after = "<w:p><w:pPr><w:spacing w:before=\"120\"/></w:pPr></w:p>"
-    return f"{before}<w:tbl>{tbl_pr}{tr_xml}</w:tbl>{after}"
+    return f"<w:p><w:pPr><w:spacing w:after=\"120\"/></w:pPr></w:p><w:tbl>{tbl_pr}{tr_xml}</w:tbl><w:p><w:pPr><w:spacing w:before=\"120\"/></w:pPr></w:p>"
 
 
-def make_image_drawing(rId_png, rId_svg, alt_text, width_emu=5486400, height_emu=3429000):
+def make_image_drawing(rId_png, alt_text, width_emu=5486400, height_emu=3429000):
     doc_id = "".join(filter(str.isdigit, rId_png)) or "1"
     alt_text_esc = escape(alt_text or "image")
     return (
@@ -154,13 +136,7 @@ def make_image_drawing(rId_png, rId_svg, alt_text, width_emu=5486400, height_emu
         f"<pic:cNvPicPr><a:picLocks noChangeAspect=\"1\"/></pic:cNvPicPr>"
         f"</pic:nvPicPr>"
         f"<pic:blipFill>"
-        f"<a:blip r:embed=\"{rId_png}\">"
-        f"<a:extLst>"
-        f"<a:ext uri=\"{{96DAC541-7B7A-43D3-8B79-37D633B846F1}}\">"
-        f"<asvg:svgBlip xmlns:asvg=\"{ASVG_NS}\" r:embed=\"{rId_svg}\"/>"
-        f"</a:ext>"
-        f"</a:extLst>"
-        f"</a:blip>"
+        f"<a:blip r:embed=\"{rId_png}\"/>"
         f"<a:stretch><a:fillRect/></a:stretch>"
         f"</pic:blipFill>"
         f"<pic:spPr>"
@@ -170,44 +146,54 @@ def make_image_drawing(rId_png, rId_svg, alt_text, width_emu=5486400, height_emu
     )
 
 
+def get_png_size(path):
+    with open(path, "rb") as f:
+        header = f.read(24)
+    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", header[16:24])
+
+
+def fit_image_emu(width_px, height_px, max_width_emu=3300000, max_height_emu=6500000):
+    if not width_px or not height_px:
+        return 3300000, 6500000
+    scale = min(max_width_emu / width_px, max_height_emu / height_px)
+    return int(width_px * scale), int(height_px * scale)
+
+
 def iter_paragraphs(lines, image_map):
     paragraphs = []
     img_re = re.compile(r"!\[(.*?)\]\((.*?)\)")
-
     table_buffer = []
     first_h1 = True
-    
+
     def flush_table():
         if table_buffer:
             rows = []
             for t_line in table_buffer:
                 if t_line.strip() and not re.match(r"^\|?\s*:?-+:?\s*\|", t_line.strip()):
-                    actual_cells = t_line.strip("|").split("|")
-                    rows.append(actual_cells)
+                    rows.append(t_line.strip("|").split("|"))
             if rows:
                 paragraphs.append(make_table(rows))
             table_buffer.clear()
 
     for line in lines:
         stripped = line.strip()
-        
-        # Table detection
         if stripped.startswith("|") and "|" in stripped:
             table_buffer.append(stripped)
             continue
-        else:
-            flush_table()
-
+        flush_table()
         if not stripped:
             continue
-            
+
         img_match = img_re.search(stripped)
         if img_match:
             alt_text = img_match.group(1)
             img_path = img_match.group(2)
             if img_path in image_map:
-                rIds = image_map[img_path]
-                paragraphs.append(make_image_drawing(rIds["png"], rIds["svg"], alt_text))
+                img_info = image_map[img_path]
+                width_emu, height_emu = fit_image_emu(img_info["size"][0], img_info["size"][1])
+                paragraphs.append(make_image_drawing(img_info["png"], alt_text, width_emu=width_emu, height_emu=height_emu))
                 continue
 
         header_match = re.match(r"^(#{1,6})\s+(.*)", stripped)
@@ -220,34 +206,28 @@ def iter_paragraphs(lines, image_map):
             else:
                 paragraphs.append(make_heading(text, level))
             continue
-            
-        if stripped == "---": continue
 
-        if "：" in stripped and len(stripped) < 100 and not stripped.startswith("**"):
-            # Metadata: no indent
-            paragraphs.append(make_paragraph(stripped, first_line=0))
+        if stripped == "---":
             continue
 
-        if re.match(r"^\d+\.\s+.*", stripped) or stripped.startswith("- "):
-            # List items: indent left 480, no first line
+        if "：" in stripped and len(stripped) < 100 and not stripped.startswith("**"):
+            paragraphs.append(make_paragraph(stripped, first_line=0))
+        elif re.match(r"^\d+\.\s+.*", stripped) or stripped.startswith("- "):
             paragraphs.append(make_paragraph(stripped, left=480, first_line=0))
         else:
-            # Normal paragraph: first line 480
             paragraphs.append(make_paragraph(stripped, first_line=480))
-            
+
     flush_table()
     return paragraphs
 
 
-def build_content_types(has_svg=False):
-    svg_str = "<Default Extension=\"svg\" ContentType=\"image/svg+xml\"/>" if has_svg else ""
+def build_content_types():
     return (
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
         "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
         "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
         "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
         "<Default Extension=\"png\" ContentType=\"image/png\"/>"
-        f"{svg_str}"
         "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>"
         "<Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/>"
         "<Override PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\"/>"
@@ -320,7 +300,7 @@ def build_header_xml(text):
         "<w:pPr><w:jc w:val=\"center\"/><w:pBdr><w:bottom w:val=\"single\" w:sz=\"4\" w:space=\"1\" w:color=\"auto\"/></w:pBdr></w:pPr>"
         f"{make_run_xml(text, size=18)}"
         "</w:p>"
-        "</hdr>"
+        "</w:hdr>"
     )
 
 
@@ -343,8 +323,7 @@ def build_footer_xml():
 
 
 def build_document_xml(lines, image_map):
-    paragraphs = iter_paragraphs(lines, image_map)
-    body_content = "".join(paragraphs)
+    body_content = "".join(iter_paragraphs(lines, image_map))
     return (
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
         f"<w:document xmlns:w=\"{W_NS}\" xmlns:r=\"{R_NS}\" xmlns:wp=\"{WP_NS}\" xmlns:a=\"{A_NS}\" xmlns:pic=\"{PIC_NS}\">"
@@ -361,20 +340,21 @@ def build_document_xml(lines, image_map):
 
 def build_document_rels(image_map):
     rels = [
-        f"<Relationship Id=\"rIdHeader\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/header\" Target=\"header1.xml\"/>",
-        f"<Relationship Id=\"rIdFooter\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer\" Target=\"footer1.xml\"/>",
-        f"<Relationship Id=\"rIdStyles\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>",
-        f"<Relationship Id=\"rIdSettings\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>",
+        "<Relationship Id=\"rIdHeader\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/header\" Target=\"header1.xml\"/>",
+        "<Relationship Id=\"rIdFooter\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer\" Target=\"footer1.xml\"/>",
+        "<Relationship Id=\"rIdStyles\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>",
+        "<Relationship Id=\"rIdSettings\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>",
     ]
-    for path, rIds in image_map.items():
+    for rIds in image_map.values():
         png_filename = f"image_{rIds['png'][5:]}.png"
-        rels.append(f"<Relationship Id=\"{rIds['png']}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{png_filename}\"/>")
-        
+        rels.append(
+            f"<Relationship Id=\"{rIds['png']}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{png_filename}\"/>"
+        )
     return (
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
         "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
-        + "".join(rels) +
-        "</Relationships>"
+        + "".join(rels)
+        + "</Relationships>"
     )
 
 
@@ -383,8 +363,10 @@ def main():
     if not os.path.exists(args.input):
         print(f"Error: Input file {args.input} not found.")
         return
+
     with open(args.input, "r", encoding="utf-8") as f:
         lines = f.readlines()
+
     image_map = {}
     img_re = re.compile(r"!\[(.*?)\]\((.*?)\)")
     img_count = 1
@@ -393,13 +375,13 @@ def main():
         for match in img_re.finditer(line):
             path = match.group(2)
             if path not in image_map:
-                image_map[path] = {
-                    "svg": f"rIdSv{img_count:02d}",
-                    "png": f"rIdPn{img_count:02d}"
-                }
+                size = get_png_size(os.path.normpath(os.path.join(input_dir, path)))
+                image_map[path] = {"png": f"rIdPn{img_count:02d}"}
+                image_map[path]["size"] = size
                 img_count += 1
-    with zipfile.ZipFile(args.output, "w") as zf:
-        zf.writestr("[Content_Types].xml", build_content_types(has_svg=True))
+
+    with zipfile.ZipFile(args.output, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", build_content_types())
         zf.writestr("_rels/.rels", build_root_rels())
         zf.writestr("docProps/core.xml", build_core_xml(args.title))
         zf.writestr("docProps/app.xml", build_app_xml())
@@ -410,17 +392,12 @@ def main():
         zf.writestr("word/footer1.xml", build_footer_xml())
         zf.writestr("word/_rels/document.xml.rels", build_document_rels(image_map))
         for path, rIds in image_map.items():
-            svg_abs_path = os.path.normpath(os.path.join(input_dir, path))
-            png_rel_path = path.replace("/svg/", "/png/").replace(".svg", ".png")
-            png_abs_path = os.path.normpath(os.path.join(input_dir, png_rel_path))
-            if os.path.exists(svg_abs_path):
-                svg_filename = f"image_{rIds['svg'][5:]}.svg"
-                with open(svg_abs_path, "rb") as img_f:
-                    zf.writestr(f"word/media/{svg_filename}", img_f.read())
+            png_abs_path = os.path.normpath(os.path.join(input_dir, path))
             if os.path.exists(png_abs_path):
                 png_filename = f"image_{rIds['png'][5:]}.png"
                 with open(png_abs_path, "rb") as img_f:
                     zf.writestr(f"word/media/{png_filename}", img_f.read())
+
     print(f"Successfully generated {args.output}")
 
 
