@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#EEF6FF"/>
+    </linearGradient>
+    <linearGradient id="shortHead" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+    <linearGradient id="userHead" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <linearGradient id="kbHead" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="decisionHead" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#FB923C"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+    <style>
+      .title { font: 800 30px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #0F172A; }
+      .subtitle { font: 500 15px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #475569; }
+      .panel { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.6; }
+      .panel-title { font: 800 22px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #FFFFFF; }
+      .section-title { font: 700 17px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #1E293B; }
+      .body { font: 500 15px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #334155; }
+      .code { font: 600 13px Consolas, "Courier New", monospace; fill: #1D4ED8; }
+      .pill-short { fill: #EFF6FF; stroke: #93C5FD; stroke-width: 1.2; }
+      .pill-user { fill: #ECFDF5; stroke: #5EEAD4; stroke-width: 1.2; }
+      .pill-kb { fill: #F5F3FF; stroke: #C4B5FD; stroke-width: 1.2; }
+      .pill-out { fill: #FFF7ED; stroke: #FDBA74; stroke-width: 1.2; }
+      .link { stroke: #64748B; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .note { font: 600 14px "Microsoft YaHei", "PingFang SC", sans-serif; fill: #0F172A; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="860" fill="url(#bg)"/>
+  <text x="700" y="52" text-anchor="middle" class="title">长短期记忆与动态风险分级关系图</text>
+  <text x="700" y="82" text-anchor="middle" class="subtitle">依据代码主链路：短期记忆来自当前任务上下文，长期记忆来自用户画像、用户历史与公共知识库</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="130" width="380" height="460" rx="24" class="panel"/>
+    <rect x="70" y="130" width="380" height="72" rx="24" fill="url(#shortHead)"/>
+    <text x="260" y="175" text-anchor="middle" class="panel-title">短期记忆：当前案件分析上下文</text>
+
+    <text x="102" y="240" class="section-title">1. 原始任务输入</text>
+    <rect x="100" y="260" width="320" height="54" rx="14" class="pill-short"/>
+    <text x="120" y="292" class="code">BindTaskPayload</text>
+    <text x="120" y="338" class="body">文本、图片、音频、视频原始输入</text>
+
+    <text x="102" y="390" class="section-title">2. 子模态取证结果</text>
+    <rect x="100" y="410" width="320" height="54" rx="14" class="pill-short"/>
+    <text x="120" y="442" class="code">BindTaskInsights</text>
+    <text x="120" y="488" class="body">Image / Video / Audio insights</text>
+
+    <text x="102" y="540" class="section-title">3. 当前案件评分结果</text>
+    <rect x="100" y="560" width="320" height="54" rx="14" class="pill-short"/>
+    <text x="120" y="592" class="code">BindRiskAssessment</text>
+    <text x="120" y="638" class="body">score + structured_summary</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="500" y="130" width="380" height="460" rx="24" class="panel"/>
+    <rect x="500" y="130" width="380" height="72" rx="24" fill="url(#userHead)"/>
+    <text x="690" y="175" text-anchor="middle" class="panel-title">长期记忆一：用户长期风险画像</text>
+
+    <text x="532" y="240" class="section-title">1. 用户画像读取</text>
+    <rect x="530" y="260" width="320" height="54" rx="14" class="pill-user"/>
+    <text x="550" y="292" class="code">query_user_info</text>
+    <text x="550" y="338" class="body">user_name / age / occupation / region</text>
+
+    <text x="532" y="390" class="section-title">2. 历史风险状态</text>
+    <rect x="530" y="410" width="320" height="54" rx="14" class="pill-user"/>
+    <text x="550" y="442" class="code">historical_score</text>
+    <text x="550" y="488" class="body">high/mid/low ratio + risk trend analysis</text>
+
+    <text x="532" y="540" class="section-title">3. 用户历史语义记忆</text>
+    <rect x="530" y="560" width="320" height="54" rx="14" class="pill-user"/>
+    <text x="550" y="592" class="code">search_user_history</text>
+    <text x="550" y="638" class="body">检索该用户过往相似案件命中结果</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="930" y="130" width="400" height="460" rx="24" class="panel"/>
+    <rect x="930" y="130" width="400" height="72" rx="24" fill="url(#kbHead)"/>
+    <text x="1130" y="175" text-anchor="middle" class="panel-title">长期记忆二：公共历史知识</text>
+
+    <text x="962" y="240" class="section-title">1. 公共案件知识库</text>
+    <rect x="960" y="260" width="340" height="54" rx="14" class="pill-kb"/>
+    <text x="980" y="292" class="code">search_similar_cases</text>
+    <text x="980" y="338" class="body">从全局历史案件知识库召回相似案例</text>
+
+    <text x="962" y="390" class="section-title">2. 向量检索命中</text>
+    <rect x="960" y="410" width="340" height="54" rx="14" class="pill-kb"/>
+    <text x="980" y="442" class="code">knowledge_base_hit</text>
+    <text x="980" y="488" class="body">high / low / none</text>
+
+    <text x="962" y="540" class="section-title">3. 知识先验作用</text>
+    <rect x="960" y="560" width="340" height="54" rx="14" class="pill-kb"/>
+    <text x="980" y="592" class="body">提供与当前案件相似的公共先验</text>
+    <text x="980" y="614" class="body">但不替代当前案件事实本身</text>
+  </g>
+
+  <path d="M 450 360 C 470 360, 480 360, 500 360" class="link"/>
+  <path d="M 880 360 C 900 360, 910 360, 930 360" class="link"/>
+
+  <g filter="url(#shadow)">
+    <rect x="280" y="660" width="840" height="130" rx="24" class="panel"/>
+    <rect x="280" y="660" width="840" height="58" rx="24" fill="url(#decisionHead)"/>
+    <text x="700" y="697" text-anchor="middle" class="panel-title">动态风险分级与输出</text>
+
+    <rect x="320" y="735" width="220" height="34" rx="12" class="pill-out"/>
+    <text x="430" y="757" text-anchor="middle" class="code">resolve_dynamic_risk_level</text>
+
+    <rect x="580" y="735" width="200" height="34" rx="12" class="pill-out"/>
+    <text x="680" y="757" text-anchor="middle" class="code">dynamic_threshold</text>
+
+    <rect x="820" y="735" width="160" height="34" rx="12" class="pill-out"/>
+    <text x="900" y="757" text-anchor="middle" class="code">risk_level</text>
+
+    <text x="700" y="790" text-anchor="middle" class="body">主智能体基于当前案件评分、historical_score、knowledge_base_hit、user_history_hit 输出最终风险等级，并继续生成报告、归档历史、触发预警与联动。</text>
+  </g>
+
+  <path d="M 260 590 C 260 640, 390 640, 430 735" class="link"/>
+  <path d="M 690 590 C 690 645, 650 660, 680 735" class="link"/>
+  <path d="M 1130 590 C 1130 640, 970 650, 900 735" class="link"/>
+
+  <text x="700" y="830" text-anchor="middle" class="note">图注：短期记忆指本轮深度分析中的当前案件上下文；长期记忆指用户画像、用户历史语义记忆与公共历史案件知识库。聊天上下文属于附加交互能力，不作为赛题长短期记忆机制的主口径。</text>
+</svg>

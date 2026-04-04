@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="700" viewBox="0 0 1360 700">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
+      .core { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.8; rx: 18; }
+      .risklow { fill: #f8fafc; stroke: #9ca3af; stroke-width: 1.4; rx: 12; }
+      .riskmid { fill: #fff7ed; stroke: #f59e0b; stroke-width: 1.4; rx: 12; }
+      .riskhigh { fill: #fef2f2; stroke: #ef4444; stroke-width: 1.4; rx: 12; }
+      .arrow { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="680" y="42" text-anchor="middle" class="title">图 3 动态风险判断机制示意图</text>
+
+  <rect x="70" y="110" width="280" height="135" class="box"/>
+  <text x="210" y="145" text-anchor="middle" class="label">当前案件风险特征</text>
+  <text x="210" y="178" text-anchor="middle" class="small">诈骗话术特征</text>
+  <text x="210" y="202" text-anchor="middle" class="small">危险动作请求</text>
+  <text x="210" y="226" text-anchor="middle" class="small">多模态证据强度</text>
+  <text x="210" y="250" text-anchor="middle" class="small">用户暴露阶段</text>
+
+  <rect x="70" y="295" width="280" height="115" class="box"/>
+  <text x="210" y="330" text-anchor="middle" class="label">公共知识支撑</text>
+  <text x="210" y="363" text-anchor="middle" class="small">历史案件知识库相似情况</text>
+
+  <rect x="70" y="460" width="280" height="135" class="box"/>
+  <text x="210" y="495" text-anchor="middle" class="label">用户个体历史支撑</text>
+  <text x="210" y="528" text-anchor="middle" class="small">用户个人历史相似经历</text>
+  <text x="210" y="552" text-anchor="middle" class="small">用户历史风险状态</text>
+
+  <rect x="470" y="235" width="360" height="230" class="core"/>
+  <text x="650" y="290" text-anchor="middle" class="label">动态风险判断机制</text>
+  <text x="650" y="340" text-anchor="middle" class="small">当前案件评估</text>
+  <text x="650" y="370" text-anchor="middle" class="small">双重知识支撑</text>
+  <text x="650" y="400" text-anchor="middle" class="small">动态调整</text>
+
+  <rect x="960" y="145" width="250" height="105" class="risklow"/>
+  <text x="1085" y="180" text-anchor="middle" class="label">低风险</text>
+  <text x="1085" y="213" text-anchor="middle" class="small">给出建议</text>
+
+  <rect x="960" y="300" width="250" height="105" class="riskmid"/>
+  <text x="1085" y="335" text-anchor="middle" class="label">中风险</text>
+  <text x="1085" y="368" text-anchor="middle" class="small">主动提醒</text>
+
+  <rect x="960" y="455" width="250" height="105" class="riskhigh"/>
+  <text x="1085" y="490" text-anchor="middle" class="label">高风险</text>
+  <text x="1085" y="523" text-anchor="middle" class="small">提醒 + 家庭联动 + 归档重点关注</text>
+
+  <path d="M350 178 L470 285" class="arrow"/>
+  <path d="M350 352 L470 350" class="arrow"/>
+  <path d="M350 528 L470 415" class="arrow"/>
+
+  <path d="M830 285 L960 198" class="arrow"/>
+  <path d="M830 350 L960 352" class="arrow"/>
+  <path d="M830 415 L960 508" class="arrow"/>
+</svg>

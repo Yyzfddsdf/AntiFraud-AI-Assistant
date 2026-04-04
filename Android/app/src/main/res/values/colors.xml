@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sentinel_primary">#059669</color>
+    <color name="sentinel_primary_dark">#047857</color>
+    <color name="sentinel_teal">#0F766E</color>
+    <color name="sentinel_surface">#F8FAFC</color>
+    <color name="sentinel_surface_alt">#EEF2F7</color>
+    <color name="sentinel_text">#0F172A</color>
+    <color name="sentinel_text_muted">#64748B</color>
+    <color name="sentinel_border">#E2E8F0</color>
+    <color name="sentinel_danger">#DC2626</color>
+    <color name="sentinel_warning">#F59E0B</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

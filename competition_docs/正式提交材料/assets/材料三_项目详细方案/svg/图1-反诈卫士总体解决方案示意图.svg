@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .subtitle { font: 600 18px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #374151; }
+      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .text { font: 500 15px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #374151; }
+      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
+      .layer { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; rx: 18; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; rx: 12; }
+      .core { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.5; rx: 12; }
+      .arrow { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="600" y="42" text-anchor="middle" class="title">图 1 反诈卫士总体解决方案示意图</text>
+
+  <rect x="60" y="80" width="1080" height="150" class="layer"/>
+  <text x="90" y="112" class="subtitle">交互入口层</text>
+  <rect x="110" y="135" width="260" height="64" class="box"/>
+  <text x="240" y="173" text-anchor="middle" class="label">用户侧服务端</text>
+  <rect x="470" y="135" width="260" height="64" class="box"/>
+  <text x="600" y="173" text-anchor="middle" class="label">Android 主动守护端</text>
+  <rect x="830" y="135" width="260" height="64" class="box"/>
+  <text x="960" y="173" text-anchor="middle" class="label">管理员治理端</text>
+
+  <rect x="60" y="285" width="1080" height="230" class="layer"/>
+  <text x="90" y="317" class="subtitle">核心业务层</text>
+  <rect x="110" y="350" width="180" height="64" class="core"/>
+  <text x="200" y="388" text-anchor="middle" class="label">多模态分析</text>
+  <rect x="320" y="350" width="230" height="64" class="core"/>
+  <text x="435" y="388" text-anchor="middle" class="label">风险判断与报告生成</text>
+  <rect x="580" y="350" width="220" height="64" class="core"/>
+  <text x="690" y="388" text-anchor="middle" class="label">主动提醒与家庭联防</text>
+  <rect x="830" y="350" width="220" height="64" class="core"/>
+  <text x="940" y="388" text-anchor="middle" class="label">历史归档与用户记忆</text>
+  <rect x="385" y="435" width="430" height="64" class="core"/>
+  <text x="600" y="473" text-anchor="middle" class="label">案例治理与知识沉淀</text>
+
+  <rect x="60" y="570" width="1080" height="150" class="layer"/>
+  <text x="90" y="602" class="subtitle">数据与知识层</text>
+  <rect x="95" y="625" width="220" height="58" class="box"/>
+  <text x="205" y="660" text-anchor="middle" class="label">用户业务数据</text>
+  <rect x="355" y="625" width="220" height="58" class="box"/>
+  <text x="465" y="660" text-anchor="middle" class="label">历史案件知识库</text>
+  <rect x="615" y="625" width="220" height="58" class="box"/>
+  <text x="725" y="660" text-anchor="middle" class="label">用户个人历史记忆</text>
+  <rect x="875" y="625" width="220" height="58" class="box"/>
+  <text x="985" y="660" text-anchor="middle" class="label">缓存与实时会话支撑</text>
+
+  <path d="M240 199 L240 330" class="arrow"/>
+  <path d="M600 199 L600 330" class="arrow"/>
+  <path d="M960 199 L960 330" class="arrow"/>
+
+  <path d="M200 414 L205 625" class="arrow"/>
+  <path d="M435 414 L465 625" class="arrow"/>
+  <path d="M690 414 L725 625" class="arrow"/>
+  <path d="M940 414 L985 625" class="arrow"/>
+  <path d="M600 499 L600 625" class="arrow"/>
+
+  <path d="M815 467 C930 467 930 382 800 382" class="arrow"/>
+  <text x="865" y="438" class="small">治理反馈持续优化</text>
+</svg>

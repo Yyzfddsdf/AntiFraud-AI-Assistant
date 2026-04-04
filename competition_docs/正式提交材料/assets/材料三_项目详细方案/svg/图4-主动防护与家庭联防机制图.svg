@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1380" height="760" viewBox="0 0 1380 760">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
+      .path1 { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
+      .path2 { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.6; rx: 14; }
+      .merge { fill: #fff7ed; stroke: #f59e0b; stroke-width: 1.6; rx: 14; }
+      .arrow { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="690" y="42" text-anchor="middle" class="title">图 4 主动防护与家庭联防机制图</text>
+
+  <rect x="60" y="305" width="240" height="95" class="box"/>
+  <text x="180" y="343" text-anchor="middle" class="label">用户浏览可疑内容</text>
+  <text x="180" y="370" text-anchor="middle" class="label">或接触可疑信息</text>
+
+  <rect x="390" y="120" width="250" height="70" class="path1"/>
+  <text x="515" y="162" text-anchor="middle" class="label">快路径</text>
+  <rect x="390" y="215" width="250" height="70" class="path1"/>
+  <text x="515" y="257" text-anchor="middle" class="small">页面 / 通知初步识别</text>
+  <rect x="390" y="310" width="250" height="70" class="path1"/>
+  <text x="515" y="352" text-anchor="middle" class="small">本地快速风险判断</text>
+  <rect x="390" y="405" width="250" height="70" class="path1"/>
+  <text x="515" y="447" text-anchor="middle" class="small">明显风险即时提醒</text>
+
+  <rect x="390" y="540" width="250" height="70" class="path2"/>
+  <text x="515" y="582" text-anchor="middle" class="label">慢路径</text>
+  <rect x="710" y="505" width="270" height="70" class="path2"/>
+  <text x="845" y="547" text-anchor="middle" class="small">复杂证据提交后端</text>
+  <rect x="710" y="600" width="270" height="70" class="path2"/>
+  <text x="845" y="642" text-anchor="middle" class="small">多模态正式分析</text>
+  <rect x="1035" y="552" width="270" height="70" class="path2"/>
+  <text x="1170" y="594" text-anchor="middle" class="small">生成结构化风险报告</text>
+
+  <rect x="1035" y="185" width="270" height="80" class="merge"/>
+  <text x="1170" y="220" text-anchor="middle" class="label">历史归档</text>
+  <text x="1170" y="244" text-anchor="middle" class="small">形成持续风险记录</text>
+
+  <rect x="1035" y="300" width="270" height="80" class="merge"/>
+  <text x="1170" y="335" text-anchor="middle" class="label">高风险事件识别</text>
+  <text x="1170" y="359" text-anchor="middle" class="small">进入重点处置</text>
+
+  <rect x="1035" y="415" width="270" height="80" class="merge"/>
+  <text x="1170" y="450" text-anchor="middle" class="label">家庭守护通知</text>
+  <text x="1170" y="474" text-anchor="middle" class="small">形成协同联防</text>
+
+  <rect x="1035" y="80" width="270" height="80" class="merge"/>
+  <text x="1170" y="115" text-anchor="middle" class="label">后续治理支撑</text>
+  <text x="1170" y="139" text-anchor="middle" class="small">反哺知识沉淀与优化</text>
+
+  <path d="M300 352 L390 352" class="arrow"/>
+  <path d="M180 400 C180 520 330 575 390 575" class="arrow"/>
+
+  <path d="M640 447 C700 447 700 520 710 540" class="arrow"/>
+  <text x="690" y="500" class="small">需进一步复核时进入慢路径</text>
+
+  <path d="M640 575 L710 540" class="arrow"/>
+  <path d="M980 635 L1035 590" class="arrow"/>
+  <path d="M1170 552 L1170 495" class="arrow"/>
+  <path d="M1170 415 L1170 380" class="arrow"/>
+  <path d="M1170 300 L1170 265" class="arrow"/>
+  <path d="M1170 185 L1170 160" class="arrow"/>
+</svg>

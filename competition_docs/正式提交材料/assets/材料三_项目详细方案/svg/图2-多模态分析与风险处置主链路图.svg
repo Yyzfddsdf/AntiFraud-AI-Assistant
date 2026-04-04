@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
+      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
+      .accent { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.6; rx: 14; }
+      .arrow { stroke: #64748b; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="42" text-anchor="middle" class="title">图 2 多模态分析与风险处置主链路图</text>
+
+  <rect x="40" y="190" width="150" height="90" class="box"/>
+  <text x="115" y="225" text-anchor="middle" class="label">用户提交</text>
+  <text x="115" y="248" text-anchor="middle" class="label">可疑内容</text>
+  <text x="115" y="270" text-anchor="middle" class="small">文本 / 图片 / 音频 / 视频</text>
+
+  <rect x="240" y="190" width="180" height="90" class="box"/>
+  <text x="330" y="225" text-anchor="middle" class="label">多模态子模块</text>
+  <text x="330" y="248" text-anchor="middle" class="label">提取证据</text>
+  <text x="330" y="270" text-anchor="middle" class="small">图像 / 音频 / 视频</text>
+
+  <rect x="470" y="190" width="170" height="90" class="accent"/>
+  <text x="555" y="225" text-anchor="middle" class="label">主分析模块</text>
+  <text x="555" y="248" text-anchor="middle" class="label">聚合判断</text>
+
+  <rect x="690" y="170" width="210" height="130" class="box"/>
+  <text x="795" y="205" text-anchor="middle" class="label">知识检索与历史匹配</text>
+  <text x="795" y="238" text-anchor="middle" class="small">公共知识库</text>
+  <text x="795" y="262" text-anchor="middle" class="small">用户历史记忆</text>
+
+  <rect x="950" y="190" width="180" height="90" class="accent"/>
+  <text x="1040" y="225" text-anchor="middle" class="label">风险分级与</text>
+  <text x="1040" y="248" text-anchor="middle" class="label">报告生成</text>
+
+  <rect x="1180" y="190" width="130" height="90" class="box"/>
+  <text x="1245" y="225" text-anchor="middle" class="label">历史归档</text>
+
+  <rect x="1040" y="360" width="190" height="90" class="box"/>
+  <text x="1135" y="395" text-anchor="middle" class="label">高风险提醒与</text>
+  <text x="1135" y="418" text-anchor="middle" class="label">家庭联动</text>
+
+  <rect x="760" y="360" width="210" height="90" class="box"/>
+  <text x="865" y="395" text-anchor="middle" class="label">典型案例进入</text>
+  <text x="865" y="418" text-anchor="middle" class="label">治理流程</text>
+
+  <path d="M190 235 L240 235" class="arrow"/>
+  <path d="M420 235 L470 235" class="arrow"/>
+  <path d="M640 235 L690 235" class="arrow"/>
+  <path d="M900 235 L950 235" class="arrow"/>
+  <path d="M1130 235 L1180 235" class="arrow"/>
+
+  <path d="M1245 280 L1245 320 L1135 320 L1135 360" class="arrow"/>
+  <path d="M1245 280 L1245 330 L865 330 L865 360" class="arrow"/>
+
+  <text x="700" y="510" text-anchor="middle" class="small">主链路体现“取证 - 聚合分析 - 判级 - 归档 - 联动 - 治理沉淀”的完整服务流程</text>
+</svg>
