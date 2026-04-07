@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,7 +41,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 管理员案件案例审核流程图</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 管理员案件案例审核流程图</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示典型案件提取、人工判定入库与知识缓存重建机制</text>
 
   <rect x="100" y="150" width="220" height="60" rx="8" fill="url(#nodeGrad)" filter="url(#shadow)"/>
@@ -87,3 +87,4 @@
   <path d="M 700 720 L 580 720 L 580 620 L 350 620" class="line" marker-end="url(#arrow)"/>
   <text x="465" y="710" text-anchor="middle" class="line-text">清理原待审区记录</text>
 </svg>
+

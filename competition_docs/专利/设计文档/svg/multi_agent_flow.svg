@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -45,7 +45,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 多智能体分层协同流程图</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 多智能体分层协同流程图</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示多模态并发取证与主智能体聚合决策框架</text>
 
   <!-- Input Data Node -->
@@ -118,3 +118,4 @@
   <rect x="500" y="750" width="200" height="50" rx="25" fill="#10B981" filter="url(#shadow)"/>
   <text x="600" y="781" text-anchor="middle" class="node-title">下发最终结构化报告</text>
 </svg>
+

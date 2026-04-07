@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="850" viewBox="0 0 1000 850">
   <defs>
     <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -29,7 +29,7 @@
   </style>
 
   <rect width="1000" height="850" class="bg"/>
-  <text x="500" y="55" text-anchor="middle" class="title">反诈卫士 (Sensible AI) 系统架构设计</text>
+  <text x="500" y="55" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) 系统架构设计</text>
 
   <!-- LAYER 1: UI / Terminal (Blue) -->
   <g transform="translate(50, 115)">
@@ -136,3 +136,4 @@
   <path d="M 500 640 Q 500 650 500 660" class="line"/>
 
 </svg>
+

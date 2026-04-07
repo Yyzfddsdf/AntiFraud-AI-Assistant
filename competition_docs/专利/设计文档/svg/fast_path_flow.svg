@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,7 +41,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - Android 快路径判决流程 (Fast Path)</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - Android 快路径判决流程 (Fast Path)</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示无障碍抓取、OCR兜底及加权分级告警的高频防线机制</text>
 
   <!-- Start event -->
@@ -99,3 +99,4 @@
   <text x="950" y="690" text-anchor="middle" class="line-text" fill="#FFFFFF">推荐转入后台深度复审</text>
 
 </svg>
+

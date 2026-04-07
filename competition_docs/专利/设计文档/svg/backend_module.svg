@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -37,7 +37,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 后端模块与六边形架构图</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 后端模块与六边形架构图</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示 cmd/api、bootstrap、platform 及内部业务模块的高内聚低耦合结构</text>
 
   <!-- Level 1: Entry -->
@@ -125,3 +125,4 @@
   <path d="M 850 520 L 800 520" class="line-thick" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
 
 </svg>
+

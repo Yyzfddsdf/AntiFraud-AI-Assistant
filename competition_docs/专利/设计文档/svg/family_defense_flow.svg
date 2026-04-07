@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,7 +41,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 家庭联防流程图</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 家庭联防流程图</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示基于归档观察者模式的高风险识别与跨用户强提醒闭环</text>
 
   <!-- Node 1: Event Trigger -->
@@ -89,3 +89,4 @@
   <text x="950" y="636" text-anchor="middle" class="line-text">下次登录拉取通知列表</text>
 
 </svg>
+

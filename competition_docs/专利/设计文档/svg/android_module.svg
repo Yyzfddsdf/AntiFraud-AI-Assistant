@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -31,7 +31,7 @@
 
   <rect width="1000" height="850" fill="url(#bgGrad)"/>
   
-  <text x="500" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - Android 端模块架构图</text>
+  <text x="500" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - Android 端模块架构图</text>
   <text x="500" y="80" text-anchor="middle" class="subtitle">展示UI视图层、后台守护、无障碍解析与通知联动的模块划分</text>
 
   <!-- 1. UI Layer -->
@@ -106,3 +106,4 @@
 
   <path d="M 500 590 L 500 630" class="line" marker-end="url(#arrow)"/>
 </svg>
+

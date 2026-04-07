@@ -369,6 +369,8 @@ def build_document_rels(image_map):
     for path, rIds in image_map.items():
         png_filename = f"image_{rIds['png'][5:]}.png"
         rels.append(f"<Relationship Id=\"{rIds['png']}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{png_filename}\"/>")
+        svg_filename = f"image_{rIds['svg'][5:]}.svg"
+        rels.append(f"<Relationship Id=\"{rIds['svg']}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{svg_filename}\"/>")
         
     return (
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"

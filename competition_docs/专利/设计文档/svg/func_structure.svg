@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 850">
   <defs>
     <!-- Background Gradient -->
@@ -46,12 +46,12 @@
 
   <rect width="1100" height="850" fill="url(#bgGrad)"/>
   
-  <text x="550" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 功能结构图</text>
+  <text x="550" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 功能结构图</text>
   <text x="550" y="80" text-anchor="middle" class="subtitle">展示用户侧、管理员侧与后端支撑服务的功能清单</text>
 
   <!-- Root Node -->
   <rect x="350" y="120" width="300" height="60" rx="12" fill="url(#rootGrad)" filter="url(#shadow)"/>
-  <text x="500" y="155" text-anchor="middle" class="node-text-white">反诈卫士系统 (Sensible AI)</text>
+  <text x="500" y="155" text-anchor="middle" class="node-text-white">反诈卫士系统 (Sentinel AI)</text>
 
   <!-- Level 1 Nodes -->
   <rect x="100" y="240" width="200" height="50" rx="8" fill="url(#l1Grad1)" filter="url(#shadow)"/>
@@ -161,3 +161,4 @@
   </g>
 
 </svg>
+

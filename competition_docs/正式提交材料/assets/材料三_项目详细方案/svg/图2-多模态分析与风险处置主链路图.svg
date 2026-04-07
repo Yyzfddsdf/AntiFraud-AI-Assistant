@@ -1,62 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="520" viewBox="0 0 1360 520">
   <defs>
-    <style>
-      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
-      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
-      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
-      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
-      .accent { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.6; rx: 14; }
-      .arrow { stroke: #64748b; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
-    </style>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#60A5FA"/>
     </marker>
   </defs>
 
-  <text x="700" y="42" text-anchor="middle" class="title">图 2 多模态分析与风险处置主链路图</text>
+  <rect width="1360" height="520" fill="#F8FAFC"/>
 
-  <rect x="40" y="190" width="150" height="90" class="box"/>
-  <text x="115" y="225" text-anchor="middle" class="label">用户提交</text>
-  <text x="115" y="248" text-anchor="middle" class="label">可疑内容</text>
-  <text x="115" y="270" text-anchor="middle" class="small">文本 / 图片 / 音频 / 视频</text>
+  <text x="680" y="50" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="28" font-weight="800" fill="#1E293B">多模态分析与风险处置主链路图</text>
+  <text x="680" y="80" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" font-weight="500" fill="#64748B">体现“取证 → 聚合分析 → 知识比对 → 判级 → 下游联动与治理”的完整顺序流程</text>
 
-  <rect x="240" y="190" width="180" height="90" class="box"/>
-  <text x="330" y="225" text-anchor="middle" class="label">多模态子模块</text>
-  <text x="330" y="248" text-anchor="middle" class="label">提取证据</text>
-  <text x="330" y="270" text-anchor="middle" class="small">图像 / 音频 / 视频</text>
+  <g transform="translate(40, 180)" filter="url(#shadow)">
+    <rect width="160" height="100" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="80" y="35" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="700" fill="#1E293B">1. 用户提交内容</text>
+    <rect x="20" y="50" width="120" height="1" fill="#E2E8F0"/>
+    <text x="80" y="70" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="13" font-weight="500" fill="#475569">包含可疑线索的</text>
+    <text x="80" y="88" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#64748B">文本/图片/音视频</text>
+  </g>
 
-  <rect x="470" y="190" width="170" height="90" class="accent"/>
-  <text x="555" y="225" text-anchor="middle" class="label">主分析模块</text>
-  <text x="555" y="248" text-anchor="middle" class="label">聚合判断</text>
+  <path d="M 200 230 L 240 230" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
 
-  <rect x="690" y="170" width="210" height="130" class="box"/>
-  <text x="795" y="205" text-anchor="middle" class="label">知识检索与历史匹配</text>
-  <text x="795" y="238" text-anchor="middle" class="small">公共知识库</text>
-  <text x="795" y="262" text-anchor="middle" class="small">用户历史记忆</text>
+  <g transform="translate(250, 180)" filter="url(#shadow)">
+    <rect width="160" height="100" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="80" y="35" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="700" fill="#1E293B">2. 子模块提取</text>
+    <rect x="20" y="50" width="120" height="1" fill="#E2E8F0"/>
+    <text x="80" y="70" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="13" font-weight="500" fill="#475569">多模态并行处理</text>
+    <text x="80" y="88" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#64748B">抽取独立模态特征</text>
+  </g>
 
-  <rect x="950" y="190" width="180" height="90" class="accent"/>
-  <text x="1040" y="225" text-anchor="middle" class="label">风险分级与</text>
-  <text x="1040" y="248" text-anchor="middle" class="label">报告生成</text>
+  <path d="M 410 230 L 450 230" fill="none" stroke="#60A5FA" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
 
-  <rect x="1180" y="190" width="130" height="90" class="box"/>
-  <text x="1245" y="225" text-anchor="middle" class="label">历史归档</text>
+  <g transform="translate(460, 175)" filter="url(#shadow)">
+    <rect width="160" height="110" rx="16" fill="#EFF6FF" stroke="#60A5FA" stroke-width="2.5"/>
+    <text x="80" y="45" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="17" font-weight="800" fill="#1D4ED8">3. 主分析模块</text>
+    <text x="80" y="70" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#2563EB">特征聚合判断</text>
+    <text x="80" y="92" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#60A5FA">跨模态逻辑融合</text>
+  </g>
 
-  <rect x="1040" y="360" width="190" height="90" class="box"/>
-  <text x="1135" y="395" text-anchor="middle" class="label">高风险提醒与</text>
-  <text x="1135" y="418" text-anchor="middle" class="label">家庭联动</text>
+  <path d="M 620 230 L 660 230" fill="none" stroke="#60A5FA" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
 
-  <rect x="760" y="360" width="210" height="90" class="box"/>
-  <text x="865" y="395" text-anchor="middle" class="label">典型案例进入</text>
-  <text x="865" y="418" text-anchor="middle" class="label">治理流程</text>
+  <g transform="translate(670, 160)" filter="url(#shadow)">
+    <rect width="200" height="140" rx="16" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2"/>
+    <rect x="0" y="0" width="200" height="45" rx="16" fill="#E2E8F0"/>
+    <rect x="0" y="25" width="200" height="20" fill="#E2E8F0"/>
+    <text x="100" y="28" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="700" fill="#1E293B">4. 知识检索与历史匹配</text>
+    
+    <circle cx="20" cy="70" r="4" fill="#64748B"/>
+    <text x="35" y="75" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="600" fill="#334155">公共知识库相似度检索</text>
 
-  <path d="M190 235 L240 235" class="arrow"/>
-  <path d="M420 235 L470 235" class="arrow"/>
-  <path d="M640 235 L690 235" class="arrow"/>
-  <path d="M900 235 L950 235" class="arrow"/>
-  <path d="M1130 235 L1180 235" class="arrow"/>
+    <circle cx="20" cy="105" r="4" fill="#64748B"/>
+    <text x="35" y="110" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="600" fill="#334155">用户历史记忆检索匹配</text>
+  </g>
 
-  <path d="M1245 280 L1245 320 L1135 320 L1135 360" class="arrow"/>
-  <path d="M1245 280 L1245 330 L865 330 L865 360" class="arrow"/>
+  <path d="M 870 230 L 910 230" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
 
-  <text x="700" y="510" text-anchor="middle" class="small">主链路体现“取证 - 聚合分析 - 判级 - 归档 - 联动 - 治理沉淀”的完整服务流程</text>
+  <g transform="translate(920, 175)" filter="url(#shadow)">
+    <rect width="160" height="110" rx="16" fill="#FFF7ED" stroke="#FDBA74" stroke-width="2.5"/>
+    <text x="80" y="45" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="17" font-weight="800" fill="#C2410C">5. 风险最终定级</text>
+    <text x="80" y="70" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#EA580C">与报告生成</text>
+    <text x="80" y="92" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#FB923C">输出结构化结果</text>
+  </g>
+
+
+  <path d="M 1080 230 C 1110 230, 1110 120, 1150 120" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <g transform="translate(1160, 80)" filter="url(#shadow)">
+    <rect width="160" height="80" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="80" y="35" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#1E293B">个人历史归档</text>
+    <text x="80" y="55" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#64748B">记录持续风险状态</text>
+  </g>
+
+  <path d="M 1080 230 L 1150 230" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <g transform="translate(1160, 190)" filter="url(#shadow)">
+    <rect width="160" height="80" rx="12" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+    <text x="80" y="35" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#B91C1C">高风险家庭联动</text>
+    <text x="80" y="55" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#EF4444">跨端强提醒与阻断</text>
+  </g>
+
+  <path d="M 1080 230 C 1110 230, 1110 340, 1150 340" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <g transform="translate(1160, 300)" filter="url(#shadow)">
+    <rect width="160" height="80" rx="12" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5"/>
+    <text x="80" y="35" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#15803D">进入治理流程</text>
+    <text x="80" y="55" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="12" font-weight="500" fill="#22C55E">反哺优化知识底座</text>
+  </g>
+
 </svg>

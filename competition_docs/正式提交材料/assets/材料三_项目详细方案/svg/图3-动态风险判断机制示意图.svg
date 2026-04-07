@@ -1,62 +1,127 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="700" viewBox="0 0 1360 700">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
   <defs>
-    <style>
-      .title { font: 700 28px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
-      .label { font: 600 16px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #1f2937; }
-      .small { font: 500 13px 'Microsoft YaHei', 'PingFang SC', sans-serif; fill: #4b5563; }
-      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; rx: 14; }
-      .core { fill: #eef6ff; stroke: #6b9bd1; stroke-width: 1.8; rx: 18; }
-      .risklow { fill: #f8fafc; stroke: #9ca3af; stroke-width: 1.4; rx: 12; }
-      .riskmid { fill: #fff7ed; stroke: #f59e0b; stroke-width: 1.4; rx: 12; }
-      .riskhigh { fill: #fef2f2; stroke: #ef4444; stroke-width: 1.4; rx: 12; }
-      .arrow { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
-    </style>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#F1F5F9"/>
+    </linearGradient>
+    
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#DBEAFE"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#94A3B8"/>
     </marker>
   </defs>
 
-  <text x="680" y="42" text-anchor="middle" class="title">图 3 动态风险判断机制示意图</text>
+  <rect width="1200" height="680" fill="url(#bgGrad)"/>
 
-  <rect x="70" y="110" width="280" height="135" class="box"/>
-  <text x="210" y="145" text-anchor="middle" class="label">当前案件风险特征</text>
-  <text x="210" y="178" text-anchor="middle" class="small">诈骗话术特征</text>
-  <text x="210" y="202" text-anchor="middle" class="small">危险动作请求</text>
-  <text x="210" y="226" text-anchor="middle" class="small">多模态证据强度</text>
-  <text x="210" y="250" text-anchor="middle" class="small">用户暴露阶段</text>
+  <text x="600" y="55" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="28" font-weight="800" fill="#0F172A">动态风险判断机制示意图</text>
+  <text x="600" y="85" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="15" fill="#64748B">双重知识支撑与动态阈值调整</text>
 
-  <rect x="70" y="295" width="280" height="115" class="box"/>
-  <text x="210" y="330" text-anchor="middle" class="label">公共知识支撑</text>
-  <text x="210" y="363" text-anchor="middle" class="small">历史案件知识库相似情况</text>
+  <g transform="translate(60, 130)" filter="url(#shadow)">
+    <rect width="280" height="150" rx="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#3B82F6"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#1E293B">当前案件风险特征</text>
+    
+    <circle cx="26" cy="65" r="4" fill="#94A3B8"/>
+    <text x="40" y="70" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">诈骗话术与高危关键词</text>
+    
+    <circle cx="26" cy="90" r="4" fill="#94A3B8"/>
+    <text x="40" y="95" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">危险动作请求 (如转账/授权)</text>
+    
+    <circle cx="26" cy="115" r="4" fill="#94A3B8"/>
+    <text x="40" y="120" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">多模态证据融合强度</text>
+  </g>
 
-  <rect x="70" y="460" width="280" height="135" class="box"/>
-  <text x="210" y="495" text-anchor="middle" class="label">用户个体历史支撑</text>
-  <text x="210" y="528" text-anchor="middle" class="small">用户个人历史相似经历</text>
-  <text x="210" y="552" text-anchor="middle" class="small">用户历史风险状态</text>
+  <g transform="translate(60, 305)" filter="url(#shadow)">
+    <rect width="280" height="100" rx="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#8B5CF6"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#1E293B">公共知识库支撑</text>
+    
+    <circle cx="26" cy="65" r="4" fill="#94A3B8"/>
+    <text x="40" y="70" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">历史案件知识库相似度比对</text>
+  </g>
 
-  <rect x="470" y="235" width="360" height="230" class="core"/>
-  <text x="650" y="290" text-anchor="middle" class="label">动态风险判断机制</text>
-  <text x="650" y="340" text-anchor="middle" class="small">当前案件评估</text>
-  <text x="650" y="370" text-anchor="middle" class="small">双重知识支撑</text>
-  <text x="650" y="400" text-anchor="middle" class="small">动态调整</text>
+  <g transform="translate(60, 430)" filter="url(#shadow)">
+    <rect width="280" height="120" rx="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#10B981"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#1E293B">用户个体历史支撑</text>
+    
+    <circle cx="26" cy="65" r="4" fill="#94A3B8"/>
+    <text x="40" y="70" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">用户个人历史相似经历检索</text>
+    
+    <circle cx="26" cy="95" r="4" fill="#94A3B8"/>
+    <text x="40" y="100" font-family="'PingFang SC', sans-serif" font-size="14" fill="#475569">用户长期历史风险极性状态</text>
+  </g>
 
-  <rect x="960" y="145" width="250" height="105" class="risklow"/>
-  <text x="1085" y="180" text-anchor="middle" class="label">低风险</text>
-  <text x="1085" y="213" text-anchor="middle" class="small">给出建议</text>
 
-  <rect x="960" y="300" width="250" height="105" class="riskmid"/>
-  <text x="1085" y="335" text-anchor="middle" class="label">中风险</text>
-  <text x="1085" y="368" text-anchor="middle" class="small">主动提醒</text>
+  <g transform="translate(420, 210)" filter="url(#shadow)">
+    <rect width="360" height="260" rx="20" fill="url(#coreGrad)" stroke="#93C5FD" stroke-width="2"/>
+    
+    <rect x="0" y="0" width="360" height="60" rx="20" fill="#3B82F6"/>
+    <rect x="0" y="30" width="360" height="30" fill="#3B82F6"/> <text x="180" y="36" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="18" font-weight="800" fill="#FFFFFF">动态风险判断核心引擎</text>
+    
+    <rect x="60" y="85" width="240" height="40" rx="8" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.5"/>
+    <text x="180" y="111" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#1E293B">1. 基础评分 (当前案件评估)</text>
+    
+    <path d="M 180 125 L 180 145" fill="none" stroke="#60A5FA" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <rect x="960" y="455" width="250" height="105" class="riskhigh"/>
-  <text x="1085" y="490" text-anchor="middle" class="label">高风险</text>
-  <text x="1085" y="523" text-anchor="middle" class="small">提醒 + 家庭联动 + 归档重点关注</text>
+    <rect x="60" y="145" width="240" height="40" rx="8" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.5"/>
+    <text x="180" y="171" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#1E293B">2. 综合干预 (双重知识支撑)</text>
 
-  <path d="M350 178 L470 285" class="arrow"/>
-  <path d="M350 352 L470 350" class="arrow"/>
-  <path d="M350 528 L470 415" class="arrow"/>
+    <path d="M 180 185 L 180 205" fill="none" stroke="#60A5FA" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <path d="M830 285 L960 198" class="arrow"/>
-  <path d="M830 350 L960 352" class="arrow"/>
-  <path d="M830 415 L960 508" class="arrow"/>
+    <rect x="60" y="205" width="240" height="40" rx="8" fill="#DBEAFE" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="180" y="231" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#1D4ED8">3. 越界比对 (动态阈值定级)</text>
+  </g>
+
+
+  <g transform="translate(860, 130)" filter="url(#shadow)">
+    <rect width="280" height="110" rx="16" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#64748B"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#334155">低风险</text>
+    
+    <rect x="20" y="60" width="70" height="26" rx="6" fill="#E2E8F0"/>
+    <text x="55" y="78" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="13" font-weight="800" fill="#475569">处置动作</text>
+    <text x="100" y="78" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#1E293B">给出防范建议</text>
+  </g>
+
+  <g transform="translate(860, 270)" filter="url(#shadow)">
+    <rect width="280" height="110" rx="16" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#F59E0B"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#B45309">中风险</text>
+    
+    <rect x="20" y="60" width="70" height="26" rx="6" fill="#FFEDD5"/>
+    <text x="55" y="78" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="13" font-weight="800" fill="#C2410C">处置动作</text>
+    <text x="100" y="78" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#9A3412">主动警示提醒</text>
+  </g>
+
+  <g transform="translate(860, 410)" filter="url(#shadow)">
+    <rect width="280" height="140" rx="16" fill="#FEF2F2" stroke="#FECACA" stroke-width="2"/>
+    <rect x="20" y="20" width="4" height="20" rx="2" fill="#EF4444"/>
+    <text x="32" y="36" font-family="'PingFang SC', sans-serif" font-size="16" font-weight="800" fill="#B91C1C">高风险</text>
+    
+    <rect x="20" y="60" width="70" height="26" rx="6" fill="#FEE2E2"/>
+    <text x="55" y="78" text-anchor="middle" font-family="'PingFang SC', sans-serif" font-size="13" font-weight="800" fill="#B91C1C">处置动作</text>
+    
+    <text x="100" y="78" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#7F1D1D">触发强提醒与跨端家庭联动</text>
+    <text x="100" y="102" font-family="'PingFang SC', sans-serif" font-size="14" font-weight="800" fill="#7F1D1D">并进入历史库重点归档关注</text>
+  </g>
+
+
+  <path d="M 340 205 C 380 205, 380 280, 420 280" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 340 355 L 420 355" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 340 490 C 380 490, 380 400, 420 400" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <path d="M 780 340 C 820 340, 820 185, 860 185" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 780 340 C 820 340, 820 325, 860 325" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 780 340 C 820 340, 820 480, 860 480" fill="none" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
 </svg>

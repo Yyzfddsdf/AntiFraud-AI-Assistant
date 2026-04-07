@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,7 +41,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 数据库与缓存协同架构图</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 数据库与缓存协同架构图</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示 Redis 集群在限流、会话保护与底层 SQLite 检索降解中的关键作用</text>
 
   <!-- Request Side -->
@@ -109,3 +109,4 @@
   <text x="750" y="650" text-anchor="middle" class="card-subtext">主从写入同步更新缓存 (如缓存重置)</text>
 
 </svg>
+

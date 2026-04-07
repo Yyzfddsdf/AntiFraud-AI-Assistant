@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -30,7 +30,7 @@
   </style>
 
   <rect width="1000" height="850" class="bg"/>
-  <text x="500" y="60" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 核心创新机制</text>
+  <text x="500" y="60" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 核心创新机制</text>
 
   <!-- Central Core -->
   <circle cx="500" cy="425" r="95" class="core-node"/>
@@ -98,3 +98,4 @@
   <path d="M 220 310 Q 250 220 400 200" class="flow-line" marker-end="url(#arrow-emerald)"/>
 
 </svg>
+

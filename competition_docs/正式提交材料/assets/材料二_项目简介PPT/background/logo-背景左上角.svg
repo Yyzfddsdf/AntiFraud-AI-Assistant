@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180">
+  <defs>
+    <linearGradient id="logo-grad" x1="24" y1="24" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#059669" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .brand-cn {
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        font-size: 52px;
+        font-weight: 800;
+        fill: #0F172A;
+      }
+      .brand-en {
+        font-family: Arial, "Microsoft YaHei", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.28em;
+        fill: #94A3B8;
+      }
+    </style>
+  </defs>
+
+  <g transform="translate(18,18)" filter="url(#soft-shadow)">
+    <rect x="0" y="0" width="108" height="108" rx="30" fill="url(#logo-grad)"/>
+    <g transform="translate(18.5,18.5) scale(2.9583)">
+      <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <g transform="translate(160,24)">
+    <text x="0" y="52" class="brand-cn">反诈卫士</text>
+    <text x="2" y="95" class="brand-en">SENTINEL AI</text>
+  </g>
+</svg>

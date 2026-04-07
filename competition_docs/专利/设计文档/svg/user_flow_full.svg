@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,7 +41,7 @@
 
   <rect width="1200" height="800" fill="url(#bgGrad)"/>
   
-  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sensible AI) - 普通用户完整分析流程 (慢路径)</text>
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 普通用户完整分析流程 (慢路径)</text>
   <text x="600" y="80" text-anchor="middle" class="subtitle">展示多模态深度分析、智能体执行与归档案件的流转过程</text>
 
   <!-- Row 1: Input -->
@@ -106,3 +106,4 @@
   <text x="1000" y="636" text-anchor="middle" class="node-text">家庭通知机制 (WS下发)</text>
 
 </svg>
+

@@ -1,132 +1,148 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="850" viewBox="0 0 1000 850">
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 1000 750">
   <defs>
-    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F8FAFC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F1F5F9;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="blue" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#EFF6FF;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#DBEAFE;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="green" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#ECFDF5;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#D1FAE5;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="teal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F0FDFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CCFBF1;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="indigo" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#EEF2FF;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#E0E7FF;stop-opacity:1" />
     </linearGradient>
+    <linearGradient id="amber" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFF7ED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFEDD5;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981"/>
+    </marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#94A3B8"/>
+    </marker>
   </defs>
 
-  <style type="text/css">
-    .bg { fill: #F8FAFC; }
-    .title { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
-    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
-    .bento-card { fill: #FFFFFF; stroke-width: 1.5; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02)); }
-    .bento-header { stroke-width: 1.5; }
-    .bento-title { font-family: "PingFang SC", sans-serif; font-size: 14px; font-weight: 800; fill: #1E293B; }
-    .item-text { font-family: "PingFang SC", sans-serif; font-size: 11px; fill: #475569; }
-    .box { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.2; rx: 12; ry: 12; }
-    .box-highlight { fill: #FFFFFF; stroke-width: 2; rx: 12; ry: 12; }
-  </style>
+  <rect x="15" y="15" width="970" height="720" fill="url(#bg)" stroke="#E2E8F0" stroke-width="2" rx="30" filter="url(#shadow)"/>
+  
+  <text x="50" y="65" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="32" font-weight="900" fill="#1E293B">治理主流程</text>
 
-  <rect width="1000" height="850" class="bg"/>
-  <text x="500" y="55" text-anchor="middle" class="title">反诈知识治理与平台运营架构</text>
+  <g transform="translate(45, 90)">
+    <rect width="220" height="70" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" rx="35" filter="url(#shadow-sm)"/>
+    <text x="110" y="32" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1D4ED8">典型案例送审</text>
+    <text x="110" y="55" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#64748B">来自存量研判与用户</text>
+  </g>
 
-  <!-- BENTO PIPELINE GRID -->
+  <g transform="translate(285, 90)">
+    <rect width="220" height="70" fill="#FFFFFF" stroke="#10B981" stroke-width="2" rx="35" filter="url(#shadow-sm)"/>
+    <text x="110" y="32" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#047857">后台案件采集</text>
+    <text x="110" y="55" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#64748B">公开案例与新型话术</text>
+  </g>
 
-  <!-- Top Left: Data Sources (Blue Domain) -->
-  <g transform="translate(60, 135)">
-    <rect width="430" height="205" rx="16" ry="16" class="bento-card" stroke="#3B82F6"/>
-    <path d="M 0 16 Q 0 0 16 0 L 284 0 Q 300 0 300 16 L 300 45 L 0 45 Z" class="bento-header" fill="url(#grad-blue)" stroke="#3B82F6"/>
-    <text x="20" y="28" class="bento-title" fill="#1D4ED8">信息汇聚与捕捉 (Sources)</text>
+  <path d="M 120 160 L 120 220" fill="none" stroke="#3B82F6" stroke-width="4" marker-end="url(#arrow-blue)"/>
+  <path d="M 395 160 L 395 185 L 120 185" fill="none" stroke="#10B981" stroke-width="4" stroke-linejoin="round"/>
+
+  <g transform="translate(35, 230)">
+    <rect width="170" height="160" fill="url(#blue)" stroke="#3B82F6" stroke-width="2" rx="20" filter="url(#shadow)"/>
+    <text x="20" y="35" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#1D4ED8">01</text>
+    <text x="85" y="70" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1E293B">待审核案例池</text>
+    <text x="85" y="110" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">统一接收待处理</text>
+    <text x="85" y="140" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">保留来源与原材</text>
+  </g>
+
+  <g transform="translate(225, 230)">
+    <rect width="170" height="160" fill="url(#green)" stroke="#10B981" stroke-width="2" rx="20" filter="url(#shadow)"/>
+    <text x="20" y="35" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#047857">02</text>
+    <text x="85" y="70" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1E293B">管理员审核</text>
+    <text x="85" y="110" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">确认真实与风险</text>
+    <text x="85" y="140" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">筛除重复无效样本</text>
+  </g>
+
+  <g transform="translate(415, 230)">
+    <rect width="170" height="160" fill="url(#teal)" stroke="#14B8A6" stroke-width="2" rx="20" filter="url(#shadow)"/>
+    <text x="20" y="35" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#0F766E">03</text>
+    <text x="85" y="70" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1E293B">清洗标注</text>
+    <text x="85" y="110" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">脱敏与字段规范</text>
+    <text x="85" y="140" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">生成结构化特征</text>
+  </g>
+
+  <g transform="translate(605, 230)">
+    <rect width="170" height="160" fill="url(#indigo)" stroke="#6366F1" stroke-width="2" rx="20" filter="url(#shadow)"/>
+    <text x="20" y="35" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#4338CA">04</text>
+    <text x="85" y="70" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1E293B">正式知识库入库</text>
+    <text x="85" y="110" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">案件索引与向量库</text>
+    <text x="85" y="140" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">形成可检索底座</text>
+  </g>
+
+  <g transform="translate(795, 230)">
+    <rect width="170" height="160" fill="url(#amber)" stroke="#F59E0B" stroke-width="2" rx="20" filter="url(#shadow)"/>
+    <text x="20" y="35" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#B45309">05</text>
+    <text x="85" y="70" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="900" fill="#1E293B">检索复用与更新</text>
+    <text x="85" y="110" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">为前台报告供能</text>
+    <text x="85" y="140" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" fill="#475569">新型策略持续热更</text>
+  </g>
+
+  <path d="M 205 310 L 215 310" fill="none" stroke="#94A3B8" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow-gray)"/>
+  <path d="M 395 310 L 405 310" fill="none" stroke="#94A3B8" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow-gray)"/>
+  <path d="M 585 310 L 595 310" fill="none" stroke="#94A3B8" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow-gray)"/>
+  <path d="M 775 310 L 785 310" fill="none" stroke="#94A3B8" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow-gray)"/>
+
+  <g transform="translate(35, 435)">
+    <rect width="540" height="195" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" rx="20" filter="url(#shadow-sm)"/>
+    <text x="30" y="40" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" fill="#334155">治理运营支撑</text>
     
-    <g transform="translate(30, 70)">
-        <rect width="180" height="110" class="box"/>
-        <text x="90" y="42" text-anchor="middle" class="item-text" font-weight="800" fill="#1E3A8A">存量研判存证流</text>
-        <text x="90" y="72" text-anchor="middle" class="item-text">自动锁定中高风险</text>
-        <text x="90" y="92" text-anchor="middle" class="item-text">关键诈骗场景特征</text>
-    </g>
+    <circle cx="35" cy="80" r="5" fill="#64748B"/>
+    <text x="55" y="86" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">审核链路全程可追溯，保证知识入库受控而非无序堆积</text>
     
-    <g transform="translate(220, 70)">
-        <rect width="185" height="110" class="box"/>
-        <text x="92" y="42" text-anchor="middle" class="item-text" font-weight="800" fill="#1E3A8A">主动采集侦测引擎</text>
-        <text x="92" y="72" text-anchor="middle" class="item-text">公开法律法规动态挖掘</text>
-        <text x="92" y="92" text-anchor="middle" class="item-text">新型话术样本实时搜集</text>
-    </g>
+    <circle cx="35" cy="125" r="5" fill="#64748B"/>
+    <text x="55" y="131" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">治理看板与风险地图支撑案例增量、类型分布和平台分析</text>
+    
+    <circle cx="35" cy="170" r="5" fill="#64748B"/>
+    <text x="55" y="176" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">管理员端承担复核、沉淀、回查和整体运营观察职责</text>
   </g>
 
-  <!-- Top Right: Processing Hub (Emerald Domain) -->
-  <g transform="translate(510, 135)">
-    <rect width="430" height="205" rx="16" ry="16" class="bento-card" stroke="#10B981"/>
-    <path d="M 0 16 Q 0 0 16 0 L 284 0 Q 300 0 300 16 L 300 45 L 0 45 Z" class="bento-header" fill="url(#grad-emerald)" stroke="#10B981"/>
-    <text x="20" y="28" class="bento-title" fill="#065F46">智慧化治理引擎 (Processing)</text>
-
-    <g transform="translate(30, 70)">
-        <rect width="175" height="115" class="box"/>
-        <text x="87" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#064E3B">端侧脱敏清洗中心</text>
-        <text x="87" y="75" text-anchor="middle" class="item-text">文本语义对齐校验</text>
-        <text x="87" y="95" text-anchor="middle" class="item-text">特征指纹生成存证</text>
-    </g>
-
-    <g transform="translate(225, 70)">
-        <rect width="180" height="115" class="box-highlight" stroke="#10B981"/>
-        <text x="90" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#065F46">专家多端复核标注</text>
-        <text x="90" y="75" text-anchor="middle" class="item-text" fill="#065F46">案例研判复核与二次标记</text>
-        <text x="90" y="95" text-anchor="middle" class="item-text" fill="#065F46">反向驱动 RAG 权重进化</text>
-    </g>
+  <g transform="translate(595, 435)">
+    <rect width="370" height="195" fill="#F5F3FF" stroke="#C7D2FE" stroke-width="2" rx="20" filter="url(#shadow-sm)"/>
+    <text x="30" y="40" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="900" fill="#4338CA">知识底座支撑</text>
+    
+    <circle cx="35" cy="80" r="5" fill="#6366F1"/>
+    <text x="55" y="86" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">正式知识库、向量库和图谱构成检索底座</text>
+    
+    <circle cx="35" cy="125" r="5" fill="#6366F1"/>
+    <text x="55" y="131" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">新案例入库后直接参与深度分析与热更新</text>
+    
+    <circle cx="35" cy="170" r="5" fill="#6366F1"/>
+    <text x="55" y="176" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" fill="#475569">形成“治理反哺识别”的自动化知识闭环</text>
   </g>
 
-  <!-- Bottom Left: Knowledge Base (Indigo Domain) -->
-  <g transform="translate(60, 365)">
-    <rect width="430" height="445" rx="16" ry="16" class="bento-card" stroke="#6366F1"/>
-    <path d="M 0 16 Q 0 0 16 0 L 334 0 Q 350 0 350 16 L 350 45 L 0 45 Z" class="bento-header" fill="url(#grad-indigo)" stroke="#6366F1"/>
-    <text x="20" y="28" class="bento-title" fill="#F8FAFC">核心反诈知识底座 (Repository)</text>
-
-    <g transform="translate(30, 75)">
-        <rect width="370" height="100" class="box"/>
-        <text x="185" y="42" text-anchor="middle" class="item-text" font-weight="800" fill="#4338CA">案件持久化索引 (SQLite)</text>
-        <text x="185" y="72" text-anchor="middle" class="item-text">支持分级风险流水的全量溯源与特征检索</text>
-    </g>
-
-    <g transform="translate(30, 195)">
-        <rect width="370" height="100" class="box-highlight" stroke="#6366F1"/>
-        <text x="185" y="42" text-anchor="middle" class="item-text" font-weight="800" fill="#4338CA">高维语义矢量库 (Vector)</text>
-        <text x="185" y="72" text-anchor="middle" class="item-text" fill="#4338CA">实现毫秒级的跨场景相关性知识召回系统</text>
-    </g>
-
-    <g transform="translate(30, 315)">
-        <rect width="370" height="110" class="box"/>
-        <text x="25" y="32" class="item-text" font-weight="800" fill="#1E293B">反诈场景语义知识图谱</text>
-        <text x="40" y="65" class="item-text">• 自动化诈骗场景诱导链路推理 (Reasoning)</text>
-        <text x="40" y="90" class="item-text">• 全场景动态判研指纹与画像 (Profiling)</text>
-    </g>
-  </g>
-
-  <!-- Bottom Right: Platform Ops (Slate/Amber Domain) -->
-  <g transform="translate(510, 365)">
-    <rect width="430" height="445" rx="16" ry="16" class="bento-card" stroke="#64748B"/>
-    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 45 L 0 45 Z" class="bento-header" fill="#F1F5F9" stroke="#64748B"/>
-    <text x="20" y="28" class="bento-title" fill="#334155">平台运营与服务架构 (Operations)</text>
-
-    <g transform="translate(30, 75)">
-        <rect width="175" height="155" class="box"/>
-        <text x="87" y="45" text-anchor="middle" class="item-text" font-weight="800">治理看板 BI</text>
-        <text x="87" y="80" text-anchor="middle" class="item-text">展现全域研判数据</text>
-        <text x="87" y="105" text-anchor="middle" class="item-text">及攻击态势汇总</text>
-    </g>
-
-    <g transform="translate(225, 75)">
-        <rect width="180" height="155" class="box-highlight" stroke="#F59E0B" stroke-width="2"/>
-        <text x="90" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#92400E">全域风险动态地图</text>
-        <text x="90" y="80" text-anchor="middle" class="item-text" fill="#92400E">可视化风险地理聚集</text>
-        <text x="90" y="105" text-anchor="middle" class="item-text" fill="#92400E">动态预警轨迹全息透视</text>
-    </g>
-
-    <g transform="translate(30, 250)">
-        <rect width="375" height="165" class="box" stroke="#3B82F6" stroke-width="2"/>
-        <text x="25" y="32" class="item-text" font-weight="800" fill="#1D4ED8">前台 RAG 供能中心</text>
-        <text x="40" y="70" class="item-text" fill="#1D4ED8">• 输出极低延迟的反诈判研报告接口</text>
-        <text x="40" y="95" class="item-text" fill="#1D4ED8">• 针对新型骗术特征实现策略“热更新”</text>
-        <text x="40" y="120" class="item-text" fill="#1D4ED8">• 为端侧主智能体提供深度语义知识增强</text>
-    </g>
-  </g>
+  <path d="M 965 310 L 980 310 Q 985 310 985 320 L 985 680 Q 985 690 975 690 L 25 690 Q 15 690 15 680 L 15 320 Q 15 310 25 310 L 30 310" 
+        fill="none" stroke="#059669" stroke-width="4" stroke-dasharray="10 8" stroke-linecap="round" marker-end="url(#arrow-dash)"/>
+  
+  <rect x="250" y="670" width="500" height="40" fill="#FFFFFF" stroke="#059669" stroke-width="1.5" rx="20" filter="url(#shadow-sm)"/>
+  <text x="500" y="696" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="900" fill="#059669">新案例入库后持续反哺后续识别与知识更新</text>
 
 </svg>
