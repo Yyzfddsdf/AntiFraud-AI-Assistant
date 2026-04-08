@@ -22,7 +22,11 @@ func EnqueueMultimodalTask(userID string, request EnqueueRequest) (state.TaskRec
 		Audios: append([]string{}, request.Audios...),
 		Images: append([]string{}, request.Images...),
 	}
-	return application.DefaultTaskService().EnqueueTask(userID, payload)
+	normalizedPayload, err := application.NormalizeTaskPayload(payload)
+	if err != nil {
+		return state.TaskRecord{}, err
+	}
+	return application.DefaultTaskService().EnqueueTask(userID, normalizedPayload)
 }
 
 // GetUserTaskState 返回用户任务视图（进行中 + 历史）。
