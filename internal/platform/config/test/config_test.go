@@ -26,6 +26,7 @@ func validConfig() appcfg.Config {
 			ImageQuick:     model,
 			Video:          model,
 			Audio:          model,
+			ASR:            model,
 			CaseCollection: model,
 		},
 		Embedding: appcfg.EmbeddingConfig{

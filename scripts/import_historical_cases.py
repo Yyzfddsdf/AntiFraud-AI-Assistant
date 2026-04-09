@@ -27,11 +27,11 @@ def default_failure_output_path() -> Path:
 
 
 def default_target_groups_path() -> Path:
-    return resolve_project_root() / "config" / "target_groups.json"
+    return resolve_project_root() / "internal" / "platform" / "config" / "target_groups.json"
 
 
 def default_scam_types_path() -> Path:
-    return resolve_project_root() / "config" / "scam_types.json"
+    return resolve_project_root() / "internal" / "platform" / "config" / "scam_types.json"  
 
 
 def parse_args() -> argparse.Namespace:

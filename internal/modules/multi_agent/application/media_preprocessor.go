@@ -87,7 +87,7 @@ func NormalizeTaskPayload(payload state.TaskPayload) (state.TaskPayload, error) 
 
 	normalized.Videos = make([]string, 0, len(payload.Videos))
 	for idx, item := range payload.Videos {
-		video, err := normalizeVideoData(item)
+		video, err := normalizeVideoInput(item)
 		if err != nil {
 			return state.TaskPayload{}, fmt.Errorf("视频 %d 预处理失败: %w", idx+1, err)
 		}
@@ -106,52 +106,12 @@ func NormalizeTaskPayload(payload state.TaskPayload) (state.TaskPayload, error) 
 	return normalized, nil
 }
 
-func normalizeVideoData(input string) (string, error) {
+func normalizeVideoInput(input string) (string, error) {
 	payload, err := decodeMediaInput(input, "video/mp4")
 	if err != nil {
 		return "", err
 	}
-
-	output, err := transcodeWithFFmpeg(payload.Raw, mimeToExtension(payload.MIME, ".mp4"), ".mp4", func(inPath string, outPath string) error {
-		durationSeconds, probeErr := probeMediaDurationSeconds(inPath)
-		if probeErr != nil {
-			return fmt.Errorf("读取视频时长失败: %w", probeErr)
-		}
-		targetFPS := calculateTargetFPS(durationSeconds)
-		for _, preset := range videoPresets {
-			fps := math.Min(preset.MaxFPS, targetFPS)
-			args := []string{
-				"-y",
-				"-i", inPath,
-				"-map", "0:v:0",
-				"-map", "0:a?",
-				"-vf", fmt.Sprintf("scale=trunc(min(%d\\,iw)/2)*2:-2,fps=%s", preset.MaxWidth, formatFPS(fps)),
-				"-c:v", "libx264",
-				"-preset", "veryfast",
-				"-crf", fmt.Sprintf("%d", preset.CRF),
-				"-pix_fmt", "yuv420p",
-				"-movflags", "+faststart",
-				"-c:a", "aac",
-				"-ac", "1",
-				"-ar", "16000",
-				"-b:a", preset.AudioRate,
-				outPath,
-			}
-			ok, runErr := runFFmpegAttempt(args, outPath)
-			if runErr != nil {
-				return runErr
-			}
-			if ok {
-				return nil
-			}
-		}
-		return fmt.Errorf("压缩后仍超过大小限制 %d 字节", maxRawMediaBytes())
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return encodeDataURL("video/mp4", output), nil
+	return encodeDataURL(payload.MIME, payload.Raw), nil
 }
 
 func normalizeAudioData(input string) (string, error) {

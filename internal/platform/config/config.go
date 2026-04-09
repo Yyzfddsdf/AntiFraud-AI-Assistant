@@ -69,6 +69,7 @@ type AgentModelConfig struct {
 	ImageQuick     ModelConfig `json:"image_quick"`
 	Video          ModelConfig `json:"video"`
 	Audio          ModelConfig `json:"audio"`
+	ASR            ModelConfig `json:"asr"`
 	CaseCollection ModelConfig `json:"case_collection"`
 	SimulationQuiz ModelConfig `json:"simulation_quiz"`
 }
@@ -165,6 +166,7 @@ func (c *Config) applyEnvOverrides() {
 	c.Agents.ImageQuick.APIKey = firstNonEmptyEnv("AGENT_IMAGE_QUICK_API_KEY", c.Agents.ImageQuick.APIKey)
 	c.Agents.Video.APIKey = firstNonEmptyEnv("AGENT_VIDEO_API_KEY", c.Agents.Video.APIKey)
 	c.Agents.Audio.APIKey = firstNonEmptyEnv("AGENT_AUDIO_API_KEY", c.Agents.Audio.APIKey)
+	c.Agents.ASR.APIKey = firstNonEmptyEnv("AGENT_ASR_API_KEY", c.Agents.ASR.APIKey)
 	c.Agents.CaseCollection.APIKey = firstNonEmptyEnv("AGENT_CASE_COLLECTION_API_KEY", c.Agents.CaseCollection.APIKey)
 	c.Agents.SimulationQuiz.APIKey = firstNonEmptyEnv("AGENT_SIMULATION_QUIZ_API_KEY", c.Agents.SimulationQuiz.APIKey)
 
@@ -188,6 +190,7 @@ func (c *Config) normalize() {
 	c.Agents.ImageQuick = normalizeModel(c.Agents.ImageQuick)
 	c.Agents.Video = normalizeModel(c.Agents.Video)
 	c.Agents.Audio = normalizeModel(c.Agents.Audio)
+	c.Agents.ASR = normalizeModel(c.Agents.ASR)
 	c.Agents.CaseCollection = normalizeModel(c.Agents.CaseCollection)
 	c.Agents.SimulationQuiz = normalizeModel(c.Agents.SimulationQuiz)
 	if c.Agents.SimulationQuiz.Model == "" {
@@ -330,6 +333,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validateModel("agents.audio", c.Agents.Audio); err != nil {
+		return err
+	}
+	if err := validateModel("agents.asr", c.Agents.ASR); err != nil {
 		return err
 	}
 	if err := validateModel("agents.case_collection", c.Agents.CaseCollection); err != nil {
