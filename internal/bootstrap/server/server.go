@@ -9,7 +9,7 @@ import (
 
 	chatapi "antifraud/internal/modules/chat/adapters/inbound/http"
 	chatapp "antifraud/internal/modules/chat/application"
-	"antifraud/internal/modules/family"
+	family_system "antifraud/internal/modules/family"
 	"antifraud/internal/modules/login/adapters/inbound/http/controllers"
 	"antifraud/internal/modules/login/adapters/inbound/http/middleware"
 	"antifraud/internal/modules/login/adapters/outbound/session"
@@ -19,7 +19,7 @@ import (
 	"antifraud/internal/modules/multi_agent/adapters/outbound/state"
 	region_system "antifraud/internal/modules/region"
 	"antifraud/internal/modules/scam_simulation"
-	"antifraud/internal/modules/user_profile"
+	user_profile_system "antifraud/internal/modules/user_profile"
 	appcfg "antifraud/internal/platform/config"
 	"antifraud/internal/platform/database"
 
@@ -73,7 +73,9 @@ func BuildRouter() (*gin.Engine, error) {
 	})
 
 	r := gin.Default()
-	r.SetTrustedProxies(nil)
+	if err := r.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
+		return nil, err
+	}
 	r.Use(corsMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
 
