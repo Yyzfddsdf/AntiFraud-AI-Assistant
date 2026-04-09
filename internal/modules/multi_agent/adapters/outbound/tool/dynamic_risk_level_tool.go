@@ -83,11 +83,11 @@ func (h *DynamicRiskLevelHandler) Handle(ctx context.Context, args string) (Tool
 
 func ResolveDynamicRiskLevel(currentScore int, historicalScore int, knowledgeBaseHit string, userHistoryHit string) (DynamicRiskLevelResult, error) {
 	threshold := DynamicThresholdFromHistoricalScore(historicalScore)
-	kbAdjustment, kbLabel, err := normalizeRiskMatch(knowledgeBaseHit)
+	kbAdjustment, kbLabel, err := normalizeRiskMatch(knowledgeBaseHit, currentScore, threshold)
 	if err != nil {
 		return DynamicRiskLevelResult{}, err
 	}
-	userAdjustment, userLabel, err := normalizeRiskMatch(userHistoryHit)
+	userAdjustment, userLabel, err := normalizeRiskMatch(userHistoryHit, currentScore, threshold)
 	if err != nil {
 		return DynamicRiskLevelResult{}, err
 	}
@@ -140,14 +140,17 @@ func normalizeScore(score int) int {
 	return score
 }
 
-func normalizeRiskMatch(raw string) (int, string, error) {
+func normalizeRiskMatch(raw string, currentScore int, threshold int) (int, string, error) {
 	switch strings.TrimSpace(raw) {
 	case "", "none":
 		return 0, "none", nil
 	case "high":
 		return 8, "high", nil
 	case "low":
-		return -8, "low", nil
+		if currentScore <= threshold+5 {
+			return 0, "low", nil
+		}
+		return -4, "low", nil
 	default:
 		return 0, "", fmt.Errorf("risk match must be one of high/low/none")
 	}

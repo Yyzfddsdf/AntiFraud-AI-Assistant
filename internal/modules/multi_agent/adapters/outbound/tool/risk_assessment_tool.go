@@ -12,21 +12,26 @@ import (
 const RiskAssessmentToolName = "submit_current_risk_assessment"
 
 type RiskAssessmentInput struct {
-	Impersonation            bool     `json:"impersonation"`
-	Urgency                  bool     `json:"urgency"`
-	ThreatPressure           bool     `json:"threat_pressure"`
-	BenefitInducement        bool     `json:"benefit_inducement"`
-	MoneyTransferRequest     bool     `json:"money_transfer_request"`
-	VerificationCodeRequest  bool     `json:"verification_code_request"`
-	RemoteControlRequest     bool     `json:"remote_control_request"`
-	LinkOrAppInstallRequest  bool     `json:"link_or_app_install_request"`
-	SensitiveInfoRequest     bool     `json:"sensitive_info_request"`
-	PrivateAccountCollection bool     `json:"private_account_collection"`
-	FakeOfficialVisuals      bool     `json:"fake_official_visuals"`
-	SimilarCaseStrength      string   `json:"similar_case_strength,omitempty"`
-	MultimodalEvidence       string   `json:"multimodal_evidence,omitempty"`
-	VictimActionStage        string   `json:"victim_action_stage,omitempty"`
-	KeyEvidence              []string `json:"key_evidence,omitempty"`
+	Impersonation              bool     `json:"impersonation"`
+	Urgency                    bool     `json:"urgency"`
+	ThreatPressure             bool     `json:"threat_pressure"`
+	BenefitInducement          bool     `json:"benefit_inducement"`
+	ChannelSwitchRequest       bool     `json:"channel_switch_request"`
+	InviteCodeRequest          bool     `json:"invite_code_request"`
+	VerificationProcessRequest bool     `json:"verification_process_request"`
+	ScreenshotOrRecordRequest  bool     `json:"screenshot_or_record_request"`
+	TrustBuildingPressure      bool     `json:"trust_building_pressure"`
+	MoneyTransferRequest       bool     `json:"money_transfer_request"`
+	VerificationCodeRequest    bool     `json:"verification_code_request"`
+	RemoteControlRequest       bool     `json:"remote_control_request"`
+	LinkOrAppInstallRequest    bool     `json:"link_or_app_install_request"`
+	SensitiveInfoRequest       bool     `json:"sensitive_info_request"`
+	PrivateAccountCollection   bool     `json:"private_account_collection"`
+	FakeOfficialVisuals        bool     `json:"fake_official_visuals"`
+	SimilarCaseStrength        string   `json:"similar_case_strength,omitempty"`
+	MultimodalEvidence         string   `json:"multimodal_evidence,omitempty"`
+	VictimActionStage          string   `json:"victim_action_stage,omitempty"`
+	KeyEvidence                []string `json:"key_evidence,omitempty"`
 }
 
 type RiskAssessmentResult struct {
@@ -40,24 +45,29 @@ var RiskAssessmentTool = openai.Tool{
 	Type: openai.ToolTypeFunction,
 	Function: &openai.FunctionDefinition{
 		Name:        RiskAssessmentToolName,
-		Description: "提交当前案件的结构化风险因子（客观聚焦于本次案件，和历史以及数据库案件完全无关），由系统计算本次案件风险分数与结构化摘要。",
+		Description: "提交当前案件的结构化风险因子，重点覆盖诈骗前期引流、冒充身份、切换线路、前置验证与终局转账等阶段，由系统计算本次案件风险分数与结构化摘要。",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
-				"impersonation":               map[string]interface{}{"type": "boolean", "description": "是否存在冒充官方/客服/领导/熟人等身份。"},
-				"urgency":                     map[string]interface{}{"type": "boolean", "description": "是否存在强烈紧迫感催促。"},
-				"threat_pressure":             map[string]interface{}{"type": "boolean", "description": "是否存在恐吓、威胁、处罚压力。"},
-				"benefit_inducement":          map[string]interface{}{"type": "boolean", "description": "是否存在返利、赔偿、高收益等诱导。"},
-				"money_transfer_request":      map[string]interface{}{"type": "boolean", "description": "是否明确要求转账、充值、刷流水。"},
-				"verification_code_request":   map[string]interface{}{"type": "boolean", "description": "是否要求验证码。"},
-				"remote_control_request":      map[string]interface{}{"type": "boolean", "description": "是否要求屏幕共享或远程控制。"},
-				"link_or_app_install_request": map[string]interface{}{"type": "boolean", "description": "是否要求点击链接或安装应用。"},
-				"sensitive_info_request":      map[string]interface{}{"type": "boolean", "description": "是否要求提供身份证、银行卡、人脸等敏感信息。"},
-				"private_account_collection":  map[string]interface{}{"type": "boolean", "description": "是否要求向私人账号或非官方账号收款。"},
-				"fake_official_visuals":       map[string]interface{}{"type": "boolean", "description": "是否存在仿冒官方页面、伪通知、伪客服界面等。"},
-				"similar_case_strength":       buildStrengthSchema("相似案例支持强度。"),
-				"multimodal_evidence":         buildStrengthSchema("多模态证据强度。"),
-				"victim_action_stage":         buildVictimActionStageSchema(),
+				"impersonation":                map[string]interface{}{"type": "boolean", "description": "是否存在冒充官方/客服/领导/熟人等身份。"},
+				"urgency":                      map[string]interface{}{"type": "boolean", "description": "是否存在强烈紧迫感催促。"},
+				"threat_pressure":              map[string]interface{}{"type": "boolean", "description": "是否存在恐吓、威胁、处罚压力。"},
+				"benefit_inducement":           map[string]interface{}{"type": "boolean", "description": "是否存在返利、赔偿、高收益等诱导。"},
+				"channel_switch_request":       map[string]interface{}{"type": "boolean", "description": "是否引导切换到其他平台、私聊、备用号、加群或加好友。"},
+				"invite_code_request":          map[string]interface{}{"type": "boolean", "description": "是否索要邀请码、口令、识别码或类似前置标识。"},
+				"verification_process_request": map[string]interface{}{"type": "boolean", "description": "是否要求进行身份、额度、资格、解锁等前置验证流程。"},
+				"screenshot_or_record_request": map[string]interface{}{"type": "boolean", "description": "是否要求截图、录屏或展示当前界面以便核验。"},
+				"trust_building_pressure":      map[string]interface{}{"type": "boolean", "description": "是否通过安抚、陪聊、逐步推进等方式建立信任并持续施压。"},
+				"money_transfer_request":       map[string]interface{}{"type": "boolean", "description": "是否明确要求转账、充值、刷流水。"},
+				"verification_code_request":    map[string]interface{}{"type": "boolean", "description": "是否要求短信验证码、支付验证码或类似一次性验证码。"},
+				"remote_control_request":       map[string]interface{}{"type": "boolean", "description": "是否要求屏幕共享或远程控制。"},
+				"link_or_app_install_request":  map[string]interface{}{"type": "boolean", "description": "是否要求点击链接、扫码跳转或安装应用。"},
+				"sensitive_info_request":       map[string]interface{}{"type": "boolean", "description": "是否要求提供身份证、银行卡、人脸等敏感信息。"},
+				"private_account_collection":   map[string]interface{}{"type": "boolean", "description": "是否要求向私人账号或非官方账号收款。"},
+				"fake_official_visuals":        map[string]interface{}{"type": "boolean", "description": "是否存在仿冒官方页面、伪通知、伪客服界面等。"},
+				"similar_case_strength":        buildStrengthSchema("相似案例支持强度。"),
+				"multimodal_evidence":          buildStrengthSchema("多模态证据强度。"),
+				"victim_action_stage":          buildVictimActionStageSchema(),
 				"key_evidence": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]string{"type": "string"},
@@ -131,27 +141,44 @@ func CalculateRiskAssessment(input RiskAssessmentInput) (RiskAssessmentResult, e
 		"loss_exposure":      victimActionScore,
 	}
 	hitRules := make([]string, 0, 16)
+	preliminarySignalCount := 0
+	terminalSignalCount := 0
 
-	addHit := func(condition bool, dimension string, score int, label string) {
+	addPreliminaryHit := func(condition bool, dimension string, score int, label string) {
 		if !condition {
 			return
 		}
 		dimensions[dimension] += score
 		hitRules = append(hitRules, label)
+		preliminarySignalCount++
 	}
 
-	addHit(input.Impersonation, "social_engineering", 10, "冒充身份")
-	addHit(input.Urgency, "social_engineering", 8, "紧迫催促")
-	addHit(input.ThreatPressure, "social_engineering", 10, "恐吓施压")
-	addHit(input.BenefitInducement, "social_engineering", 8, "利益诱导")
+	addTerminalHit := func(condition bool, dimension string, score int, label string) {
+		if !condition {
+			return
+		}
+		dimensions[dimension] += score
+		hitRules = append(hitRules, label)
+		terminalSignalCount++
+	}
 
-	addHit(input.MoneyTransferRequest, "requested_actions", 25, "要求转账/充值")
-	addHit(input.VerificationCodeRequest, "requested_actions", 25, "要求验证码")
-	addHit(input.RemoteControlRequest, "requested_actions", 30, "要求远程控制")
-	addHit(input.LinkOrAppInstallRequest, "requested_actions", 18, "要求点击链接/安装应用")
-	addHit(input.SensitiveInfoRequest, "requested_actions", 20, "索要敏感信息")
-	addHit(input.PrivateAccountCollection, "requested_actions", 18, "要求向私人账户收款")
-	addHit(input.FakeOfficialVisuals, "evidence_strength", 12, "出现仿冒官方视觉证据")
+	addPreliminaryHit(input.Impersonation, "social_engineering", 8, "冒充身份")
+	addPreliminaryHit(input.Urgency, "social_engineering", 5, "紧迫催促")
+	addPreliminaryHit(input.ThreatPressure, "social_engineering", 7, "恐吓施压")
+	addPreliminaryHit(input.BenefitInducement, "social_engineering", 6, "利益诱导")
+	addPreliminaryHit(input.ChannelSwitchRequest, "social_engineering", 7, "引导切换线路/平台")
+	addPreliminaryHit(input.InviteCodeRequest, "social_engineering", 6, "索要邀请码/口令")
+	addPreliminaryHit(input.VerificationProcessRequest, "social_engineering", 7, "前置认证/额度验证")
+	addPreliminaryHit(input.ScreenshotOrRecordRequest, "social_engineering", 5, "要求截图/录屏")
+	addPreliminaryHit(input.TrustBuildingPressure, "social_engineering", 6, "逐步建立信任")
+	addPreliminaryHit(input.LinkOrAppInstallRequest, "requested_actions", 10, "要求点击链接/安装应用")
+	addPreliminaryHit(input.FakeOfficialVisuals, "evidence_strength", 10, "出现仿冒官方视觉证据")
+
+	addTerminalHit(input.MoneyTransferRequest, "requested_actions", 20, "要求转账/充值")
+	addTerminalHit(input.VerificationCodeRequest, "requested_actions", 18, "要求验证码")
+	addTerminalHit(input.RemoteControlRequest, "requested_actions", 24, "要求远程控制")
+	addTerminalHit(input.SensitiveInfoRequest, "requested_actions", 16, "索要敏感信息")
+	addTerminalHit(input.PrivateAccountCollection, "requested_actions", 16, "要求向私人账户收款")
 
 	if similarCaseStrength.score > 0 {
 		dimensions["evidence_strength"] += similarCaseStrength.score
@@ -166,11 +193,36 @@ func CalculateRiskAssessment(input RiskAssessmentInput) (RiskAssessmentResult, e
 	}
 
 	score := dimensions["social_engineering"] + dimensions["requested_actions"] + dimensions["evidence_strength"] + dimensions["loss_exposure"]
-	if input.RemoteControlRequest || input.VerificationCodeRequest {
-		score = maxInt(score, 65)
+
+	if terminalSignalCount == 0 {
+		switch {
+		case preliminarySignalCount >= 6:
+			score = maxInt(score, 45)
+		case preliminarySignalCount >= 4:
+			score = maxInt(score, 35)
+		case preliminarySignalCount >= 2:
+			score = maxInt(score, 25)
+		case preliminarySignalCount == 1:
+			score = maxInt(score, 15)
+		}
+	}
+
+	switch {
+	case terminalSignalCount >= 3:
+		score = maxInt(score, 78)
+	case terminalSignalCount >= 2:
+		score = maxInt(score, 68)
+	case terminalSignalCount == 1 && preliminarySignalCount >= 3:
+		score = maxInt(score, 58)
+	case terminalSignalCount == 1:
+		score = maxInt(score, 48)
+	}
+
+	if input.RemoteControlRequest && input.VerificationCodeRequest {
+		score = maxInt(score, 72)
 	}
 	if input.MoneyTransferRequest && input.PrivateAccountCollection {
-		score = maxInt(score, 70)
+		score = maxInt(score, 76)
 	}
 	switch victimActionStage {
 	case "transferred_money":

@@ -80,11 +80,19 @@ func TestResolveDynamicRiskLevel(t *testing.T) {
 		t.Fatalf("unexpected low decision: %+v", low)
 	}
 
-	lowByLowHit, err := agenttool.ResolveDynamicRiskLevel(48, 45, "low", "none")
+	lowNearThreshold, err := agenttool.ResolveDynamicRiskLevel(48, 45, "low", "none")
 	if err != nil {
 		t.Fatalf("resolve dynamic risk level failed: %v", err)
 	}
-	if lowByLowHit.CurrentScore >= 48 || lowByLowHit.RiskLevel != "低" {
-		t.Fatalf("expected low-hit adjustment to reduce score and keep low risk, got %+v", lowByLowHit)
+	if lowNearThreshold.CurrentScore != 48 || lowNearThreshold.RiskLevel != "低" {
+		t.Fatalf("expected low hit near threshold to avoid overcorrection, got %+v", lowNearThreshold)
+	}
+
+	lowHitMildAdjustment, err := agenttool.ResolveDynamicRiskLevel(62, 45, "low", "low")
+	if err != nil {
+		t.Fatalf("resolve dynamic risk level failed: %v", err)
+	}
+	if lowHitMildAdjustment.CurrentScore != 54 || lowHitMildAdjustment.RiskLevel != "中" {
+		t.Fatalf("expected low hits to mildly adjust clearly higher scores, got %+v", lowHitMildAdjustment)
 	}
 }
