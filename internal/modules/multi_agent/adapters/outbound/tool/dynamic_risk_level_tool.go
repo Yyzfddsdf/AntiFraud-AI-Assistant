@@ -150,7 +150,7 @@ func normalizeRiskMatch(raw string, currentScore int, threshold int) (int, strin
 		if currentScore <= threshold+5 {
 			return 0, "low", nil
 		}
-		return -4, "low", nil
+		return -5, "low", nil
 	default:
 		return 0, "", fmt.Errorf("risk match must be one of high/low/none")
 	}
