@@ -50,6 +50,12 @@ type RedisConfig struct {
 	DB       int    `json:"db"`
 }
 
+// MediaToolsConfig 定义音视频预处理依赖的外部工具路径。
+type MediaToolsConfig struct {
+	FFmpegPath  string `json:"ffmpeg_path"`
+	FFprobePath string `json:"ffprobe_path"`
+}
+
 // RetryConfig 定义通用重试策略。
 type RetryConfig struct {
 	MaxRetries   int `json:"max_retries"`
@@ -93,6 +99,7 @@ type Config struct {
 	AdminChat     ChatConfig       `json:"admin_chat"`
 	Tavily        TavilyConfig     `json:"tavily"`
 	Redis         RedisConfig      `json:"redis"`
+	MediaTools    MediaToolsConfig `json:"media_tools"`
 	Prompts       PromptConfig     `json:"prompts"`
 	Retry         RetryConfig      `json:"retry"`
 	AlertWS       AlertWSConfig    `json:"alert_ws"`
@@ -174,6 +181,8 @@ func (c *Config) applyEnvOverrides() {
 	c.Chat.APIKey = firstNonEmptyEnv("CHAT_API_KEY", c.Chat.APIKey)
 	c.AdminChat.APIKey = firstNonEmptyEnv("ADMIN_CHAT_API_KEY", c.AdminChat.APIKey)
 	c.Tavily.APIKey = firstNonEmptyEnv("TAVILY_API_KEY", c.Tavily.APIKey)
+	c.MediaTools.FFmpegPath = firstNonEmptyEnv("FFMPEG_PATH", c.MediaTools.FFmpegPath)
+	c.MediaTools.FFprobePath = firstNonEmptyEnv("FFPROBE_PATH", c.MediaTools.FFprobePath)
 }
 
 func firstNonEmptyEnv(envName string, fallback string) string {
@@ -201,6 +210,7 @@ func (c *Config) normalize() {
 	c.AdminChat = normalizeChatFromChat(c.AdminChat, c.Chat)
 	c.Tavily = normalizeTavily(c.Tavily)
 	c.Redis = normalizeRedis(c.Redis)
+	c.MediaTools = normalizeMediaTools(c.MediaTools)
 	c.Prompts.Main = strings.TrimSpace(c.Prompts.Main)
 	c.Prompts.Image = strings.TrimSpace(c.Prompts.Image)
 	c.Prompts.ImageQuick = strings.TrimSpace(c.Prompts.ImageQuick)
@@ -301,6 +311,18 @@ func normalizeRedis(redisCfg RedisConfig) RedisConfig {
 	return redisCfg
 }
 
+func normalizeMediaTools(mediaCfg MediaToolsConfig) MediaToolsConfig {
+	mediaCfg.FFmpegPath = strings.TrimSpace(mediaCfg.FFmpegPath)
+	mediaCfg.FFprobePath = strings.TrimSpace(mediaCfg.FFprobePath)
+	if mediaCfg.FFmpegPath == "" {
+		mediaCfg.FFmpegPath = "ffmpeg"
+	}
+	if mediaCfg.FFprobePath == "" {
+		mediaCfg.FFprobePath = "ffprobe"
+	}
+	return mediaCfg
+}
+
 func normalizeAlertWS(alertCfg AlertWSConfig) AlertWSConfig {
 	if alertCfg.PollIntervalSeconds <= 0 {
 		alertCfg.PollIntervalSeconds = 30
@@ -354,6 +376,9 @@ func (c Config) validate() error {
 		return err
 	}
 	if err := validateTavily("tavily", c.Tavily); err != nil {
+		return err
+	}
+	if err := validateMediaTools("media_tools", c.MediaTools); err != nil {
 		return err
 	}
 	if err := validatePrompt("prompts.main", c.Prompts.Main); err != nil {
@@ -448,6 +473,16 @@ func validateTavily(name string, tavilyCfg TavilyConfig) error {
 	}
 	if tavilyCfg.TimeoutMS <= 0 {
 		return fmt.Errorf("%s.timeout_ms must be > 0", name)
+	}
+	return nil
+}
+
+func validateMediaTools(name string, mediaCfg MediaToolsConfig) error {
+	if strings.TrimSpace(mediaCfg.FFmpegPath) == "" {
+		return fmt.Errorf("%s.ffmpeg_path is required", name)
+	}
+	if strings.TrimSpace(mediaCfg.FFprobePath) == "" {
+		return fmt.Errorf("%s.ffprobe_path is required", name)
 	}
 	return nil
 }

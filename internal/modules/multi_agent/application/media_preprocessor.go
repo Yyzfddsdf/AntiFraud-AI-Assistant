@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"antifraud/internal/modules/multi_agent/adapters/outbound/state"
+	appcfg "antifraud/internal/platform/config"
 )
 
 const (
@@ -20,17 +21,6 @@ const (
 	encodedPayloadSafetyReserve = 256 * 1024
 	ffmpegRunTimeout            = 2 * time.Minute
 	maxVideoFrameCount          = 5000
-)
-
-var (
-	ffmpegFallbackPaths = []string{
-		`D:\ffmpeg\bin\ffmpeg.exe`,
-		`D:/ffmpeg/bin/ffmpeg.exe`,
-	}
-	ffprobeFallbackPaths = []string{
-		`D:\ffmpeg\bin\ffprobe.exe`,
-		`D:/ffmpeg/bin/ffprobe.exe`,
-	}
 )
 
 type dataURLPayload struct {
@@ -214,27 +204,41 @@ func runFFmpegAttempt(args []string, outPath string) (bool, error) {
 }
 
 func lookupFFmpegPath() (string, error) {
-	if path, err := exec.LookPath("ffmpeg"); err == nil && strings.TrimSpace(path) != "" {
-		return path, nil
+	configured := ""
+	if cfg, err := appcfg.LoadConfig("internal/platform/config/config.json"); err == nil && cfg != nil {
+		configured = strings.TrimSpace(cfg.MediaTools.FFmpegPath)
 	}
-	for _, candidate := range ffmpegFallbackPaths {
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate, nil
-		}
-	}
-	return "", fmt.Errorf("未找到 ffmpeg，可执行文件需在 PATH 中或位于 D:\\ffmpeg\\bin\\ffmpeg.exe")
+	return resolveBinaryPath("ffmpeg", configured)
 }
 
 func lookupFFprobePath() (string, error) {
-	if path, err := exec.LookPath("ffprobe"); err == nil && strings.TrimSpace(path) != "" {
+	configured := ""
+	if cfg, err := appcfg.LoadConfig("internal/platform/config/config.json"); err == nil && cfg != nil {
+		configured = strings.TrimSpace(cfg.MediaTools.FFprobePath)
+	}
+	return resolveBinaryPath("ffprobe", configured)
+}
+
+func resolveBinaryPath(toolName string, configured string) (string, error) {
+	trimmed := strings.TrimSpace(configured)
+	if trimmed == "" {
+		trimmed = toolName
+	}
+
+	hasPathHint := filepath.IsAbs(trimmed) || strings.Contains(trimmed, "/") || strings.Contains(trimmed, "\\")
+	if hasPathHint {
+		info, err := os.Stat(trimmed)
+		if err == nil && !info.IsDir() {
+			return trimmed, nil
+		}
+		return "", fmt.Errorf("未找到 %s，可执行文件路径无效: %s。请先安装 ffmpeg，并在 config.json 的 media_tools 中配置路径", toolName, trimmed)
+	}
+
+	if path, err := exec.LookPath(trimmed); err == nil && strings.TrimSpace(path) != "" {
 		return path, nil
 	}
-	for _, candidate := range ffprobeFallbackPaths {
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate, nil
-		}
-	}
-	return "", fmt.Errorf("未找到 ffprobe，可执行文件需在 PATH 中或位于 D:\\ffmpeg\\bin\\ffprobe.exe")
+
+	return "", fmt.Errorf("未找到 %s。请先安装 ffmpeg，并在 config.json 的 media_tools 中配置路径，或将 %s 加入 PATH", toolName, trimmed)
 }
 
 func maxRawMediaBytes() int {

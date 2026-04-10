@@ -337,3 +337,40 @@ func TestConfigValidateTavilyRequiresAPIKeyWhenConfigured(t *testing.T) {
 		t.Fatalf("unexpected validation error: %v", err)
 	}
 }
+
+func TestConfigNormalizeMediaToolsDefaults(t *testing.T) {
+	cfg := validConfig()
+	file := writeConfigFile(t, cfg)
+
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.MediaTools.FFmpegPath != "ffmpeg" {
+		t.Fatalf("expected default ffmpeg path, got %q", loaded.MediaTools.FFmpegPath)
+	}
+	if loaded.MediaTools.FFprobePath != "ffprobe" {
+		t.Fatalf("expected default ffprobe path, got %q", loaded.MediaTools.FFprobePath)
+	}
+}
+
+func TestConfigEnvOverridesMediaTools(t *testing.T) {
+	t.Setenv("FFMPEG_PATH", " /opt/ffmpeg/bin/ffmpeg ")
+	t.Setenv("FFPROBE_PATH", " /opt/ffmpeg/bin/ffprobe ")
+
+	cfg := validConfig()
+	file := writeConfigFile(t, cfg)
+
+	loaded, err := appcfg.LoadConfig(file)
+	if err != nil {
+		t.Fatalf("load config failed: %v", err)
+	}
+
+	if loaded.MediaTools.FFmpegPath != "/opt/ffmpeg/bin/ffmpeg" {
+		t.Fatalf("expected env override for media_tools.ffmpeg_path, got %q", loaded.MediaTools.FFmpegPath)
+	}
+	if loaded.MediaTools.FFprobePath != "/opt/ffmpeg/bin/ffprobe" {
+		t.Fatalf("expected env override for media_tools.ffprobe_path, got %q", loaded.MediaTools.FFprobePath)
+	}
+}
