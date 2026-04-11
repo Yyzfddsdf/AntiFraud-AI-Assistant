@@ -116,6 +116,9 @@ npm run dev
   - `chat`：聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `admin_chat`：管理员聊天配置（`prompt`、`model`、`api_key`、`base_url`）
   - `redis`：统一缓存配置（`addr`、`password`、`db`）
+  - `media_tools`：多媒体处理工具配置
+    - `ffmpeg_path`：FFmpeg 可执行文件路径（如 `/usr/bin/ffmpeg`）
+    - `ffprobe_path`：FFprobe 可执行文件路径（如 `/usr/bin/ffprobe`）
   - `alert_ws`：实时告警轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `family_alert_ws`：家庭通知 WebSocket 轮询配置（`poll_interval_seconds`、`recent_window_minutes`）
   - `prompts.main / image / image_quick / video / audio`：提示词
