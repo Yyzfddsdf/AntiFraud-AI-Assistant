@@ -2,7 +2,7 @@
 .env
 .env.local
 .env.*.local
-
+.env.example
 # 比赛文档（不需要上传）
 competition_docs/
 
