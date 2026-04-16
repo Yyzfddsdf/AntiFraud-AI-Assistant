@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">反诈卫士</string>
+    <string name="accessibility_auto_analyze_description">检测转账、验证码、下载引导等敏感场景，并自动完成快速风险分析。</string>
+    <string name="accessibility_auto_analyze_summary">反诈屏幕守护</string>
+</resources>

@@ -1,0 +1,23 @@
+<div class="h-full flex flex-col relative">
+  <MobileLoadingOverlay :state="loadingOverlayState"></MobileLoadingOverlay>
+  <MobileToastStack :state="toastState"></MobileToastStack>
+
+  <MobileAuthScreen v-if="authReady && !isAuthenticated" :state="authState"></MobileAuthScreen>
+
+  <div v-else :class="['flex-1 min-h-0 flex flex-col', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
+    <MobileAppHeader v-if="!['history', 'risk_trend', 'simulation_quiz', 'submit'].includes(activeTab)" :state="headerState"></MobileAppHeader>
+
+    <main :class="['flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative', ['history', 'risk_trend', 'simulation_quiz'].includes(activeTab) ? 'pb-0' : 'pb-28', activeTab === 'tasks' ? 'bg-white' : 'bg-slate-50']">
+      <MobileDashboardScreens :state="dashboardScreensState"></MobileDashboardScreens>
+      <MobileSocialScreens :state="socialScreensState"></MobileSocialScreens>
+      <MobileProfileScreens :state="profileScreensState"></MobileProfileScreens>
+    </main>
+
+    <MobileBottomNav v-if="!['history', 'risk_trend', 'simulation_quiz'].includes(activeTab)" :state="bottomNavState"></MobileBottomNav>
+    <MobileWorkflowScreens :state="workflowScreensState"></MobileWorkflowScreens>
+    <MobileFamilyManageModal :state="familyManageModalState"></MobileFamilyManageModal>
+    <MobileTaskDetailModal :state="taskDetailModalState"></MobileTaskDetailModal>
+    <MobileAlertDetailModal :state="alertDetailModalState"></MobileAlertDetailModal>
+    <MobileFamilyAlertModal :state="familyAlertModalState"></MobileFamilyAlertModal>
+  </div>
+</div>

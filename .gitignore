@@ -1,0 +1,23 @@
+# 环境变量文件（包含敏感信息，不上传）
+.env
+.env.local
+.env.*.local
+
+# 比赛文档（不需要上传）
+competition_docs/
+
+# 其他忽略项
+.trae/
+trae/
+DB/
+AGENTS.md
+CLAUDE.md
+SESSION_MEMORY.md
+.gocache
+.claude/
+sentinel-react-frontend/node_modules
+frontend/desktop-vue/node_modules
+frontend/desktop-vue/dist
+frontend/mobile-vue/node_modules
+frontend/mobile-vue/dist
+.agents/

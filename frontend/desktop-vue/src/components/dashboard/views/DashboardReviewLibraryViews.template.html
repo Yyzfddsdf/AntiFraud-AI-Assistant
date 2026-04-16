@@ -1,0 +1,778 @@
+                <div v-if="activeTab === 'case_review' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">案件审核</h1>
+                    </div>
+
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 p-6 mb-6">
+                        <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">采集主题</label>
+                                <input
+                                    v-model="caseCollectionForm.query"
+                                    type="text"
+                                    placeholder="例如：冒充客服退款诈骗、虚假投资理财诈骗"
+                                    class="w-full px-4 py-3 rounded-sm border border-slate-200 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none transition"
+                                />
+                            </div>
+                            <div class="w-full lg:w-40">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">案件数量</label>
+                                <input
+                                    v-model.number="caseCollectionForm.case_count"
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    class="w-full px-4 py-3 rounded-sm border border-slate-200 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none transition"
+                                />
+                            </div>
+                            <button
+                                @click="submitCaseCollection"
+                                :disabled="startingCaseCollection"
+                                class="px-5 py-3 rounded-sm bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-lg shadow-brand-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {{ startingCaseCollection ? '后台启动中...' : '后台采集案件' }}
+                            </button>
+                        </div>
+                        <p class="mt-3 text-xs text-slate-500">任务会在后台逐条搜索并写入待审核案件库，无需等待页面返回结果。</p>
+                    </div>
+
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">记录ID</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">标题</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">目标人群</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">涉及法律</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">提交时间</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="r in pendingReviews" :key="r.record_id" class="hover:bg-slate-50/80 transition-colors group">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ r.record_id.substring(0,12) }}...</td>
+                                        <td class="px-6 py-4 font-bold text-slate-900">{{ r.title }}</td>
+                                        <td class="px-6 py-4 text-slate-600">{{ r.target_group }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="['px-2.5 py-1 rounded-sm text-xs font-bold border', getRiskClass(r.risk_level)]">
+                                                {{ normalizeRiskLevelText(r.risk_level) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ r.scam_type || '-' }}</td>
+                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ r.violated_law || '-' }}</td>
+                                        <td class="px-6 py-4 text-slate-500 text-xs">{{ formatTime(r.created_at) }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewReviewDetail(r.record_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-sm">查看</button>
+                                                <button @click="rejectReview(r.record_id)" class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-3 py-1.5 rounded-sm">拒绝入库</button>
+                                                <button @click="approveReview(r.record_id)" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs bg-emerald-50 px-3 py-1.5 rounded-sm">通过入库</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="pendingReviews.length === 0" class="p-12 text-center text-slate-400">暂无待审核案件</div>
+                    </div>
+                </div>
+
+                <!-- Review Detail Modal -->
+                <teleport to="body">
+                    <transition name="fade">
+                        <div v-if="showReviewDetailModal && selectedReview" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showReviewDetailModal = false">
+                            <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 mx-4">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h2 class="text-xl font-extrabold text-slate-900">待审核案件详情</h2>
+                                    <button @click="showReviewDetailModal = false" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                                </div>
+                                <div class="space-y-4 text-sm">
+                                    <div><span class="font-bold text-slate-600">记录ID：</span><span class="font-mono text-slate-500">{{ selectedReview.record_id }}</span></div>
+                                    <div><span class="font-bold text-slate-600">提交用户：</span>{{ selectedReview.user_id }}</div>
+                                    <div><span class="font-bold text-slate-600">标题：</span>{{ selectedReview.title }}</div>
+                                    <div><span class="font-bold text-slate-600">目标人群：</span>{{ selectedReview.target_group }}</div>
+                                    <div><span class="font-bold text-slate-600">风险等级：</span><span :class="['px-2.5 py-1 rounded-sm text-xs font-bold border', getRiskClass(selectedReview.risk_level)]">{{ normalizeRiskLevelText(selectedReview.risk_level) }}</span></div>
+                                    <div><span class="font-bold text-slate-600">诈骗类型：</span>{{ selectedReview.scam_type }}</div>
+                                    <div><span class="font-bold text-slate-600">案件描述：</span><p class="mt-1 text-slate-700 whitespace-pre-wrap">{{ selectedReview.case_description }}</p></div>
+                                    <div v-if="selectedReview.typical_scripts && selectedReview.typical_scripts.length"><span class="font-bold text-slate-600">典型话术：</span><ul class="mt-1 list-disc list-inside text-slate-700"><li v-for="s in selectedReview.typical_scripts">{{ s }}</li></ul></div>
+                                    <div v-if="selectedReview.keywords && selectedReview.keywords.length"><span class="font-bold text-slate-600">关键词：</span><span class="text-slate-700">{{ selectedReview.keywords.join('、') }}</span></div>
+                                    <div><span class="font-bold text-slate-600">涉及法律：</span>{{ selectedReview.violated_law || '-' }}</div>
+                                    <div v-if="selectedReview.suggestion"><span class="font-bold text-slate-600">防范建议：</span>{{ selectedReview.suggestion }}</div>
+                                </div>
+                                <div class="mt-8 flex justify-end gap-3">
+                                    <button @click="showReviewDetailModal = false" class="px-5 py-2.5 rounded-sm text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">关闭</button>
+                                    <button @click="rejectReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-sm text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20">拒绝入库</button>
+                                    <button @click="approveReview(selectedReview.record_id)" class="px-5 py-2.5 rounded-sm text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">通过入库</button>
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+                </teleport>
+
+                <!-- Case Library View (Admin Only) -->
+                <div v-if="activeTab === 'case_library' && user.role === 'admin'" class="max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">案件库管理</h1>
+                        <button @click="openCaseModal" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-5 rounded-sm shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2 hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            录入新案件
+                        </button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                        <div class="text-sm text-slate-500">
+                            共 {{ caseLibraryPagination.total }} 条历史案件，当前第 {{ caseLibraryPagination.page }} / {{ caseLibraryPagination.total_pages || 1 }} 页
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="text-sm text-slate-500">每页条数</label>
+                            <CustomSelect
+                                :model-value="caseLibraryPagination.page_size"
+                                :options="[
+                                    { label: '10', value: 10 },
+                                    { label: '20', value: 20 },
+                                    { label: '50', value: 50 }
+                                ]"
+                                wrapper-class="w-24 relative"
+                                trigger-class="px-3 py-2 text-sm"
+                                menu-class="rounded-sm"
+                                @update:model-value="changeCaseLibraryPageSize"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">案件ID</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">标题</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">目标人群</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="c in caseLibrary" :key="c.case_id" class="hover:bg-slate-50/80 transition-colors group">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ c.case_id.substring(0,12) }}...</td>
+                                        <td class="px-6 py-4 font-bold text-slate-900">{{ c.title }}</td>
+                                        <td class="px-6 py-4 text-slate-600">{{ c.target_group }}</td>
+                                        <td class="px-6 py-4">
+                                             <span :class="['px-2.5 py-1 rounded-sm text-xs font-bold border', getRiskClass(c.risk_level)]">
+                                                {{ normalizeRiskLevelText(c.risk_level) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ c.scam_type || '-' }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewCaseDetail(c.case_id)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-sm">查看</button>
+                                                <button @click="deleteCase(c)" class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-3 py-1.5 rounded-sm">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="caseLibrary.length === 0" class="p-12 text-center text-slate-400">暂无历史案件数据</div>
+                        <div v-else class="px-6 py-4 border-t border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div class="text-sm text-slate-500">
+                                当前显示 {{ caseLibrary.length }} 条记录
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    @click="goToCaseLibraryPage(caseLibraryPagination.page - 1)"
+                                    :disabled="!caseLibraryPagination.has_prev"
+                                    class="px-3 py-2 rounded-sm border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
+                                    上一页
+                                </button>
+                                <span class="px-3 py-2 text-sm font-semibold text-slate-600">
+                                    {{ caseLibraryPagination.page }} / {{ caseLibraryPagination.total_pages || 1 }}
+                                </span>
+                                <button
+                                    @click="goToCaseLibraryPage(caseLibraryPagination.page + 1)"
+                                    :disabled="!caseLibraryPagination.has_next"
+                                    class="px-3 py-2 rounded-sm border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
+                                    下一页
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case Detail Modal -->
+                <teleport to="body">
+                <div v-if="selectedCase" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedCase = null">
+                    <div class="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                            <div>
+                                <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
+                                <div class="flex items-center gap-3 mt-1">
+                                     <span :class="['px-2 py-0.5 rounded-sm text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
+                                        {{ normalizeRiskLevelText(selectedCase.risk_level) }}风险
+                                    </span>
+                                    <span class="text-xs text-slate-400 font-mono">ID: {{ selectedCase.case_id }}</span>
+                                </div>
+                            </div>
+                            <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 custom-scrollbar transform-gpu">
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
+                                    <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">诈骗类型</h4>
+                                    <p class="text-slate-800 font-semibold">{{ selectedCase.scam_type || '-' }}</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
+                                    <p class="text-slate-800 font-semibold">{{ formatTime(selectedCase.created_at) }}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                    <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    案件描述
+                                </h4>
+                                <div class="bg-white p-5 rounded-sm border border-slate-200 text-slate-600 text-sm leading-relaxed">
+                                    {{ selectedCase.case_description }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                    典型话术
+                                </h4>
+                                <div class="space-y-2">
+                                    <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-sm border border-indigo-100 text-indigo-900 text-sm flex gap-3">
+                                        <span class="text-indigo-400 font-bold text-xs mt-0.5">0{{ idx + 1 }}</span>
+                                        {{ script }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                        违反法律
+                                    </h4>
+                                    <div class="bg-rose-50/50 p-4 rounded-sm border border-rose-100 text-rose-800 text-sm leading-relaxed">
+                                        {{ selectedCase.violated_law }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        处置建议
+                                    </h4>
+                                    <div class="bg-emerald-50/50 p-4 rounded-sm border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
+                                        {{ selectedCase.suggestion }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                 <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">关键词提取</h4>
+                                 <div class="flex flex-wrap gap-2">
+                                     <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-sm text-xs font-bold border border-slate-200">
+                                         # {{ kw }}
+                                     </span>
+                                 </div>
+                            </div>
+
+                            <div class="border-t border-slate-100 pt-6 mt-2">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                    技术调试信息
+                                </h4>
+                                <div class="bg-slate-900 rounded-sm p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
+                                    <div class="flex justify-between border-b border-slate-700 pb-2">
+                                        <span class="text-slate-500">Model:</span>
+                                        <span class="text-emerald-400">{{ selectedCase.embedding_model }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-700 pb-2">
+                                        <span class="text-slate-500">Dimension:</span>
+                                        <span class="text-brand-400">{{ selectedCase.embedding_dimension }}</span>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-slate-500">Vector (First 10 dims):</span>
+                                            <span class="text-[10px] text-slate-600">Total {{ selectedCase.embedding_vector ? selectedCase.embedding_vector.length : 0 }} dims</span>
+                                        </div>
+                                        <div class="bg-slate-950 p-3 rounded-sm overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
+                                            [{{ selectedCase.embedding_vector ? selectedCase.embedding_vector.join(', ') : 'null' }}]
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </teleport>
+
+        <!-- Task Detail Modal -->
+        <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedTask = null">
+            <div class="bg-white rounded-sm shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 no-print shrink-0">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1">{{ selectedTask.title || '分析报告' }}</h3>
+                        <p class="text-xs text-slate-500 mt-0.5 font-mono flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-sm bg-slate-300"></span>
+                            ID: {{ selectedTask.task_id }}
+                        </p>
+                        <div class="mt-2 flex items-center gap-2 flex-wrap">
+                            <span :class="getStatusClass(selectedTask.status)">{{ getStatusLabel(selectedTask.status) }}</span>
+                            <span class="px-2 py-0.5 rounded-sm text-[10px] font-bold border border-fuchsia-200 text-fuchsia-700 bg-fuchsia-50">
+                                诈骗类型：{{ selectedTask.scam_type || '未识别' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Export Dropdown -->
+                        <div class="relative group">
+                            <button type="button" class="case-download-trigger" aria-label="案件下载" title="案件下载">
+                                <svg
+                                    viewBox="0 0 256 256"
+                                    height="24"
+                                    width="28"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M74.34 85.66a8 8 0 0 1 11.32-11.32L120 108.69V24a8 8 0 0 1 16 0v84.69l34.34-34.35a8 8 0 0 1 11.32 11.32l-48 48a8 8 0 0 1-11.32 0ZM240 136v64a16 16 0 0 1-16 16H32a16 16 0 0 1-16-16v-64a16 16 0 0 1 16-16h52.4a4 4 0 0 1 2.83 1.17L111 145a24 24 0 0 0 34 0l23.8-23.8a4 4 0 0 1 2.8-1.2H224a16 16 0 0 1 16 16m-40 32a12 12 0 1 0-12 12a12 12 0 0 0 12-12"
+                                        fill="currentColor"
+                                    ></path>
+                                </svg>
+                            </button>
+                            <div class="absolute right-0 top-full pt-1 w-40 hidden group-hover:block z-50 animate-fade-in">
+                                <div class="bg-white rounded-sm shadow-xl border border-slate-100 overflow-hidden p-1">
+                                    <button @click="exportData('md')" class="w-full text-left px-3 py-2 hover:bg-slate-50 text-xs text-slate-700 flex items-center gap-2 rounded font-medium transition-colors">
+                                        <span class="w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">M</span>
+                                        Markdown
+                                    </button>
+                                    <button @click="exportData('json')" class="w-full text-left px-3 py-2 hover:bg-slate-50 text-xs text-slate-700 flex items-center gap-2 rounded font-medium transition-colors">
+                                        <span class="w-5 h-5 rounded bg-amber-100 flex items-center justify-center text-[10px] font-bold text-amber-600">J</span>
+                                        JSON
+                                    </button>
+                                    <button @click="printReport" class="w-full text-left px-3 py-2 hover:bg-slate-50 text-xs text-slate-700 flex items-center gap-2 rounded font-medium transition-colors">
+                                        <span class="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">P</span>
+                                        打印 / PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="selectedTask = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar transform-gpu">
+                    <section class="print-only">
+                        <div class="bg-white rounded-sm border border-slate-200 p-4">
+                            <h4 class="text-sm font-bold text-slate-800 mb-2">报告元信息</h4>
+                            <p class="text-sm text-slate-700">
+                                诈骗类型：{{ selectedTask.scam_type || '未识别' }}
+                            </p>
+                        </div>
+                    </section>
+
+                    <section v-if="selectedTask.summary" class="animate-fade-in">
+                        <div class="bg-white rounded-sm border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-amber-500 rounded-sm"></span>
+                                <h4 class="text-sm font-bold text-slate-800">案件摘要</h4>
+                            </div>
+                            <div class="p-5">
+                                <p class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm">{{ selectedTask.summary }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section v-if="selectedTask.risk_score || selectedTask.risk_summary" class="animate-fade-in">
+                        <div class="bg-white rounded-sm border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-emerald-500 rounded-sm"></span>
+                                <h4 class="text-sm font-bold text-slate-800">风险评分</h4>
+                            </div>
+                            <div class="p-5 space-y-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-medium text-slate-500">本次案件分数</span>
+                                    <span class="px-3 py-1 rounded-sm bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-extrabold">
+                                        {{ selectedTask.risk_score || 0 }}
+                                    </span>
+                                </div>
+                                <div v-if="parseRiskSummary(selectedTask.risk_summary)" class="grid gap-4 md:grid-cols-2">
+                                    <div class="rounded-sm border border-slate-200 bg-slate-50 p-4">
+                                        <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">维度分解</h5>
+                                        <div class="space-y-2 text-sm text-slate-700">
+                                            <div class="flex items-center justify-between">
+                                                <span>社工话术</span>
+                                                <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.social_engineering || 0 }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <span>诱导动作</span>
+                                                <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.requested_actions || 0 }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <span>证据强度</span>
+                                                <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.evidence_strength || 0 }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <span>受害暴露</span>
+                                                <span class="font-bold">{{ parseRiskSummary(selectedTask.risk_summary).dimensions?.loss_exposure || 0 }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="rounded-sm border border-slate-200 bg-slate-50 p-4">
+                                        <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">命中规则</h5>
+                                        <div v-if="parseRiskSummary(selectedTask.risk_summary).hit_rules && parseRiskSummary(selectedTask.risk_summary).hit_rules.length" class="flex flex-wrap gap-2">
+                                            <span v-for="item in parseRiskSummary(selectedTask.risk_summary).hit_rules" :key="`risk-rule-${item}`" class="px-2.5 py-1 rounded-sm bg-white border border-slate-200 text-xs font-medium text-slate-700">{{ item }}</span>
+                                        </div>
+                                        <p v-else class="text-sm text-slate-400">暂无命中规则</p>
+                                    </div>
+                                </div>
+                                <div v-else class="rounded-sm border border-slate-200 bg-slate-50 p-4">
+                                    <pre class="whitespace-pre-wrap text-xs text-slate-700">{{ selectedTask.risk_summary }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- 1. Analysis Report Section (Top, Full Width) -->
+                    <section v-if="selectedTask.report" class="animate-fade-in">
+                        <div class="bg-white rounded-sm border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-brand-500 rounded-sm"></span>
+                                <h4 class="text-sm font-bold text-slate-800">综合分析报告</h4>
+                            </div>
+                            
+                            <div class="p-5 space-y-4">
+                                <div v-for="section in parseReport(selectedTask.report)" :key="section.id" class="relative group">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                                            {{ section.id }}
+                                        </div>
+                                        <div class="flex-1">
+                                            <h5 class="text-base font-bold text-slate-900 mb-1.5">{{ section.title }}</h5>
+                                            <div class="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">{{ section.content }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Fallback -->
+                                <div v-if="parseReport(selectedTask.report).length === 0" class="prose prose-sm prose-slate max-w-none">
+                                    <pre class="whitespace-pre-wrap font-sans">{{ selectedTask.report }}</pre>
+                                </div>
+
+                                <div v-if="extractAttackSteps(selectedTask.report).length > 0" class="pt-5 mt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="w-1.5 h-4 bg-rose-500 rounded-sm"></span>
+                                        <h5 class="text-sm font-bold text-slate-800">诈骗链路时间线</h5>
+                                    </div>
+                                    <div class="relative pl-8 space-y-4">
+                                        <div class="absolute left-[11px] top-1 bottom-1 w-px bg-rose-100"></div>
+                                        <div v-for="(step, idx) in extractAttackSteps(selectedTask.report)" :key="'attack-step-'+idx" class="relative">
+                                            <span class="absolute -left-8 top-0.5 w-5 h-5 rounded-sm bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
+                                                {{ idx + 1 }}
+                                            </span>
+                                            <div class="bg-rose-50/60 border border-rose-100 rounded-sm px-3 py-2">
+                                                <p class="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">{{ step }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="extractScamKeywordSentences(selectedTask.report).length > 0" class="pt-5 mt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-1.5 h-4 bg-fuchsia-500 rounded-sm"></span>
+                                        <h5 class="text-sm font-bold text-slate-800">诈骗关键词句</h5>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span
+                                            v-for="(keyword, idx) in extractScamKeywordSentences(selectedTask.report)"
+                                            :key="'scam-keyword-'+idx"
+                                            class="inline-flex items-center px-2.5 py-1 rounded-sm text-xs font-medium text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-100"
+                                        >
+                                            {{ keyword }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- 2. Multimodal Deep Dive (Side-by-Side) -->
+                    <section v-if="selectedTask.payload" class="space-y-8 animate-fade-in">
+                        <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2 rounded-t-2xl">
+                            <span class="w-1.5 h-4 bg-indigo-500 rounded-sm"></span>
+                            <h4 class="text-sm font-bold text-slate-800">多模态深度分析对照</h4>
+                        </div>
+
+                        <div class="space-y-12 px-2">
+                            <!-- Text Section -->
+                            <div v-if="selectedTask.payload.text" class="flex flex-col gap-4">
+                                <h5 class="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    文本证据
+                                </h5>
+                                <div class="bg-slate-50 p-5 rounded-sm border border-slate-200 shadow-sm">
+                                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{{ selectedTask.payload.text }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Videos Section -->
+                            <div v-if="selectedTask.payload.videos && selectedTask.payload.videos.length > 0">
+                                <h5 class="flex items-center gap-2 text-sm font-bold text-indigo-600 uppercase tracking-wider mb-6">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    视频分析对照 ({{ selectedTask.payload.videos.length }})
+                                </h5>
+                                <div class="space-y-8">
+                                    <div v-for="(vid, idx) in selectedTask.payload.videos" :key="'vid-pair-'+idx" class="grid grid-cols-1 md:grid-cols-5 gap-6 p-4 bg-white rounded-sm border border-indigo-50 shadow-sm hover:shadow-md transition-shadow">
+                                        <!-- Source (Left) -->
+                                        <div class="md:col-span-2">
+                                            <div class="relative group rounded-sm overflow-hidden border border-slate-200 bg-black aspect-video shadow-inner">
+                                                <video controls class="w-full h-full object-contain">
+                                                    <source :src="vid" type="video/mp4">
+                                                </video>
+                                                <div class="absolute top-2 left-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded backdrop-blur-md uppercase tracking-wider">Source #{{ idx + 1 }}</div>
+                                            </div>
+                                        </div>
+                                        <!-- Insight (Right) -->
+                                        <div class="md:col-span-3 space-y-3">
+                                            <div v-if="selectedTask.payload.video_insights && selectedTask.payload.video_insights[idx]">
+                                                <div v-for="(section, sIdx) in parseInsight(selectedTask.payload.video_insights[idx])" :key="sIdx" class="mb-3 last:mb-0">
+                                                    <div class="flex items-center gap-2 mb-1.5" v-if="section.title !== '概述'">
+                                                        <span class="w-1 h-1 rounded-sm bg-indigo-500"></span>
+                                                        <h6 class="font-bold text-indigo-900 text-xs">{{ section.title }}</h6>
+                                                    </div>
+                                                    <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-indigo-100">{{ section.content }}</div>
+                                                </div>
+                                                <div v-if="parseInsight(selectedTask.payload.video_insights[idx]).length === 0" class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{{ selectedTask.payload.video_insights[idx] }}</div>
+                                            </div>
+                                            <div v-else class="flex items-center justify-center h-full text-slate-400 text-xs italic bg-slate-50 rounded-sm border border-dashed border-slate-200">
+                                                该视频暂无分析结果
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Images Section -->
+                            <div v-if="selectedTask.payload.images && selectedTask.payload.images.length > 0">
+                                <h5 class="flex items-center gap-2 text-sm font-bold text-emerald-600 uppercase tracking-wider mb-6">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    图片分析对照 ({{ selectedTask.payload.images.length }})
+                                </h5>
+                                <div class="space-y-8">
+                                    <div v-for="(img, idx) in selectedTask.payload.images" :key="'img-pair-'+idx" class="grid grid-cols-1 md:grid-cols-5 gap-6 p-4 bg-white rounded-sm border border-emerald-50 shadow-sm hover:shadow-md transition-shadow">
+                                        <!-- Source (Left) -->
+                                        <div class="md:col-span-2">
+                                            <div class="relative group rounded-sm overflow-hidden border border-slate-200 bg-slate-100 aspect-square shadow-inner cursor-zoom-in" @click="openImage(img)">
+                                                <img :src="img" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                     <span class="text-white text-[10px] font-bold">查看大图 #{{ idx + 1 }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Insight (Right) -->
+                                        <div class="md:col-span-3 space-y-3">
+                                            <div v-if="selectedTask.payload.image_insights && selectedTask.payload.image_insights[idx]">
+                                                <div v-for="(section, sIdx) in parseInsight(selectedTask.payload.image_insights[idx])" :key="sIdx" class="mb-3 last:mb-0">
+                                                    <div class="flex items-center gap-2 mb-1.5" v-if="section.title !== '概述'">
+                                                        <span class="w-1 h-1 rounded-sm bg-emerald-500"></span>
+                                                        <h6 class="font-bold text-emerald-900 text-xs">{{ section.title }}</h6>
+                                                    </div>
+                                                    <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-emerald-100">{{ section.content }}</div>
+                                                </div>
+                                                <div v-if="parseInsight(selectedTask.payload.image_insights[idx]).length === 0" class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{{ selectedTask.payload.image_insights[idx] }}</div>
+                                            </div>
+                                            <div v-else class="flex items-center justify-center h-full text-slate-400 text-xs italic bg-slate-50 rounded-sm border border-dashed border-slate-200">
+                                                该图片暂无分析结果
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audios Section -->
+                            <div v-if="selectedTask.payload.audios && selectedTask.payload.audios.length > 0">
+                                <h5 class="flex items-center gap-2 text-sm font-bold text-amber-600 uppercase tracking-wider mb-6">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    音频分析对照 ({{ selectedTask.payload.audios.length }})
+                                </h5>
+                                <div class="space-y-8">
+                                    <div v-for="(aud, idx) in selectedTask.payload.audios" :key="'aud-pair-'+idx" class="grid grid-cols-1 md:grid-cols-5 gap-6 p-4 bg-white rounded-sm border border-amber-50 shadow-sm hover:shadow-md transition-shadow">
+                                        <!-- Source (Left) -->
+                                        <div class="md:col-span-2 flex flex-col justify-center">
+                                            <div class="bg-slate-50 p-4 rounded-sm border border-slate-200">
+                                                <span class="text-[10px] font-bold text-slate-400 mb-2 block uppercase tracking-wider">音频文件 #{{ idx + 1 }}</span>
+                                                <audio controls class="w-full h-8 accent-brand-600">
+                                                    <source :src="aud" type="audio/mpeg">
+                                                </audio>
+                                            </div>
+                                        </div>
+                                        <!-- Insight (Right) -->
+                                        <div class="md:col-span-3 space-y-3">
+                                            <div v-if="selectedTask.payload.audio_insights && selectedTask.payload.audio_insights[idx]">
+                                                <div v-for="(section, sIdx) in parseInsight(selectedTask.payload.audio_insights[idx])" :key="sIdx" class="mb-3 last:mb-0">
+                                                    <div class="flex items-center gap-2 mb-1.5" v-if="section.title !== '概述'">
+                                                        <span class="w-1 h-1 rounded-sm bg-amber-500"></span>
+                                                        <h6 class="font-bold text-amber-900 text-xs">{{ section.title }}</h6>
+                                                    </div>
+                                                    <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-amber-100">{{ section.content }}</div>
+                                                </div>
+                                                <div v-if="parseInsight(selectedTask.payload.audio_insights[idx]).length === 0" class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{{ selectedTask.payload.audio_insights[idx] }}</div>
+                                            </div>
+                                            <div v-else class="flex items-center justify-center h-full text-slate-400 text-xs italic bg-slate-50 rounded-sm border border-dashed border-slate-200">
+                                                该音频暂无分析结果
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Case Modal -->
+        <div v-if="showCaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in" @click.self="showCaseModal = false">
+            <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up border border-white/20 will-change-transform">
+                <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">录入新案件</h3>
+                    <button @click="showCaseModal = false" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-sm transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/50">
+                    <div v-if="duplicateCaseConflict" class="rounded-sm border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 text-amber-900">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z"></path></svg>
+                                    <span class="text-sm font-extrabold tracking-wide">检测到高度相似案件</span>
+                                </div>
+                                <p class="text-sm leading-relaxed text-amber-900/90">当前录入内容与已有案件过于相似，系统已阻止重复入库。建议先查看已有案件，再决定是否调整内容后重新提交。</p>
+                            </div>
+                            <button @click="duplicateCaseConflict = null" class="shrink-0 rounded-sm p-2 text-amber-500 hover:bg-amber-100 hover:text-amber-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div class="rounded-sm border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">案件标题</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.title || '-' }}</div>
+                            </div>
+                            <div class="rounded-sm border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">案件ID</div>
+                                <div class="mt-1 font-mono text-xs text-slate-700 break-all">{{ duplicateCaseConflict.case_id || '-' }}</div>
+                            </div>
+                            <div class="rounded-sm border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">目标人群</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.target_group || '-' }}</div>
+                            </div>
+                            <div class="rounded-sm border border-amber-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-bold uppercase tracking-wider text-amber-500">诈骗类型</div>
+                                <div class="mt-1 font-semibold text-slate-800">{{ duplicateCaseConflict.scam_type || '-' }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            <div class="text-xs font-medium text-amber-700">如确认不是重复案件，请修改标题、描述或关键事实后再提交。</div>
+                            <button @click="viewDuplicateCaseConflict" class="px-4 py-2 rounded-sm bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20">
+                                查看已有案件
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">案件标题 <span class="text-red-500">*</span></label>
+                        <input v-model="caseForm.title" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="例如：冒充客服退款诈骗">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">目标人群 <span class="text-red-500">*</span></label>
+                            <CustomSelect
+                                v-model="caseForm.target_group"
+                                :options="[{ label: '请选择', value: '' }, ...targetGroupOptions.map(tg => ({ label: tg, value: tg }))]"
+                                placeholder="请选择"
+                                wrapper-class="relative"
+                                trigger-class="py-3"
+                                menu-class="max-h-64 overflow-y-auto"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">风险等级 <span class="text-red-500">*</span></label>
+                            <CustomSelect
+                                v-model="caseForm.risk_level"
+                                :options="[
+                                    { label: '请选择', value: '' },
+                                    { label: '高风险', value: '高' },
+                                    { label: '中风险', value: '中' },
+                                    { label: '低风险', value: '低' }
+                                ]"
+                                placeholder="请选择"
+                                wrapper-class="relative"
+                                trigger-class="py-3"
+                                menu-class="rounded-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">诈骗类型 <span class="text-red-500">*</span></label>
+                        <CustomSelect
+                            v-model="caseForm.scam_type"
+                            :options="[{ label: '请选择', value: '' }, ...scamTypeOptions.map(st => ({ label: st, value: st }))]"
+                            placeholder="请选择"
+                            wrapper-class="relative"
+                            trigger-class="py-3"
+                            menu-class="max-h-64 overflow-y-auto"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">案件描述 <span class="text-red-500">*</span></label>
+                        <textarea v-model="caseForm.case_description" rows="3" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="简要描述案件经过和手法..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">典型话术 <span class="text-xs font-normal text-slate-400 ml-2">(每行一条)</span></label>
+                        <textarea v-model="caseForm.typical_scripts_raw" rows="3" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="您好，我是淘宝客服...&#10;您的账户存在异常..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">关键词 <span class="text-xs font-normal text-slate-400 ml-2">(用逗号分隔)</span></label>
+                        <input v-model="caseForm.keywords_raw" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="客服, 退款, 转账, 安全账户">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">违反法律说明</label>
+                        <input v-model="caseForm.violated_law" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium" placeholder="涉嫌违反《刑法》第二百六十六条...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">处置建议</label>
+                        <textarea v-model="caseForm.suggestion" rows="2" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium resize-none" placeholder="立即停止转账，报警..."></textarea>
+                    </div>
+                </div>
+
+                <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                    <button @click="showCaseModal = false" class="px-6 py-3 rounded-sm text-slate-600 font-bold hover:bg-slate-200/50 transition-colors">取消</button>
+                    <button @click="submitCase" :disabled="submittingCase" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-sm shadow-lg shadow-brand-500/25 transition-all active:scale-[0.98] flex items-center gap-2">
+                        <span v-if="submittingCase" class="loader !w-4 !h-4 !border-white/30 !border-t-white"></span>
+                        {{ submittingCase ? '提交中...' : '确认录入' }}
+                    </button>
+                </div>
+            </div>
+        </div>

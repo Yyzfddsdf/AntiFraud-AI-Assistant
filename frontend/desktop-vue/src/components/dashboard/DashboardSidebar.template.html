@@ -1,0 +1,132 @@
+            <aside :class="['bg-white border-r border-slate-200 flex flex-col z-20 transition-all duration-300 ease-in-out h-full shrink-0', isSidebarCollapsed ? 'w-20' : 'w-full md:w-72']">
+                <!-- Header / Logo -->
+                <div class="p-6 flex items-center justify-between border-b border-slate-200 h-20 relative z-10 shrink-0">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 min-w-[32px] bg-brand-600 rounded-sm flex items-center justify-center text-white transition-transform hover:scale-105">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <span v-show="!isSidebarCollapsed" class="font-black text-lg text-slate-900 tracking-tight whitespace-nowrap transition-opacity duration-200 uppercase">Sentinel AI</span>
+                    </div>
+                    <!-- Toggle Button (Desktop Only) -->
+                    <button @click="toggleSidebar" class="hidden md:flex text-slate-400 hover:text-brand-600 transition-colors p-1 rounded-sm hover:bg-brand-50" :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+                        <svg class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': isSidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="p-4 space-y-1 flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden relative z-10">
+                    <div v-if="!isSidebarCollapsed" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2 mt-4 transition-opacity duration-200">核心功能</div>
+                    <div v-else class="h-6 mt-4"></div> <!-- Spacer when collapsed -->
+                    
+                    <button @click="activeTab = 'submit'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'submit' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '新建分析任务' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'submit' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">新建分析任务</span>
+                        <!-- Tooltip for collapsed state -->
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">新建任务</div>
+                    </button>
+                    
+                    <button @click="activeTab = 'tasks'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'tasks' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '任务监控列表' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'tasks' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">任务监控列表</span>
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">任务监控</div>
+                    </button>
+
+                    <button @click="activeTab = 'risk_trend'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'risk_trend' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '风险趋势' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'risk_trend' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">风险趋势</span>
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">风险趋势</div>
+                    </button>
+
+                    <button @click="activeTab = 'simulation_quiz'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'simulation_quiz' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '反诈模拟' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'simulation_quiz' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">反诈模拟</span>
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">反诈模拟</div>
+                    </button>
+
+                    <button @click="activeTab = 'history'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'history' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '历史案件档案' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'history' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">历史案件档案</span>
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">历史档案</div>
+                    </button>
+
+                    <button @click="activeTab = 'family'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'family' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '家庭中心' : ''">
+                        <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'family' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10.5L12 4l9 6.5M5 9.5V20h14V9.5M9 20v-5h6v5"></path></svg>
+                        <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">家庭中心</span>
+                        <span v-if="familyUnreadCount > 0 && !isSidebarCollapsed" class="ml-auto min-w-[18px] h-[18px] px-1 rounded bg-rose-500 text-white text-[9px] font-black leading-[18px] text-center">{{ familyUnreadCount }}</span>
+                        <span v-if="familyUnreadCount > 0 && isSidebarCollapsed" class="absolute top-2 right-2 min-w-[16px] h-[16px] px-1 rounded bg-rose-500 text-white text-[9px] font-black leading-[16px] text-center">{{ familyUnreadCount }}</span>
+                        <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">家庭中心</div>
+                    </button>
+
+                    <!-- Admin Section -->
+                    <div v-if="user.role === 'admin'">
+                        <div v-if="!isSidebarCollapsed" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2 mt-6 transition-opacity duration-200">管理员功能</div>
+                        <div v-else class="h-6 mt-6"></div>
+                        
+                        <button @click="activeTab = 'admin_stats'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'admin_stats' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '全景分析' : ''">
+                            <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'admin_stats' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">全景分析</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">全景分析</div>
+                        </button>
+
+                        <button @click="activeTab = 'geo_risk_map_full'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'geo_risk_map_full' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '全国地理态势' : ''">
+                            <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'geo_risk_map_full' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2m0 18l6-3m-6 3V2m6 15l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 2"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">全国地理态势</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">全国地理态势</div>
+                        </button>
+                        
+                        <button @click="activeTab = 'users'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'users' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '用户权限管理' : ''">
+                            <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'users' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">用户权限管理</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">用户管理</div>
+                        </button>
+                        
+                        <button @click="activeTab = 'case_review'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'case_review' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '案件审核' : ''">
+                            <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'case_review' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">案件审核</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">案件审核</div>
+                        </button>
+
+                        <button @click="activeTab = 'case_library'" :class="['w-full text-left px-4 py-2.5 rounded-sm text-sm font-semibold flex items-center gap-3 transition-all duration-200 group relative', activeTab === 'case_library' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700']" :title="isSidebarCollapsed ? '案件库管理' : ''">
+                            <svg class="w-4 h-4 min-w-[16px] transition-colors" :class="activeTab === 'case_library' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-200">案件库管理</span>
+                            <div v-if="isSidebarCollapsed" class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">案件库</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer / Profile -->
+                <div class="p-4 border-t border-slate-200 bg-white relative z-10 shrink-0">
+                    <!-- Collapsed Profile View -->
+                    <div v-if="isSidebarCollapsed" class="flex flex-col items-center gap-4">
+                        <button @click="activeTab = 'profile'" class="w-8 h-8 rounded-sm bg-brand-50 border border-brand-200 flex items-center justify-center text-xs font-bold text-brand-700 hover:border-brand-600 transition-colors relative group" title="个人资料">
+                            {{ getUserAvatarText(user) }}
+                            <div class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">个人资料</div>
+                        </button>
+                        <button @click="logout" class="text-slate-400 hover:text-brand-600 p-2 rounded-sm hover:bg-brand-50 transition-colors relative group" title="退出登录">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            <div class="absolute left-14 bg-brand-900 text-white text-xs px-2.5 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-sm">退出登录</div>
+                        </button>
+                    </div>
+
+                    <!-- Expanded Profile View -->
+                    <div v-else>
+                        <div class="flex items-center gap-3 mb-3 cursor-pointer hover:bg-brand-50 p-2 rounded-sm border border-transparent hover:border-brand-200 transition-colors group" @click="activeTab = 'profile'">
+                            <div class="w-8 h-8 min-w-[32px] rounded-sm bg-brand-50 border border-brand-200 flex items-center justify-center text-xs font-bold text-brand-700 group-hover:border-brand-600 transition-colors">
+                                {{ getUserAvatarText(user) }}
+                            </div>
+                            <div class="flex-1 min-w-0 overflow-hidden">
+                                <p class="text-xs font-bold text-slate-900 truncate">{{ getUserDisplayName(user) }}</p>
+                                <p v-if="getUserEmailText(user) || getUserPhoneText(user)" class="text-[10px] text-slate-500 truncate mt-0.5">{{ getUserEmailText(user) || getUserPhoneText(user) }}</p>
+                            </div>
+                            <!-- Settings Icon -->
+                            <div class="text-slate-400 group-hover:text-brand-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </div>
+                        </div>
+                        <button @click="logout" class="w-full flex items-center justify-center gap-2 text-slate-500 hover:text-brand-700 bg-slate-50 hover:bg-brand-50 border border-slate-200 hover:border-brand-200 px-3 py-2 rounded-sm text-xs font-bold transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            安全退出
+                        </button>
+                    </div>
+                </div>
+            </aside>

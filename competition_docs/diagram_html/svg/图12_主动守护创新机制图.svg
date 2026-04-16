@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.1"/>
+    </filter>
+    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EFF6FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DBEAFE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ECFDF5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D1FAE5;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="phoneGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrow-rose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#F43F5E"/>
+    </marker>
+  </defs>
+
+  <style>
+    .bg { fill: #F8FAFC; }
+    .title { font-family: "PingFang SC", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
+    .phone-body { fill: #1E293B; stroke: #0F172A; stroke-width: 2.5; filter: url(#shadow); }
+    .phone-screen { fill: url(#phoneGrad); }
+    .card { fill: #FFFFFF; stroke-width: 1.5; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.03)); }
+    .card-title { font-family: "PingFang SC", sans-serif; font-size: 14px; font-weight: 800; fill: #1E293B; }
+    .card-desc { font-family: "PingFang SC", sans-serif; font-size: 11px; fill: #475569; }
+    .line-blue { stroke: #3B82F6; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .line-rose { stroke: #F43F5E; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .highlight-rose { fill: #FFF1F2; stroke: #F43F5E; stroke-width: 2; rx: 16; ry: 16; }
+    .btn-emerald { fill: #10B981; rx: 12; ry: 12; }
+  </style>
+
+  <rect width="1000" height="800" class="bg"/>
+  <text x="500" y="55" text-anchor="middle" class="title">Android 近地触发：主动守护机理模型</text>
+
+  <!-- Left: Target Apps (Context) -->
+  <g transform="translate(50, 310)">
+    <rect width="180" height="180" rx="20" class="card" stroke="#94A3B8" stroke-dasharray="6 4"/>
+    <text x="90" y="40" text-anchor="middle" class="card-title" fill="#475569">宿主应用环境</text>
+    <rect x="30" y="65" width="120" height="35" rx="8" fill="#F1F5F9"/>
+    <text x="90" y="88" text-anchor="middle" class="item-text" font-size="12" fill="#334155">WeChat / SMS</text>
+    <text x="90" y="130" text-anchor="middle" class="card-desc" font-weight="800" fill="#EF4444">潜在诈骗话术出现</text>
+    <text x="90" y="150" text-anchor="middle" class="card-desc">诱导转账/非法链接</text>
+  </g>
+
+  <!-- Center: Phone UI Mockup (Active Domain) -->
+  <g transform="translate(350, 140)">
+    <rect width="320" height="580" rx="40" class="phone-body"/>
+    <rect x="15" y="25" width="290" height="530" rx="30" class="phone-screen"/>
+    
+    <text x="160" y="60" text-anchor="middle" class="card-title" font-size="12" fill="#334155">反诈卫士：底层守护进程</text>
+    
+    <!-- Step 1: Accessibility -->
+    <g transform="translate(35, 95)">
+        <rect width="250" height="85" rx="16" class="card" stroke="#3B82F6"/>
+        <text x="20" y="32" class="card-title" fill="#1D4ED8">无障碍侦测层</text>
+        <text x="20" y="60" class="card-desc">自动捕获 UI Tree 文本节点</text>
+    </g>
+
+    <!-- Step 2: OCR -->
+    <g transform="translate(35, 205)">
+        <rect width="250" height="85" rx="16" class="card" stroke="#6366F1"/>
+        <text x="20" y="32" class="card-title" fill="#4338CA">本地 OCR 引擎</text>
+        <text x="20" y="60" class="card-desc">全场景屏幕截图实时推演</text>
+    </g>
+
+    <!-- Step 3: Decision -->
+    <g transform="translate(35, 315)">
+        <rect width="250" height="100" rx="16" fill="#F0FDF4" stroke="#10B981" stroke-width="2"/>
+        <text x="125" y="40" text-anchor="middle" class="card-title" fill="#064E3B">分级语义研判引擎</text>
+        <text x="125" y="70" text-anchor="middle" class="card-desc" font-weight="800" fill="#059669">命中: [ 高风险 5级 ]</text>
+    </g>
+
+    <!-- Step 4: Overlay Shield -->
+    <g transform="translate(235, 450)">
+        <circle r="35" fill="url(#grad-blue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+        <text y="5" text-anchor="middle" class="card-title" fill="#1D4ED8" font-size="10">变温悬浮球</text>
+    </g>
+  </g>
+
+  <!-- Right: Warning Interaction (Rose Domain) -->
+  <g transform="translate(730, 420)">
+    <rect width="220" height="130" rx="20" class="highlight-rose"/>
+    <text x="110" y="40" text-anchor="middle" class="card-title" fill="#BE123C" font-size="15">拦截式强交互弹窗</text>
+    <text x="30" y="75" class="card-desc" fill="#B91C1C" font-weight="800">• 拦截高危转账/支付行为</text>
+    <text x="30" y="100" class="card-desc" fill="#B91C1C">• 展示命中的诈骗话术特征</text>
+  </g>
+
+  <!-- Connectors (Smooth Curves) -->
+  <path d="M 230 350 Q 290 350 340 280" class="line-blue" marker-end="url(#arrow-blue)"/>
+  <path d="M 230 450 Q 290 450 340 380" class="line-blue" marker-end="url(#arrow-blue)"/>
+  
+  <path d="M 620 480 Q 680 480 720 480" class="line-rose" stroke-dasharray="6 4" marker-end="url(#arrow-rose)"/>
+  <text x="670" y="465" text-anchor="middle" class="card-desc" font-weight="800" fill="#F43F5E">触发联防屏蔽</text>
+
+</svg>

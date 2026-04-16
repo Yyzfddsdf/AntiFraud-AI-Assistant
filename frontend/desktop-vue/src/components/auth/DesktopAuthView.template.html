@@ -1,0 +1,87 @@
+        <div class="h-full flex relative overflow-y-auto bg-slate-50">
+            <!-- Background Elements -->
+            <div class="absolute inset-0 z-0">
+                <div class="absolute inset-0 bg-slate-50"></div>
+                <div class="absolute top-0 inset-x-0 h-[500px] bg-brand-50/30"></div>
+            </div>
+
+            <div class="relative z-10 w-full flex items-center justify-center p-4">
+                <div class="w-full max-w-[420px] bg-white border border-slate-200 rounded-sm p-8 md:p-10 shadow-sm animate-slide-up">
+                    <div class="text-center mb-10">
+                        <div class="w-16 h-16 bg-brand-600 rounded-sm mx-auto flex items-center justify-center mb-6 group cursor-default">
+                            <svg class="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Sentinel AI</h1>
+                        <p class="text-slate-500 text-sm mt-2 font-medium">管理员桌面控制台</p>
+                        <p class="text-slate-400 text-xs mt-2">支持统一账号注册登录。普通用户登录后可在桌面端继续完成管理员开通。</p>
+                    </div>
+
+                    <div class="flex bg-slate-100 p-1 rounded-sm mb-8">
+                        <button @click="authMode = 'login'" :class="['flex-1 py-2.5 text-sm font-bold rounded-sm transition-all duration-200', authMode === 'login' ? 'bg-white text-brand-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700']">登录账户</button>
+                        <button @click="authMode = 'register'" :class="['flex-1 py-2.5 text-sm font-bold rounded-sm transition-all duration-200', authMode === 'register' ? 'bg-white text-brand-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700']">注册新用户</button>
+                    </div>
+
+                    <div v-if="authMode === 'login'" class="flex bg-slate-100 p-1 rounded-sm mb-6">
+                        <button @click="loginMethod = 'password'" :class="['flex-1 py-2 text-xs font-bold rounded-sm transition-all duration-200', loginMethod === 'password' ? 'bg-white text-brand-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700']">密码登录</button>
+                        <button @click="loginMethod = 'sms'" :class="['flex-1 py-2 text-xs font-bold rounded-sm transition-all duration-200', loginMethod === 'sms' ? 'bg-white text-brand-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700']">短信登录</button>
+                    </div>
+
+                    <form @submit.prevent="handleAuth" class="space-y-5">
+                        <div v-if="authMode === 'register'" class="animate-fade-in">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">用户名</label>
+                            <input v-model="form.username" type="text" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="设置用户名">
+                        </div>
+
+                        <div v-if="authMode === 'register'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">邮箱地址</label>
+                            <input v-model="form.email" type="email" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="name@company.com">
+                        </div>
+
+                        <div v-if="authMode === 'login' && loginMethod === 'password'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">邮箱或手机号</label>
+                            <input v-model="form.account" type="text" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="请输入邮箱或手机号">
+                        </div>
+
+                        <div v-if="authMode === 'register' || loginMethod === 'sms'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">手机号</label>
+                            <input v-model="form.phone" type="tel" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="请输入 11 位手机号">
+                        </div>
+
+                        <div v-if="authMode === 'register' || loginMethod === 'password'">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">密码</label>
+                            <input v-model="form.password" type="password" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="••••••••">
+                        </div>
+
+                        <div v-if="shouldShowSMSCodeSection">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">短信验证码</label>
+                            <div class="flex gap-3">
+                                <input v-model="form.smsCode" type="text" required class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium tracking-[0.3em] text-center" placeholder="输入短信验证码">
+                                <button type="button" @click="sendSMSCode" :disabled="!canSendSMSCode" :class="['shrink-0 px-4 py-3 rounded-sm border font-bold text-sm transition-colors', canSendSMSCode ? 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100' : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed']">
+                                    {{ smsCodeButtonText }}
+                                </button>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-400">当前演示短信验证码固定为 {{ demoSMSCode }}，短信发送与真实校验逻辑后续接入。</p>
+                        </div>
+
+                        <div v-if="requiresGraphCaptcha" class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">图形验证码</label>
+                                <input v-model="form.captchaCode" type="text" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium text-center tracking-widest" placeholder="输入验证码">
+                            </div>
+                            <div class="relative h-[48px] mt-[23px] group cursor-pointer overflow-hidden rounded-sm border border-slate-200 hover:border-brand-300 transition-colors" @click="fetchCaptcha" title="点击刷新验证码">
+                                <img :src="captchaImage" class="w-full h-full object-cover" v-if="captchaImage">
+                                <div v-else class="w-full h-full bg-slate-100 animate-pulse"></div>
+                                <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" :disabled="loading" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 rounded-sm transition-all active:scale-[0.98] flex justify-center items-center gap-2 mt-4">
+                            <span v-if="loading" class="loader !w-5 !h-5 !border-white/30 !border-t-white"></span>
+                            {{ authSubmitLabel }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>

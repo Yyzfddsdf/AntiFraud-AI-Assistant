@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#EFF6FF"/>
+    </linearGradient>
+    
+    <linearGradient id="head-short" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+    <linearGradient id="head-user" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <linearGradient id="head-kb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="head-decision" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+
+    <filter id="shadow-md" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.04"/>
+    </filter>
+
+    <marker id="arrow-down" viewBox="0 0 10 10" refX="5" refY="10" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 0 L 5 10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .font-sans { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+    .font-mono { font-family: "JetBrains Mono", Consolas, "Courier New", monospace; }
+    
+    .title { font-size: 32px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-size: 16px; font-weight: 500; fill: #64748B; }
+    
+    .card-head { font-size: 20px; font-weight: 800; fill: #FFFFFF; }
+    .item-title { font-size: 15px; font-weight: 800; fill: #334155; }
+    .item-desc { font-size: 13px; fill: #64748B; }
+    .code-text { font-size: 13px; font-weight: 600; }
+    
+    .note-text { font-size: 14px; font-weight: 500; fill: #64748B; }
+  </style>
+
+  <rect width="1400" height="860" fill="url(#bg)"/>
+
+  <text x="700" y="65" text-anchor="middle" class="font-sans title">长短期记忆与动态风险分级机制</text>
+  <text x="700" y="95" text-anchor="middle" class="font-sans subtitle">代码级主链路映射：短期上下文感知 结合 长期历史与公共经验干预，共同驱动动态风险决策</text>
+
+  <g transform="translate(80, 160)" filter="url(#shadow-md)">
+    <rect width="380" height="380" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <rect width="380" height="70" rx="20" fill="url(#head-short)"/>
+    <rect y="40" width="380" height="30" fill="url(#head-short)"/>
+    <text x="190" y="42" text-anchor="middle" class="font-sans card-head">短期记忆</text>
+    <text x="190" y="60" text-anchor="middle" class="font-sans" font-size="13" fill="#DBEAFE">当前案件分析上下文</text>
+
+    <g transform="translate(20, 90)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#3B82F6"/>
+      <text x="40" y="32" class="font-sans item-title">原始任务输入集</text>
+      <text x="40" y="52" class="font-sans item-desc">解析文本、图片、音频、视频等多模态证据</text>
+      <rect x="40" y="60" width="130" height="22" rx="4" fill="#EFF6FF" stroke="#BFDBFE"/>
+      <text x="105" y="75" text-anchor="middle" class="font-mono code-text" fill="#1D4ED8">BindTaskPayload</text>
+    </g>
+
+    <g transform="translate(20, 185)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#3B82F6"/>
+      <text x="40" y="32" class="font-sans item-title">子模态独立取证特征</text>
+      <text x="40" y="52" class="font-sans item-desc">从各子任务提取的结构化特征 (Insights)</text>
+      <rect x="40" y="60" width="140" height="22" rx="4" fill="#EFF6FF" stroke="#BFDBFE"/>
+      <text x="110" y="75" text-anchor="middle" class="font-mono code-text" fill="#1D4ED8">BindTaskInsights</text>
+    </g>
+
+    <g transform="translate(20, 280)">
+      <rect width="340" height="80" rx="12" fill="#EFF6FF" stroke="#BFDBFE"/>
+      <circle cx="25" cy="40" r="4" fill="#2563EB"/>
+      <text x="40" y="32" class="font-sans item-title">当前案件基础评分输出</text>
+      <text x="40" y="52" class="font-sans item-desc">仅基于当前案件生成的风险初判与摘要</text>
+      <rect x="40" y="60" width="160" height="22" rx="4" fill="#DBEAFE"/>
+      <text x="120" y="75" text-anchor="middle" class="font-mono code-text" fill="#1D4ED8">BindRiskAssessment</text>
+    </g>
+  </g>
+
+
+  <g transform="translate(510, 160)" filter="url(#shadow-md)">
+    <rect width="380" height="380" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <rect width="380" height="70" rx="20" fill="url(#head-user)"/>
+    <rect y="40" width="380" height="30" fill="url(#head-user)"/>
+    <text x="190" y="42" text-anchor="middle" class="font-sans card-head">长期记忆 (一)</text>
+    <text x="190" y="60" text-anchor="middle" class="font-sans" font-size="13" fill="#CCFBF1">用户长线风险画像</text>
+
+    <g transform="translate(20, 90)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#0F766E"/>
+      <text x="40" y="32" class="font-sans item-title">基础身份画像加载</text>
+      <text x="40" y="52" class="font-sans item-desc">姓名、年龄、职业与常驻地等人口学属性</text>
+      <rect x="40" y="60" width="130" height="22" rx="4" fill="#ECFDF5" stroke="#A7F3D0"/>
+      <text x="105" y="75" text-anchor="middle" class="font-mono code-text" fill="#047857">query_user_info</text>
+    </g>
+
+    <g transform="translate(20, 185)">
+      <rect width="340" height="80" rx="12" fill="#ECFDF5" stroke="#A7F3D0"/>
+      <circle cx="25" cy="40" r="4" fill="#059669"/>
+      <text x="40" y="32" class="font-sans item-title">历史风险状态评估极性</text>
+      <text x="40" y="52" class="font-sans item-desc">决定后续动态阈值高低的核心历史分值参数</text>
+      <rect x="40" y="60" width="140" height="22" rx="4" fill="#D1FAE5"/>
+      <text x="110" y="75" text-anchor="middle" class="font-mono code-text" fill="#047857">historical_score</text>
+    </g>
+
+    <g transform="translate(20, 280)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#0F766E"/>
+      <text x="40" y="32" class="font-sans item-title">个人语义记忆追溯</text>
+      <text x="40" y="52" class="font-sans item-desc">检索该用户过往相似案件的命中结果</text>
+      <rect x="40" y="60" width="160" height="22" rx="4" fill="#ECFDF5" stroke="#A7F3D0"/>
+      <text x="120" y="75" text-anchor="middle" class="font-mono code-text" fill="#047857">search_user_history</text>
+    </g>
+  </g>
+
+
+  <g transform="translate(940, 160)" filter="url(#shadow-md)">
+    <rect width="380" height="380" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <rect width="380" height="70" rx="20" fill="url(#head-kb)"/>
+    <rect y="40" width="380" height="30" fill="url(#head-kb)"/>
+    <text x="190" y="42" text-anchor="middle" class="font-sans card-head">长期记忆 (二)</text>
+    <text x="190" y="60" text-anchor="middle" class="font-sans" font-size="13" fill="#EDE9FE">公共知识库与历史经验</text>
+
+    <g transform="translate(20, 90)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#7C3AED"/>
+      <text x="40" y="32" class="font-sans item-title">全局公共案件召回</text>
+      <text x="40" y="52" class="font-sans item-desc">在全局历史库中通过向量检索相似受骗模式</text>
+      <rect x="40" y="60" width="165" height="22" rx="4" fill="#F5F3FF" stroke="#DDD6FE"/>
+      <text x="122" y="75" text-anchor="middle" class="font-mono code-text" fill="#6D28D9">search_similar_cases</text>
+    </g>
+
+    <g transform="translate(20, 185)">
+      <rect width="340" height="80" rx="12" fill="#F5F3FF" stroke="#DDD6FE"/>
+      <circle cx="25" cy="40" r="4" fill="#6D28D9"/>
+      <text x="40" y="32" class="font-sans item-title">知识库强干预极性判定</text>
+      <text x="40" y="52" class="font-sans item-desc">生成 [高危/低危/无关] 的干预标签</text>
+      <rect x="40" y="60" width="155" height="22" rx="4" fill="#EDE9FE"/>
+      <text x="117" y="75" text-anchor="middle" class="font-mono code-text" fill="#6D28D9">knowledge_base_hit</text>
+    </g>
+
+    <g transform="translate(20, 280)">
+      <rect width="340" height="80" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <circle cx="25" cy="40" r="4" fill="#7C3AED"/>
+      <text x="40" y="32" class="font-sans item-title">知识先验赋能 (提示)</text>
+      <text x="40" y="52" class="font-sans item-desc">提供辅助参考依据，辅助大模型进行深度判别</text>
+      <rect x="40" y="60" width="160" height="22" rx="4" fill="#F5F3FF" stroke="#DDD6FE"/>
+      <text x="120" y="75" text-anchor="middle" class="font-mono code-text" fill="#6D28D9">Prior Knowledge Injected</text>
+    </g>
+  </g>
+
+
+  <path d="M 270 550 Q 270 600 680 610" fill="none" stroke="#94A3B8" stroke-width="4" stroke-dasharray="8 6"/>
+  <path d="M 700 550 L 700 610" fill="none" stroke="#94A3B8" stroke-width="4" stroke-dasharray="8 6"/>
+  <path d="M 1130 550 Q 1130 600 720 610" fill="none" stroke="#94A3B8" stroke-width="4" stroke-dasharray="8 6"/>
+  <line x1="700" y1="610" x2="700" y2="640" stroke="#94A3B8" stroke-width="4" marker-end="url(#arrow-down)"/>
+
+
+  <g transform="translate(200, 650)" filter="url(#shadow-md)">
+    <rect width="1000" height="130" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <rect width="1000" height="50" rx="20" fill="url(#head-decision)"/>
+    <rect y="30" width="1000" height="20" fill="url(#head-decision)"/>
+    
+    <text x="500" y="32" text-anchor="middle" class="font-sans card-head">核心决策引擎：动态风险定级与联动</text>
+    
+    <g transform="translate(50, 70)">
+      <rect x="0" y="0" width="220" height="36" rx="8" fill="#FFF7ED" stroke="#FDBA74"/>
+      <text x="110" y="23" text-anchor="middle" class="font-mono code-text" fill="#C2410C">resolve_dynamic_risk_level</text>
+      
+      <text x="240" y="23" class="font-mono code-text" fill="#94A3B8">+</text>
+
+      <rect x="270" y="0" width="160" height="36" rx="8" fill="#FFF7ED" stroke="#FDBA74"/>
+      <text x="350" y="23" text-anchor="middle" class="font-mono code-text" fill="#C2410C">dynamic_threshold</text>
+
+      <path d="M 450 18 L 470 18" fill="none" stroke="#F97316" stroke-width="3"/>
+      <path d="M 465 13 L 475 18 L 465 23" fill="none" stroke="#F97316" stroke-width="3" stroke-linecap="round"/>
+
+      <rect x="490" y="0" width="120" height="36" rx="8" fill="#FEF2F2" stroke="#FCA5A5"/>
+      <text x="550" y="23" text-anchor="middle" class="font-mono code-text" fill="#B91C1C">risk_level</text>
+
+      <line x1="630" y1="5" x2="630" y2="30" stroke="#E2E8F0" stroke-width="2"/>
+
+      <text x="650" y="15" class="font-sans item-desc" font-weight="600" fill="#334155">主智能体融合各项评分标签，输出最终等级</text>
+      <text x="650" y="32" class="font-sans item-desc">随后触发报警联动、报告生成及记忆池归档回流。</text>
+    </g>
+  </g>
+
+  <rect x="180" y="805" width="1040" height="36" rx="18" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="700" y="828" text-anchor="middle" class="font-sans note-text">📍 <tspan font-weight="bold" fill="#475569">设计注：</tspan>短期记忆提供事实基础，长期记忆提供历史干预。普通聊天对话视为外围交互，不包含在核心判别主干道中。</text>
+
+</svg>

@@ -1,0 +1,174 @@
+                <div v-if="activeTab === 'geo_risk_map' && user.role === 'admin'" class="max-w-[96rem] mx-auto animate-fade-in">
+                    <div class="relative overflow-hidden rounded-sm border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(6,182,212,0.18),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_24%),linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(2,6,23,0.98))] shadow-sm">
+                        <div class="absolute inset-0 pointer-events-none opacity-60" style="background-image: linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px); background-size: 28px 28px;"></div>
+                        <div class="absolute -left-16 top-0 h-72 w-72 rounded-sm bg-cyan-400/20 blur-3xl"></div>
+                        <div class="absolute right-0 top-20 h-80 w-80 rounded-sm bg-blue-500/20 blur-3xl"></div>
+
+                        <div class="relative z-10 p-8 md:p-10">
+                            <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+                                <div class="max-w-3xl">
+                                    <div class="inline-flex items-center gap-2 rounded-sm border border-cyan-400/20 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200/90">
+                                        National Geo Radar
+                                    </div>
+                                    <h1 class="mt-5 text-3xl md:text-4xl font-black tracking-tight text-white">全国反诈案件地理可视化</h1>
+                                    <p class="mt-4 text-sm md:text-base leading-7 text-slate-300 max-w-2xl">
+                                        围绕地区、时间与案件类型三大维度，对用户本人位置与其历史案件进行聚合，支持全国省级态势总览与省内城市钻取分析，实现一图感知全国反诈风险分布。
+                                    </p>
+                                </div>
+
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex flex-wrap gap-2 rounded-sm border border-white/10 bg-white/5 p-1.5 backdrop-blur-xl">
+                                        <button
+                                            v-for="item in geoWindowOptions"
+                                            :key="`geo-window-${item.value}`"
+                                            @click="setGeoWindow(item.value)"
+                                            :class="[
+                                                'px-4 py-2 rounded-sm text-xs font-bold tracking-wide transition-all',
+                                                geoSelectedWindow === item.value
+                                                    ? 'bg-cyan-400 text-slate-950 shadow-sm'
+                                                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                                            ]">
+                                            {{ item.label }}
+                                        </button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 rounded-sm border border-white/10 bg-white/5 p-1.5 backdrop-blur-xl">
+                                        <button
+                                            @click="setGeoViewMode('province')"
+                                            :class="[
+                                                'px-4 py-2 rounded-sm text-xs font-bold tracking-wide transition-all',
+                                                geoViewMode === 'province'
+                                                    ? 'bg-indigo-400 text-slate-950 shadow-sm'
+                                                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                                            ]">
+                                            省级总览
+                                        </button>
+                                        <button
+                                            @click="setGeoViewMode('city')"
+                                            :disabled="!geoSelectedProvinceCode"
+                                            :class="[
+                                                'px-4 py-2 rounded-sm text-xs font-bold tracking-wide transition-all',
+                                                geoViewMode === 'city'
+                                                    ? 'bg-fuchsia-400 text-slate-950 shadow-sm'
+                                                    : 'text-slate-300 hover:text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed'
+                                            ]">
+                                            城市钻取
+                                        </button>
+                                        <button
+                                            @click="fetchGeoRiskMap(true)"
+                                            class="px-4 py-2 rounded-sm text-xs font-bold tracking-wide text-slate-200 hover:text-white hover:bg-white/10 transition-all">
+                                            刷新数据
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1.75fr)_380px] gap-6">
+                                <section class="rounded-sm border border-cyan-400/15 bg-slate-950/55 backdrop-blur-xl shadow-sm">
+                                    <div class="flex items-center justify-between gap-4 px-6 py-5 border-b border-white/10">
+                                        <div>
+                                            <div class="text-[11px] font-bold uppercase tracking-[0.26em] text-cyan-200/80">实时态势地图</div>
+                                            <h2 class="mt-2 text-xl font-extrabold text-white">{{ geoMapTitle }}</h2>
+                                        </div>
+                                        <button
+                                            v-if="geoViewMode === 'city'"
+                                            @click="backToProvinceGeoMap"
+                                            class="px-4 py-2 rounded-sm border border-white/10 bg-white/5 text-sm font-bold text-slate-200 hover:bg-white/10 transition-colors">
+                                            返回全国
+                                        </button>
+                                    </div>
+                                    <div class="px-6 py-6">
+                                        <div class="relative h-[620px] w-full rounded-sm border border-white/6 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.08),_transparent_38%),linear-gradient(180deg,_rgba(2,6,23,0.96),_rgba(15,23,42,0.92))] overflow-hidden">
+                                            <div id="adminGeoRiskMapChart" class="absolute inset-0"></div>
+                                            <div v-if="geoMapLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/85 text-cyan-100">
+                                                <div class="w-12 h-12 rounded-sm border-2 border-cyan-300/20 border-t-cyan-300 animate-spin"></div>
+                                                <div class="text-sm font-bold tracking-[0.24em] uppercase">地图数据加载中</div>
+                                            </div>
+                                            <div v-else-if="geoMapError" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/85 text-center px-8">
+                                                <div class="text-base font-extrabold text-rose-200">全国地理态势加载失败</div>
+                                                <div class="text-sm text-slate-300 max-w-md">{{ geoMapError }}</div>
+                                                <button @click="fetchGeoRiskMap(true)" class="px-4 py-2 rounded-sm bg-rose-500/15 border border-rose-300/20 text-rose-100 text-sm font-bold hover:bg-rose-500/25 transition-colors">
+                                                    重新加载
+                                                </button>
+                                            </div>
+                                            <div v-else-if="geoMapData && (!geoMapData.provinces || !geoMapData.provinces.length)" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/85 text-center px-8">
+                                                <div class="text-base font-extrabold text-slate-100">暂无可视化数据</div>
+                                                <div class="text-sm text-slate-400 max-w-md">当前没有同时具备用户位置与案件历史的数据，无法绘制全国地图。</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="space-y-6">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="rounded-sm border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                                            <div class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">定位用户</div>
+                                            <div class="mt-3 text-3xl font-black text-white">{{ geoMapData?.summary?.total_users_with_location || 0 }}</div>
+                                            <div class="mt-2 text-xs text-slate-400">已设置地区并产生案件的用户数</div>
+                                        </div>
+                                        <div class="rounded-sm border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                                            <div class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">历史案件</div>
+                                            <div class="mt-3 text-3xl font-black text-white">{{ geoMapData?.summary?.total_cases || 0 }}</div>
+                                            <div class="mt-2 text-xs text-slate-400">参与地理聚合的有效案件数</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-sm border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <div>
+                                                <div class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">{{ geoViewMode === 'province' ? '省级排名' : '城市排名' }}</div>
+                                                <h3 class="mt-2 text-lg font-extrabold text-white">{{ geoRankingTitle }}</h3>
+                                            </div>
+                                            <div class="text-xs text-slate-400">按 {{ geoCurrentWindowLabel }} 排序</div>
+                                        </div>
+                                        <div class="mt-5 space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                                            <button
+                                                v-for="(item, index) in geoCurrentRanking"
+                                                :key="`${geoViewMode}-${item.region_code}`"
+                                                @click="geoViewMode === 'province' ? drillIntoProvince(item.region_code) : null"
+                                                :class="[
+                                                    'w-full rounded-sm border p-4 text-left transition-all',
+                                                    geoViewMode === 'province'
+                                                        ? 'border-cyan-400/10 bg-slate-950/60 hover:border-cyan-300/30 hover:bg-slate-950/80'
+                                                        : 'border-white/8 bg-slate-950/50'
+                                                ]">
+                                                <div class="flex items-start justify-between gap-4">
+                                                    <div class="min-w-0">
+                                                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">TOP {{ index + 1 }}</div>
+                                                        <div class="mt-2 truncate text-base font-extrabold text-white">{{ item.region_name }}</div>
+                                                        <div class="mt-3 flex flex-wrap gap-2">
+                                                            <span
+                                                                v-for="scam in item.stats[geoSelectedWindow].top_scam_types"
+                                                                :key="`${item.region_code}-${scam.scam_type}`"
+                                                                class="rounded-sm border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-cyan-100">
+                                                                {{ scam.scam_type }} · {{ scam.count }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="shrink-0 text-right">
+                                                        <div class="text-2xl font-black text-white">{{ item.stats[geoSelectedWindow].count }}</div>
+                                                        <div :class="geoRiskBadgeClass(item.stats[geoSelectedWindow].risk_level)" class="mt-2 inline-flex rounded-sm px-2.5 py-1 text-[11px] font-bold">
+                                                            {{ item.stats[geoSelectedWindow].risk_level }}风险
+                                                        </div>
+                                                        <div class="mt-2 text-[11px] text-slate-400">{{ item.stats[geoSelectedWindow].trend }} · {{ formatGeoChange(item.stats[geoSelectedWindow].change_rate) }}</div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                            <div v-if="!geoCurrentRanking.length" class="rounded-sm border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400">
+                                                当前时间维度下暂无可展示的地区统计数据
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-sm border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                                        <div class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">展示说明</div>
+                                        <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                                            <li>地图标点大小对应案件数量，颜色深浅对应风险等级。</li>
+                                            <li>悬浮地图可查看地区名称、案件数量、Top3 高发骗局与环比趋势。</li>
+                                            <li>点击省份后进入城市钻取视图，查看省内城市分布。</li>
+                                        </ul>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>

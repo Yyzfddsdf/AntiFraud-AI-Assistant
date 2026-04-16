@@ -1,0 +1,129 @@
+{
+  "debug_toast_enabled": false,
+  "debug_toast_min_interval_ms": 1000,
+  "ocr_fallback_enabled": true,
+  "ocr_attempt_cooldown_ms": 6000,
+  "min_sensitive_score": 3,
+  "global_cooldown_ms": 12000,
+  "same_screen_cooldown_ms": 18000,
+  "max_captured_texts": 60,
+  "max_text_length": 48,
+  "multi_group_bonus_threshold": 3,
+  "multi_group_bonus": 1,
+  "link_indicator_bonus": 1,
+  "verification_code_bonus": 1,
+  "ignored_package_prefixes": [
+    "com.android.systemui",
+    "com.android.settings",
+    "com.google.android.permissioncontroller"
+  ],
+  "ignored_package_keywords": [
+    "permissioncontroller"
+  ],
+  "link_indicators": [
+    "http",
+    "www.",
+    ".com",
+    "点击链接",
+    "下载",
+    "安装"
+  ],
+  "keyword_groups": [
+    {
+      "id": "support",
+      "label": "客服身份",
+      "weight": 1,
+      "keywords": ["客服", "官方", "专员", "工作人员", "平台客服", "客服专员", "售后", "售后处理", "审核专员", "风险专员", "系统通知", "安全中心", "账户中心", "监管部门"]
+    },
+    {
+      "id": "payment",
+      "label": "转账收款",
+      "weight": 2,
+      "keywords": ["转账", "汇款", "付款", "收款", "充值", "打款", "提现", "银行卡", "账户", "扫码", "扫码支付", "收款码", "付款码", "对公账户", "备用金", "垫付", "先付", "补款", "补差价", "代付", "保证金", "定金"]
+    },
+    {
+      "id": "verification",
+      "label": "验证码",
+      "weight": 2,
+      "keywords": ["验证码", "校验码", "短信码", "动态码", "口令", "安全码", "确认码", "核验码", "授权码", "交易验证码", "登录验证码"]
+    },
+    {
+      "id": "install",
+      "label": "下载链接",
+      "weight": 2,
+      "keywords": ["下载", "安装", "链接", "点击链接", "网址", "浏览器", "复制链接", "打开网页", "跳转浏览器", "安装包", "apk", "应用包", "点这里", "马上下载"]
+    },
+    {
+      "id": "finance",
+      "label": "资金诱导",
+      "weight": 2,
+      "keywords": ["退款", "会员", "刷单", "贷款", "投资", "理财", "征信", "解冻", "认证", "保证金", "返利", "做任务", "退费", "退订", "取消会员", "百万保障", "关闭服务", "解除绑定", "解封", "流水", "验资", "高收益", "稳赚", "带你赚钱", "导师", "内幕消息"]
+    },
+    {
+      "id": "contact",
+      "label": "私下联系",
+      "weight": 1,
+      "keywords": ["私聊", "私下", "加微", "加V", "微信", "QQ", "加好友", "好友验证", "通过一下", "单独联系", "线下联系", "拉群", "进群", "群聊", "小号联系", "转私人"]
+    }
+  ],
+  "package_overrides": [
+    {
+      "package_names": ["com.tencent.mm"],
+      "ocr_fallback_enabled": true,
+      "ocr_attempt_cooldown_ms": 4000,
+      "min_sensitive_score": 2,
+      "global_cooldown_ms": 9000,
+      "same_screen_cooldown_ms": 14000,
+      "max_captured_texts": 90,
+      "max_text_length": 64,
+      "multi_group_bonus_threshold": 2,
+      "multi_group_bonus": 1,
+      "link_indicator_bonus": 2,
+      "verification_code_bonus": 2,
+      "link_indicators": [
+        "http",
+        "https",
+        "www.",
+        ".com",
+        "点击链接",
+        "下载",
+        "安装",
+        "收款",
+        "转账",
+        "红包"
+      ],
+      "keyword_groups": [
+        {
+          "id": "wechat_payment",
+          "label": "微信转账收款",
+          "weight": 3,
+          "keywords": ["转账", "收款", "红包", "扫码付款", "立即支付", "向对方付款", "确认收款", "微信支付", "零钱", "银行卡", "收款码", "付款码", "先垫付", "补款", "补差价", "保证金", "押金", "先打款"]
+        },
+        {
+          "id": "wechat_contact",
+          "label": "微信私下联系",
+          "weight": 2,
+          "keywords": ["加微信", "加我微信", "私聊", "私下", "好友验证", "通过一下", "拉群", "进群", "单独聊", "私发", "发你二维码", "换个号聊", "小号", "群里发不了"]
+        },
+        {
+          "id": "wechat_verification",
+          "label": "微信验证码",
+          "weight": 3,
+          "keywords": ["验证码", "短信验证码", "安全验证", "登录验证", "校验码", "交易验证码", "确认码", "核验码", "授权码"]
+        },
+        {
+          "id": "wechat_link",
+          "label": "微信链接下载",
+          "weight": 3,
+          "keywords": ["点击链接", "复制链接", "在浏览器打开", "下载", "安装", "网址", "打开网页", "长按识别", "保存二维码", "打开小程序", "跳转网页", "安装包", "apk"]
+        },
+        {
+          "id": "wechat_scam",
+          "label": "微信高危诱导",
+          "weight": 3,
+          "keywords": ["垫付", "刷单", "返利", "做任务", "退款", "解冻", "保证金", "认证金", "客服", "官方通知", "百万保障", "关闭服务", "取消会员", "账户异常", "冻结", "解封", "验资", "流水", "征信", "贷款", "投资", "高收益", "稳赚", "导师带单"]
+        }
+      ]
+    }
+  ]
+}

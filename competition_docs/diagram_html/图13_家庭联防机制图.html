@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图13 家庭联防机制图</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#fff6e8",
+        primaryTextColor: "#173042",
+        primaryBorderColor: "#d28b26",
+        lineColor: "#6a8093",
+        secondaryColor: "#eef8ff",
+        tertiaryColor: "#eef8f1",
+        fontFamily: "Microsoft YaHei, PingFang SC, sans-serif",
+        fontSize: "18px"
+      },
+      themeCSS: `
+        .node rect, .node polygon, .node path {
+          rx: 20px !important;
+          ry: 20px !important;
+        }
+      `,
+      flowchart: { curve: "basis", htmlLabels: true, nodeSpacing: 42, rankSpacing: 54 }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: linear-gradient(145deg, #fffaf6, #f4fbff); color: #24384a; }
+    .wrap { max-width: 1450px; margin: 0 auto; padding: 32px; }
+    .card { background: rgba(255,255,255,0.92); border: 1px solid #eee3d7; border-radius: 24px; box-shadow: 0 18px 48px rgba(90, 72, 48, 0.1); padding: 24px; }
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    p { margin: 0 0 20px; color: #6f7d85; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>图13 家庭联防机制图</h1>
+      <p>展示家庭组、守护关系与高风险通知的协同逻辑。</p>
+      <div class="mermaid">
+flowchart LR
+    MEMBER["被守护成员"]
+    EVENT["高风险案件事件"]
+    FAMILY["家庭系统"]
+    LINK["守护关系匹配"]
+    NOTICE["家庭高风险通知"]
+    GUARD["守护人"]
+
+    MEMBER --> EVENT --> FAMILY --> LINK --> NOTICE --> GUARD
+    classDef risk fill:#fff6e8,stroke:#d28b26,color:#173042,stroke-width:1.8px;
+    classDef flow fill:#eef8f1,stroke:#2f7d57,color:#173042,stroke-width:1.8px;
+    class MEMBER,GUARD risk;
+    class EVENT,FAMILY,LINK,NOTICE flow;
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850">
+  <defs>
+    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EFF6FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DBEAFE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EEF2FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0E7FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ECFDF5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D1FAE5;stop-opacity:1" />
+    </linearGradient>
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22.33C16.59 21.05 20 16.19 20 11V5L12 2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 12L11 14L15 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3B82F6"/>
+    </marker>
+  </defs>
+
+  <style>
+    .bg { fill: #F8FAFC; }
+    .title { font-family: "PingFang SC", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
+    .bento-card { fill: #FFFFFF; stroke-width: 1.5; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02)); }
+    .bento-header { stroke-width: 1.5; }
+    .bento-title { font-family: "PingFang SC", sans-serif; font-size: 15px; font-weight: 800; fill: #1E293B; }
+    .module-card { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.2; rx: 12; ry: 12; }
+    .item-text { font-family: "PingFang SC", sans-serif; font-size: 12px; fill: #475569; }
+    .high-light-box { stroke-width: 2; fill: #FFFFFF; rx: 16; ry: 16; }
+  </style>
+
+  <rect width="1000" height="850" class="bg"/>
+  <text x="500" y="55" text-anchor="middle" class="title">后端服务 (Go Backend) 业务域分层架构</text>
+
+  <!-- BENTO GRID SYSTEM -->
+
+  <!-- Top: Dispatch & Entrance (Blue) -->
+  <g transform="translate(60, 130)">
+    <rect width="880" height="155" rx="16" class="bento-card" stroke="#3B82F6"/>
+    <path d="M 0 16 Q 0 0 16 0 L 284 0 Q 300 0 300 16 L 300 45 L 0 45 Z" class="bento-header" fill="url(#grad-blue)" stroke="#3B82F6"/>
+    <text x="20" y="28" class="bento-title" fill="#1D4ED8">1. 通讯路由与分发域 (Dispatching)</text>
+    
+    <g transform="translate(35, 75)">
+        <rect width="255" height="65" class="module-card"/>
+        <text x="127" y="38" text-anchor="middle" class="item-text" font-weight="700" fill="#1E40AF">WebSocket / 事件总线总线</text>
+    </g>
+    
+    <g transform="translate(315, 75)">
+        <rect width="255" height="65" class="module-card"/>
+        <text x="127" y="38" text-anchor="middle" class="item-text" font-weight="700" fill="#1E40AF">RESTful 业务 Controller 层</text>
+    </g>
+    
+    <g transform="translate(595, 75)">
+        <rect width="255" height="65" class="module-card" stroke="#10B981" stroke-width="2"/>
+        <text x="127" y="38" text-anchor="middle" class="item-text" font-weight="700" fill="#065F46">中高风险实时通知通道</text>
+    </g>
+  </g>
+
+  <!-- Middle: Core Analysis Domain (Indigo/Emerald) -->
+  <g transform="translate(60, 310)">
+    <rect width="580" height="500" rx="20" class="bento-card" stroke="#6366F1"/>
+    <path d="M 0 20 Q 0 0 20 0 L 280 0 Q 300 0 300 20 L 300 45 L 0 45 Z" class="bento-header" fill="url(#grad-indigo)" stroke="#6366F1"/>
+    <text x="20" y="28" class="bento-title" fill="#4338CA">2. 判研与逻辑核心域 (Core Intelligence)</text>
+
+    <!-- Core High Light Box -->
+    <g transform="translate(30, 75)">
+        <rect width="520" height="130" class="high-light-box" stroke="#6366F1"/>
+        <use href="#icon-shield" x="25" y="25" width="22" height="22" fill="#6366F1"/>
+        <text x="60" y="42" class="bento-title" fill="#312E81">多智能体编排与裁决引擎</text>
+        <text x="40" y="85" class="item-text" fill="#4338CA">• 主核心 Reasoner Flow: 全生命周期逻辑推演</text>
+        <text x="40" y="110" class="item-text" fill="#4338CA">• Specialist Dispatcher: 针对多模态数据的专项任务下发</text>
+    </g>
+
+    <g transform="translate(30, 225)">
+        <rect width="245" height="125" class="high-light-box" stroke="#10B981"/>
+        <text x="122" y="35" text-anchor="middle" class="item-text" font-weight="800" fill="#065F46">反诈知识召回 RAG</text>
+        <text x="20" y="70" class="item-text">• 海量历史骗术向量化检索</text>
+        <text x="20" y="95" class="item-text">• 实时法律法规知识增强接入</text>
+    </g>
+
+    <g transform="translate(305, 225)">
+        <rect width="245" height="125" class="module-card" stroke="#F59E0B" stroke-width="1.5"/>
+        <text x="122" y="35" text-anchor="middle" class="item-text" font-weight="800" fill="#92400E">家庭联防协同逻辑</text>
+        <text x="20" y="70" class="item-text">• WS 全局风险广播协议</text>
+        <text x="20" y="95" class="item-text">• 守护端远程拦截指令集</text>
+    </g>
+
+    <g transform="translate(30, 365)">
+        <rect width="520" height="110" class="module-card"/>
+        <text x="25" y="35" class="item-text" font-weight="800" fill="#1E293B">平台治理与自动化运营中心</text>
+        <text x="25" y="70" class="item-text">• 专家审核二次回标系统 (Admin Review Flow)</text>
+        <text x="25" y="92" class="item-text">• 区域风险态势感知分析引擎 (Geospatial Sensoring)</text>
+    </g>
+  </g>
+
+  <!-- Right: Infrastructure Hub (Cyan/Slate) -->
+  <g transform="translate(660, 310)">
+    <rect width="280" height="500" rx="20" class="bento-card" stroke="#64748B"/>
+    <path d="M 0 20 Q 0 0 20 0 L 160 0 Q 180 0 180 20 L 180 45 L 0 45 Z" class="bento-header" fill="#F8FAFC" stroke="#64748B"/>
+    <text x="20" y="28" class="bento-title" fill="#334155">3. 基础设施层</text>
+
+    <g transform="translate(30, 75)">
+        <rect width="220" height="85" class="module-card" stroke="#0891B2"/>
+        <text x="110" y="35" text-anchor="middle" class="item-text" font-weight="800" fill="#0E7490">PgVector 数据中心</text>
+        <text x="110" y="62" text-anchor="middle" class="item-text" font-size="10">业务 / 语义知识 / 归档存证</text>
+    </g>
+
+    <g transform="translate(30, 175)">
+        <rect width="220" height="85" class="module-card"/>
+        <text x="110" y="35" text-anchor="middle" class="item-text" font-weight="800">Redis 活跃分片</text>
+        <text x="110" y="62" text-anchor="middle" class="item-text" font-size="10">高频 Session / 速率限制</text>
+    </g>
+
+    <g transform="translate(30, 275)">
+        <rect width="220" height="85" class="module-card"/>
+        <text x="110" y="35" text-anchor="middle" class="item-text" font-weight="800">LLM Provider 适配</text>
+        <text x="110" y="62" text-anchor="middle" class="item-text" font-size="10">多模型统一调用中继</text>
+    </g>
+
+    <g transform="translate(30, 375)">
+        <rect width="220" height="85" class="module-card" stroke="#0891B2"/>
+        <text x="110" y="35" text-anchor="middle" class="item-text" font-weight="800" fill="#0E7490">多模态附件存证中心</text>
+        <text x="110" y="62" text-anchor="middle" class="item-text" font-size="10">MinIO / 对象存储矩阵</text>
+    </g>
+  </g>
+
+</svg>

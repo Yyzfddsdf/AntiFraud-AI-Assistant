@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图1 项目总体架构总览图</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#e9f7ef",
+        primaryTextColor: "#173042",
+        primaryBorderColor: "#2f7d57",
+        lineColor: "#5d7b8a",
+        secondaryColor: "#eef4ff",
+        tertiaryColor: "#fff6e8",
+        clusterBkg: "#f8fbff",
+        clusterBorder: "#b9cfdd",
+        fontFamily: "Microsoft YaHei, PingFang SC, sans-serif",
+        fontSize: "18px"
+      },
+      themeCSS: `
+        .node rect, .node polygon, .node path {
+          rx: 18px !important;
+          ry: 18px !important;
+        }
+        .cluster rect {
+          rx: 22px !important;
+          ry: 22px !important;
+        }
+      `,
+      flowchart: { curve: "basis", htmlLabels: true, nodeSpacing: 34, rankSpacing: 46 }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: linear-gradient(135deg, #f6fbff, #eef6f0); color: #163045; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 32px; }
+    .card { background: rgba(255,255,255,0.88); border: 1px solid #d7e7df; border-radius: 24px; box-shadow: 0 18px 50px rgba(32, 76, 58, 0.12); padding: 24px; backdrop-filter: blur(10px); }
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    p { margin: 0 0 20px; color: #557082; }
+    .mermaid { text-align: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>图1 项目总体架构总览图</h1>
+      <p>展示 Android 端双线路设计、后端多智能体分析、个人提醒、知识沉淀与家庭联防之间的整体关系。</p>
+      <div class="mermaid">
+flowchart TB
+    U["普通用户"] --> APP["客户端入口"]
+    G["家庭守护人"] --> APP
+
+    subgraph A["用户交互层"]
+      APP
+      QUICK["快路径<br/>截图/当前页面快速筛查"]
+      DEEP["慢路径<br/>完整多模态深度分析"]
+    end
+
+    subgraph B["业务服务层"]
+      QUICKAPI["ImageQuickAgent<br/>同步低成本快判"]
+      ENTRY["多模态分析入口"]
+      CHAT["聊天式反诈助手"]
+      AGENT["多智能体分析引擎"]
+      REPORT["结构化报告与历史归档"]
+      MEMORY["用户历史记忆"]
+      ALERT["实时预警中心<br/>个人提醒"]
+      FAMILY["家庭联防中心"]
+    end
+
+    subgraph C["数据与治理层"]
+      MAINDB["主业务数据库"]
+      CASEDB["历史案件知识库"]
+      VECTOR["用户历史向量索引"]
+      REDIS["Redis 缓存"]
+      ADMIN["管理员治理后台"]
+    end
+
+    APP --> QUICK
+    APP --> DEEP
+    APP --> CHAT
+    QUICK --> QUICKAPI
+    DEEP --> ENTRY
+    QUICKAPI --> ALERT
+    QUICKAPI -. 高风险/需复核 .-> ENTRY
+    ENTRY --> AGENT
+    CHAT --> AGENT
+    AGENT --> REPORT
+    REPORT --> MEMORY
+    REPORT --> ALERT
+    REPORT --> CASEDB
+    REPORT --> MAINDB
+    AGENT --> MEMORY
+    MEMORY --> VECTOR
+    ALERT --> APP
+    REPORT -. 高风险事件 .-> FAMILY
+    FAMILY --> G
+    ADMIN --> CASEDB
+    ADMIN --> MAINDB
+    REDIS --> AGENT
+    REDIS --> CHAT
+
+    classDef core fill:#e8f7ee,stroke:#2f7d57,color:#173042,stroke-width:2px;
+    classDef side fill:#eef4ff,stroke:#5d7b8a,color:#173042,stroke-width:1.5px;
+    classDef data fill:#fff6e8,stroke:#d28b26,color:#173042,stroke-width:1.5px;
+    class APP,QUICK,DEEP,QUICKAPI,ENTRY,CHAT,AGENT,REPORT,MEMORY,ALERT,FAMILY core;
+    class U,G side;
+    class MAINDB,CASEDB,VECTOR,REDIS,ADMIN data;
+      </div>
+    </div>
+  </div>
+</body>
+</html>

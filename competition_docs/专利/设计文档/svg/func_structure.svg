@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 850">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#EFF6FF" />
+    </linearGradient>
+
+    <!-- Card Shadows -->
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+    <!-- Node Gradients -->
+    <linearGradient id="rootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <linearGradient id="l1Grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="l1Grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="l1Grad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#6D28D9" />
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .node-text-white { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 600; fill: #FFFFFF; }
+    .leaf-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #334155; }
+    .leaf-sub { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 400; fill: #64748B; }
+    .line { stroke: #94A3B8; stroke-width: 2; fill: none; }
+  </style>
+
+  <rect width="1100" height="850" fill="url(#bgGrad)"/>
+  
+  <text x="550" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 功能结构图</text>
+  <text x="550" y="80" text-anchor="middle" class="subtitle">展示用户侧、管理员侧与后端支撑服务的功能清单</text>
+
+  <!-- Root Node -->
+  <rect x="350" y="120" width="300" height="60" rx="12" fill="url(#rootGrad)" filter="url(#shadow)"/>
+  <text x="500" y="155" text-anchor="middle" class="node-text-white">反诈卫士系统 (Sentinel AI)</text>
+
+  <!-- Level 1 Nodes -->
+  <rect x="100" y="240" width="200" height="50" rx="8" fill="url(#l1Grad1)" filter="url(#shadow)"/>
+  <text x="200" y="271" text-anchor="middle" class="node-text-white">用户端功能覆盖</text>
+
+  <rect x="400" y="240" width="200" height="50" rx="8" fill="url(#l1Grad2)" filter="url(#shadow)"/>
+  <text x="500" y="271" text-anchor="middle" class="node-text-white">管理员治理功能</text>
+
+  <rect x="700" y="240" width="200" height="50" rx="8" fill="url(#l1Grad3)" filter="url(#shadow)"/>
+  <text x="800" y="271" text-anchor="middle" class="node-text-white">后端支撑服务群</text>
+
+  <!-- Root to L1 Lines -->
+  <path d="M 500 180 L 500 210 L 200 210 L 200 230" class="line" marker-end="url(#arrow)"/>
+  <path d="M 500 180 L 500 230" class="line" marker-end="url(#arrow)"/>
+  <path d="M 500 180 L 500 210 L 800 210 L 800 230" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Left Column: User Apps -->
+  <path d="M 200 290 L 200 700" class="line"/>
+  <g transform="translate(100, 320)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">多模态与快识别</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">图/文/音/视/OCR 兜底</text>
+  </g>
+  <g transform="translate(100, 390)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">聊天与历史检索</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">上下文化多轮对答与记录</text>
+  </g>
+  <g transform="translate(100, 460)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">家庭联防中心</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">被守护群与高风险通知</text>
+  </g>
+  <g transform="translate(100, 530)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">态势与基础服务</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">雷达图/地区预警/登录</text>
+  </g>
+  <g transform="translate(100, 600)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">Android 系统赋能</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">悬浮球/无障碍读取解析</text>
+  </g>
+
+  <!-- Middle Column: Admin App -->
+  <path d="M 500 290 L 500 700" class="line"/>
+  <g transform="translate(400, 320)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="180" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="220" y="30" text-anchor="middle" class="leaf-text">待审核案例池处理</text>
+  </g>
+  <g transform="translate(400, 390)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="180" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="220" y="22" text-anchor="middle" class="leaf-text">知识库实体管理</text>
+    <text x="220" y="42" text-anchor="middle" class="leaf-sub">类型标签/骗术词库</text>
+  </g>
+  <g transform="translate(400, 460)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="180" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="220" y="22" text-anchor="middle" class="leaf-text">全局知识图谱分析</text>
+    <text x="220" y="42" text-anchor="middle" class="leaf-sub">关联网络与聚集分析</text>
+  </g>
+  <g transform="translate(400, 530)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="180" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="220" y="22" text-anchor="middle" class="leaf-text">时空风险地图</text>
+    <text x="220" y="42" text-anchor="middle" class="leaf-sub">全国/省/市分层热力图</text>
+  </g>
+
+  <!-- Right Column: Backend Services -->
+  <path d="M 800 290 L 800 700" class="line"/>
+  <g transform="translate(700, 320)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">主从多智能体网络</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">提取与决策编排器</text>
+  </g>
+  <g transform="translate(700, 390)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">双重 RAG 检索引擎</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">局部向量 + 库向量融合</text>
+  </g>
+  <g transform="translate(700, 460)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">WebSocket 通知网关</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">心跳重连/跨端穿透下发</text>
+  </g>
+  <g transform="translate(700, 530)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">自愈式状态中心</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">限流/会话恢复/防链断</text>
+  </g>
+  <g transform="translate(700, 600)">
+    <path d="M 100 25 L 120 25" class="line" marker-end="url(#arrow)"/>
+    <rect x="130" y="0" width="220" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="240" y="22" text-anchor="middle" class="leaf-text">LLM 统一鉴权代理</text>
+    <text x="240" y="42" text-anchor="middle" class="leaf-sub">统一模型转换/日志</text>
+  </g>
+
+</svg>
+

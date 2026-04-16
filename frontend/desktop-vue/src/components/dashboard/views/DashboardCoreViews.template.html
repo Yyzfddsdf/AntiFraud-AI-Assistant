@@ -1,0 +1,394 @@
+                <!-- Task Center View -->
+                <div v-if="isTaskCenterTab(activeTab)" class="w-full h-full min-w-0 animate-fade-in">
+                    <div class="rounded-sm border border-slate-200 bg-white shadow-sm overflow-hidden h-full">
+                        <div class="flex flex-col lg:flex-row h-full">
+                            <aside class="w-full lg:w-56 lg:h-full shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white overflow-hidden">
+                                <div class="p-4 border-b border-slate-200">
+                                    <div class="flex items-center gap-2 text-brand-700">
+                                        <span class="w-1.5 h-7 bg-brand-500 rounded-sm"></span>
+                                        <div>
+                                            <div class="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Task Center</div>
+                                            <h1 class="text-lg font-extrabold tracking-tight text-slate-900 mt-1">任务中心</h1>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <nav class="p-2.5 space-y-1">
+                                    <button @click="setTaskCenterSection('submit')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'submit' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'submit' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">新建任务</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('tasks')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'tasks' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'tasks' ? 'bg-brand-600' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">任务监控</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('history')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'history' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'history' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">历史档案</span>
+                                    </button>
+                                    <button @click="setTaskCenterSection('risk_trend')" :class="['w-full flex items-center gap-3 rounded-sm px-3 py-2 text-left text-sm font-bold transition-all border', taskCenterSection === 'risk_trend' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-white text-slate-700 border-transparent hover:border-slate-200 hover:bg-slate-50']">
+                                        <span :class="taskCenterSection === 'risk_trend' ? 'bg-slate-700' : 'bg-slate-300'" class="w-2 h-2 rounded-full shrink-0"></span>
+                                        <span class="min-w-0 truncate">风险趋势</span>
+                                    </button>
+                                </nav>
+                            </aside>
+
+                            <div class="min-w-0 flex-1 bg-slate-100/60 p-4 lg:h-full lg:overflow-y-auto flex flex-col gap-4">
+                                <div class="bg-white rounded-sm border border-slate-200 shadow-sm p-4">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-[0.2em]">任务中心</span>
+                                        <span v-if="taskCenterSection === 'submit'" class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">新建任务</span>
+                                        <span v-else-if="taskCenterSection === 'tasks'" class="px-2 py-0.5 rounded-sm bg-brand-50 border border-brand-100 text-brand-700 text-[11px] font-bold">任务监控</span>
+                                        <span v-else-if="taskCenterSection === 'history'" class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">历史档案</span>
+                                        <span v-else class="px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold">风险趋势</span>
+                                    </div>
+                                </div>
+
+                <!-- Submit Task View -->
+                <div v-if="taskCenterSection === 'submit'" class="w-full animate-fade-in">
+                    <div class="mb-10">
+                        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">新建分析任务</h1>
+                        <p class="text-slate-500 mt-2 text-lg">上传文本、音频、视频或图片，AI 将为您进行多维度反诈分析。</p>
+                    </div>
+
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-8 space-y-8">
+                            <!-- Text Input -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    案情描述 / 对话文本
+                                </label>
+                                <textarea v-model="analyzeForm.text" class="w-full h-40 px-5 py-4 bg-slate-50 border border-slate-200 rounded-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none transition-all placeholder:text-slate-400 text-slate-700 leading-relaxed" placeholder="请详细描述遇到的情况，或直接粘贴可疑的聊天记录文本..."></textarea>
+                            </div>
+
+                            <!-- File Upload Area -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Image Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        图片凭证
+                                    </label>
+                                    <label class="analysis-upload-card analysis-upload-card--image" for="desktop-upload-image">
+                                        <input id="desktop-upload-image" type="file" multiple accept="image/*" @change="handleFileSelect($event, 'images')">
+                                        <div class="analysis-upload-card__icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="analysis-upload-card__marker" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24">
+                                                    <circle cx="8" cy="8" r="1.6"></circle>
+                                                    <path d="m4.5 18 5.2-5.1 3.4 3 2.8-2.7 3.6 4.8"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="analysis-upload-card__text">
+                                            <span>Click to upload image</span>
+                                        </div>
+                                    </label>
+                                    <div v-if="analyzeForm.images.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        已选择 {{ analyzeForm.images.length }} 个文件
+                                    </div>
+                                </div>
+
+                                <!-- Audio Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                        通话录音
+                                    </label>
+                                    <label class="analysis-upload-card analysis-upload-card--audio" for="desktop-upload-audio">
+                                        <input id="desktop-upload-audio" type="file" multiple accept="audio/*" @change="handleFileSelect($event, 'audios')">
+                                        <div class="analysis-upload-card__icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="analysis-upload-card__marker" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24">
+                                                    <path d="M6.5 15.8v-3.6"></path>
+                                                    <path d="M10 17.2V8.8"></path>
+                                                    <path d="M13.5 15.8v-5.2"></path>
+                                                    <path d="M17 16.6v-7"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="analysis-upload-card__text">
+                                            <span>Click to upload audio</span>
+                                        </div>
+                                    </label>
+                                    <div v-if="analyzeForm.audios.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        已选择 {{ analyzeForm.audios.length }} 个文件
+                                    </div>
+                                </div>
+
+                                <!-- Video Upload -->
+                                <div class="relative group">
+                                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                        视频资料
+                                    </label>
+                                    <label class="analysis-upload-card analysis-upload-card--video" for="desktop-upload-video">
+                                        <input id="desktop-upload-video" type="file" multiple accept="video/*" @change="handleFileSelect($event, 'videos')">
+                                        <div class="analysis-upload-card__icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="analysis-upload-card__marker" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24">
+                                                    <path d="m9 8 7 4-7 4z"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="analysis-upload-card__text">
+                                            <span>Click to upload video</span>
+                                        </div>
+                                    </label>
+                                    <div v-if="analyzeForm.videos.length" class="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        已选择 {{ analyzeForm.videos.length }} 个文件
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-end">
+                            <button @click="submitAnalysis" :disabled="analyzing" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-8 rounded-sm transition-colors active:scale-[0.98] flex items-center gap-3">
+                                <span v-if="analyzing" class="loader !w-4 !h-4 !border-white/30 !border-t-white"></span>
+                                {{ analyzing ? '智能分析中...' : '开始智能分析' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List View -->
+                <div v-if="taskCenterSection === 'tasks'" class="w-full animate-fade-in">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">任务监控</h1>
+                            <p class="text-slate-500 mt-2">实时查看所有分析任务的进度与结果</p>
+                        </div>
+                        <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-sm flex items-center gap-2 font-medium">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-sm"></span> 系统运行正常
+                        </span>
+                    </div>
+
+                    <div v-if="tasks.length === 0" class="text-center py-24 bg-white rounded-sm border border-slate-200 border-dashed">
+                        <div class="w-20 h-20 bg-slate-50 rounded-sm flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <p class="text-slate-500 font-medium text-lg">暂无进行中的任务</p>
+                        <button @click="activeTab = 'submit'" class="text-brand-600 font-bold mt-2 hover:text-brand-700">立即创建新任务 &rarr;</button>
+                    </div>
+
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="task in tasks" :key="task.task_id" class="bg-white p-6 rounded-sm border border-slate-200 card-hover flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-4">
+                                <span :class="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span>
+                                <span class="text-xs text-slate-400 font-mono">#{{ task.task_id.substring(0,8) }}</span>
+                            </div>
+                            
+                            <h3 class="font-bold text-slate-800 text-lg mb-2 line-clamp-1">{{ task.title || '未命名分析任务' }}</h3>
+                            <p class="text-sm text-slate-500 mb-6 flex-1 line-clamp-2">{{ task.summary || '等待分析结果...' }}</p>
+                            
+                            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    {{ formatTime(task.created_at) }}
+                                </span>
+                                <button @click="viewTaskDetail(task.task_id)" class="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group">
+                                    查看详情 
+                                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </button>
+                            </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Case Detail Modal -->
+        <teleport to="body">
+        <div v-if="selectedCase" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in modal-overlay" @click.self="selectedCase = null">
+            <div class="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up modal-content border border-white/20">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ selectedCase.title }}</h3>
+                        <div class="flex items-center gap-3 mt-1">
+                             <span :class="['px-2 py-0.5 rounded-sm text-[10px] font-bold border', getRiskClass(selectedCase.risk_level)]">
+                                {{ normalizeRiskLevelText(selectedCase.risk_level) }}风险
+                            </span>
+                            <span class="text-xs text-slate-400 font-mono">ID: {{ selectedCase.case_id }}</span>
+                        </div>
+                    </div>
+                    <button @click="selectedCase = null" class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-sm transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 custom-scrollbar transform-gpu">
+                    
+                    <!-- Basic Info -->
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">目标人群</h4>
+                            <p class="text-slate-800 font-semibold">{{ selectedCase.target_group }}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">诈骗类型</h4>
+                            <p class="text-slate-800 font-semibold">{{ selectedCase.scam_type || '-' }}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-sm border border-slate-100 shadow-sm">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">创建时间</h4>
+                            <p class="text-slate-800 font-semibold">{{ formatTime(selectedCase.created_at) }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                            <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            案件描述
+                        </h4>
+                        <div class="bg-white p-5 rounded-sm border border-slate-200 text-slate-600 text-sm leading-relaxed">
+                            {{ selectedCase.case_description }}
+                        </div>
+                    </div>
+
+                    <!-- Scripts -->
+                    <div>
+                        <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            典型话术
+                        </h4>
+                        <div class="space-y-2">
+                            <div v-for="(script, idx) in selectedCase.typical_scripts" :key="idx" class="bg-indigo-50/50 p-3 rounded-sm border border-indigo-100 text-indigo-900 text-sm flex gap-3">
+                                <span class="text-indigo-400 font-bold text-xs mt-0.5">0{{ idx + 1 }}</span>
+                                {{ script }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Law & Suggestion -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                违反法律
+                            </h4>
+                            <div class="bg-rose-50/50 p-4 rounded-sm border border-rose-100 text-rose-800 text-sm leading-relaxed">
+                                {{ selectedCase.violated_law }}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3">
+                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                处置建议
+                            </h4>
+                            <div class="bg-emerald-50/50 p-4 rounded-sm border border-emerald-100 text-emerald-800 text-sm leading-relaxed">
+                                {{ selectedCase.suggestion }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Keywords -->
+                    <div>
+                         <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">关键词提取</h4>
+                         <div class="flex flex-wrap gap-2">
+                             <span v-for="kw in selectedCase.keywords" :key="kw" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-sm text-xs font-bold border border-slate-200">
+                                 # {{ kw }}
+                             </span>
+                         </div>
+                    </div>
+
+                    <!-- Debug Info (Technical) -->
+                    <div class="border-t border-slate-100 pt-6 mt-2">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            技术调试信息
+                        </h4>
+                        <div class="bg-slate-900 rounded-sm p-4 font-mono text-xs text-slate-300 space-y-3 overflow-hidden">
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-500">Model:</span>
+                                <span class="text-emerald-400">{{ selectedCase.embedding_model }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-500">Dimension:</span>
+                                <span class="text-brand-400">{{ selectedCase.embedding_dimension }}</span>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-slate-500">Vector (First 10 dims):</span>
+                                    <span class="text-[10px] text-slate-600">Total {{ selectedCase.embedding_vector ? selectedCase.embedding_vector.length : 0 }} dims</span>
+                                </div>
+                                <div class="bg-slate-950 p-3 rounded-sm overflow-x-auto whitespace-nowrap border border-slate-800 scrollbar-thin">
+                                    [{{ selectedCase.embedding_vector ? selectedCase.embedding_vector.join(', ') : 'null' }}]
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </teleport>
+
+                <!-- History View -->
+                <div v-if="taskCenterSection === 'history'" class="w-full animate-fade-in">
+                    <h1 class="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">历史档案</h1>
+                    
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">任务ID</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">案件标题</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">风险等级</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">诈骗类型</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">摘要</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs">时间</th>
+                                        <th class="px-6 py-5 font-bold text-slate-600 uppercase tracking-wider text-xs text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in history" :key="item.record_id" class="hover:bg-slate-50/80 transition-colors group">
+                                        <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ item.record_id.substring(0,8) }}...</td>
+                                        <td class="px-6 py-4 font-semibold text-slate-900">{{ item.title || '无标题' }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="['px-2.5 py-1 rounded-sm text-xs font-bold border', getRiskClass(item.risk_level)]">
+                                                {{ normalizeRiskLevelText(item.risk_level) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600">{{ item.scam_type || '-' }}</td>
+                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ item.case_summary }}</td>
+                                        <td class="px-6 py-4 text-slate-400 font-medium">{{ formatTime(item.created_at) }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewHistoryDetail(item)" class="text-brand-600 hover:text-brand-800 font-bold text-xs bg-brand-50 px-3 py-1.5 rounded-sm">查看</button>
+                                                <button
+                                                    @click="deleteHistoryCase(item)"
+                                                    :disabled="deletingHistory[item.record_id]"
+                                                    class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 px-3 py-1.5 rounded-sm disabled:opacity-50"
+                                                >
+                                                    {{ deletingHistory[item.record_id] ? '...' : '删除' }}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="history.length === 0" class="p-12 text-center text-slate-400">暂无历史记录</div>
+                    </div>
+                </div>
+
+                <DesktopRiskTrendView v-if="taskCenterSection === 'risk_trend'" :app="app" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Quiz View -->
+                <DesktopSimulationQuizView v-if="activeTab === 'simulation_quiz'" :app="app" />
+
+

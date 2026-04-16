@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 400" width="100%" height="100%">
+  <defs>
+    <filter id="cardShadow1" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+    <clipPath id="cardClip1">
+      <rect width="260" height="380" rx="16" />
+    </clipPath>
+  </defs>
+
+  <g transform="translate(10, 10)">
+    <rect width="260" height="380" rx="16" fill="#FFFFFF" filter="url(#cardShadow1)" />
+    
+    <g clip-path="url(#cardClip1)">
+      <rect width="260" height="8" fill="#10B981" />
+      
+      <circle cx="130" cy="90" r="44" fill="#ECFDF5" />
+      <circle cx="130" cy="80" r="14" fill="#34D399" />
+      <path d="M102,115 Q130,95 158,115 V130 H102 Z" fill="#34D399" />
+      <path d="M145,100 L130,115 L115,100 L130,85 Z" fill="none" stroke="#10B981" stroke-width="2" opacity="0.3"/>
+      
+      <text x="130" y="170" font-family="sans-serif" font-size="14" font-weight="bold" fill="#94A3B8" text-anchor="middle" letter-spacing="1">业务模式 1</text>
+      <text x="130" y="205" font-family="sans-serif" font-size="22" font-weight="bold" fill="#1E293B" text-anchor="middle">个人用户服务</text>
+      
+      <line x1="90" y1="230" x2="170" y2="230" stroke="#E2E8F0" stroke-width="2" />
+      
+      <text x="130" y="270" font-family="sans-serif" font-size="14" fill="#475569" text-anchor="middle">提供风险识别、提醒、</text>
+      <text x="130" y="295" font-family="sans-serif" font-size="14" fill="#475569" text-anchor="middle">历史查看与辅助判断能力。</text>
+    </g>
+  </g>
+</svg>

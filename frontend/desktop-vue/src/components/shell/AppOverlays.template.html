@@ -1,0 +1,22 @@
+        <div v-if="!authReady" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950 text-white">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center shadow-2xl">
+                    <div class="w-6 h-6 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm font-bold tracking-[0.24em] uppercase text-white/70">Sentinel AI</div>
+                    <div class="mt-2 text-sm text-white/60">正在校验登录状态</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed top-6 right-6 z-[60] space-y-3 pointer-events-none">
+            <transition-group name="list" tag="div">
+                <div v-for="toast in toasts" :key="toast.id"
+                     :class="['px-5 py-3.5 rounded-sm shadow-xl border backdrop-blur-none flex items-center gap-3 animate-fade-in pointer-events-auto transform hover:scale-105 transition-all',
+                              toast.type === 'error' ? 'bg-red-50/90 border-red-200 text-red-700' : toast.type === 'warning' ? 'bg-amber-50/95 border-amber-200 text-amber-700' : 'bg-emerald-50/90 border-emerald-200 text-emerald-700']">
+                    <span :class="['w-2 h-2 rounded-sm', toast.type === 'error' ? 'bg-red-500' : toast.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500']"></span>
+                    <span class="text-sm font-semibold tracking-wide">{{ toast.message }}</span>
+                </div>
+            </transition-group>
+        </div>

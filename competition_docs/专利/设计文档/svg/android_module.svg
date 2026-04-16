@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#EFF6FF" />
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <linearGradient id="uiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .layer-title { font-family: system-ui, -apple-system, sans-serif; font-size: 20px; font-weight: 600; fill: #FFFFFF; }
+    .card-text { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #334155; }
+    .card-subtext { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 400; fill: #64748B; }
+    .line { stroke: #94A3B8; stroke-width: 2; fill: none; }
+  </style>
+
+  <rect width="1000" height="850" fill="url(#bgGrad)"/>
+  
+  <text x="500" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - Android 端模块架构图</text>
+  <text x="500" y="80" text-anchor="middle" class="subtitle">展示UI视图层、后台守护、无障碍解析与通知联动的模块划分</text>
+
+  <!-- 1. UI Layer -->
+  <rect x="100" y="120" width="800" height="120" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="100" y="120" width="160" height="120" fill="url(#uiGrad)" rx="12"/>
+  <text x="180" y="185" text-anchor="middle" class="layer-title">UI 展现层</text>
+  
+  <rect x="290" y="145" width="130" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="355" y="175" text-anchor="middle" class="card-text">应用主界面</text>
+  <text x="355" y="195" text-anchor="middle" class="card-subtext">(历史/分析/家庭)</text>
+  
+  <rect x="450" y="145" width="130" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="515" y="175" text-anchor="middle" class="card-text">AI 聊天面板</text>
+  <text x="515" y="195" text-anchor="middle" class="card-subtext">多模态问答视图</text>
+
+  <rect x="610" y="145" width="130" height="70" rx="6" fill="#F1F5F9" stroke="#3B82F6" stroke-width="1"/>
+  <text x="675" y="175" text-anchor="middle" class="card-text">全屏悬浮球</text>
+  <text x="675" y="195" text-anchor="middle" class="card-subtext">主动快判入口触发</text>
+
+  <rect x="770" y="145" width="110" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="825" y="175" text-anchor="middle" class="card-text">状态通知栏</text>
+  <text x="825" y="195" text-anchor="middle" class="card-subtext">高危风险前台提醒</text>
+
+  <!-- 2. Logic & State -->
+  <rect x="100" y="280" width="800" height="120" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="100" y="280" width="160" height="120" fill="url(#uiGrad)" rx="12"/>
+  <text x="180" y="345" text-anchor="middle" class="layer-title">状态驱动层</text>
+  
+  <rect x="290" y="305" width="290" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="435" y="335" text-anchor="middle" class="card-text">全局应用状态 (ViewModel / Store)</text>
+  <text x="435" y="355" text-anchor="middle" class="card-subtext">用户状态 / 任务加载状态 / 会话上下文池</text>
+  
+  <rect x="610" y="305" width="270" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="745" y="335" text-anchor="middle" class="card-text">预警规则与权重匹配引擎</text>
+  <text x="745" y="355" text-anchor="middle" class="card-subtext">骗术关键词典 + 多规则加权计分</text>
+  
+  <path d="M 500 240 L 500 280" class="line" marker-end="url(#arrow)"/>
+  
+  <!-- 3. Guard Services & Fast Path -->
+  <rect x="100" y="440" width="800" height="150" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="100" y="440" width="160" height="150" fill="url(#uiGrad)" rx="12"/>
+  <text x="180" y="505" text-anchor="middle" class="layer-title">主动守护层</text>
+  
+  <rect x="290" y="465" width="200" height="100" rx="6" fill="#F1F5F9" stroke="#F59E0B" stroke-width="2"/>
+  <text x="390" y="495" text-anchor="middle" class="card-text">Android 后台驻留</text>
+  <text x="390" y="520" text-anchor="middle" class="card-subtext">监听应用切换与屏幕动态</text>
+  <text x="390" y="540" text-anchor="middle" class="card-subtext">维持高优通知守护</text>
+
+  <rect x="520" y="465" width="360" height="100" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="540" y="490" width="150" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="615" y="510" text-anchor="middle" class="card-text">无障碍 Node 提取</text>
+  <text x="615" y="530" text-anchor="middle" class="card-subtext">静默读取页面文本</text>
+  
+  <rect x="710" y="490" width="150" height="50" rx="6" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="785" y="510" text-anchor="middle" class="card-text">屏幕截图与 OCR</text>
+  <text x="785" y="530" text-anchor="middle" class="card-subtext">无障碍受限时兜底</text>
+
+  <path d="M 500 400 L 500 440" class="line" marker-end="url(#arrow)"/>
+
+  <!-- 4. Data Access Layer -->
+  <rect x="100" y="630" width="800" height="120" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="100" y="630" width="160" height="120" fill="url(#uiGrad)" rx="12"/>
+  <text x="180" y="695" text-anchor="middle" class="layer-title">网络与数据层</text>
+  
+  <rect x="290" y="655" width="270" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="425" y="685" text-anchor="middle" class="card-text">Retrofit REST API</text>
+  <text x="425" y="705" text-anchor="middle" class="card-subtext">慢路径任务提交 / 同步历史数据</text>
+
+  <rect x="610" y="655" width="270" height="70" rx="6" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="745" y="685" text-anchor="middle" class="card-text">WebSocket 常驻连接通道</text>
+  <text x="745" y="705" text-anchor="middle" class="card-subtext">断线重连 / 实时家庭强推警报</text>
+
+  <path d="M 500 590 L 500 630" class="line" marker-end="url(#arrow)"/>
+</svg>
+

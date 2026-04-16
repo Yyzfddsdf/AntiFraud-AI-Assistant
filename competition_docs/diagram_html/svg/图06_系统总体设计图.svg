@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="850" viewBox="0 0 1000 850">
+  <defs>
+    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EFF6FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DBEAFE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EEF2FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0E7FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-cyan" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ECFEFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CFFAFE;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <style type="text/css">
+    .bg { fill: #F8FAFC; }
+    .title { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
+    .grid-block { fill: #FFFFFF; stroke-width: 1.5; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02)); }
+    .grid-header { stroke-width: 1.5; }
+    .grid-title { font-family: "PingFang SC", sans-serif; font-size: 15px; font-weight: 800; fill: #1E293B; }
+    .card { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.2; rx: 10; ry: 10; }
+    .card-title { font-family: "PingFang SC", sans-serif; font-size: 13px; font-weight: 700; fill: #1E293B; }
+    .card-desc { font-family: "PingFang SC", sans-serif; font-size: 11px; fill: #64748B; }
+    .line { stroke: #94A3B8; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+  </style>
+
+  <rect width="1000" height="850" class="bg"/>
+  <text x="500" y="55" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) 系统架构设计</text>
+
+  <!-- LAYER 1: UI / Terminal (Blue) -->
+  <g transform="translate(50, 115)">
+    <rect width="900" height="155" rx="16" ry="16" class="grid-block" stroke="#3B82F6"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="grid-header" fill="url(#grad-blue)" stroke="#3B82F6"/>
+    <text x="20" y="25" class="grid-title" fill="#1D4ED8">1. 用户展现交互 (Terminal)</text>
+    
+    <g transform="translate(45, 65)">
+        <rect width="240" height="75" class="card"/>
+        <text x="120" y="32" text-anchor="middle" class="card-title">用户侧 H5/Vue</text>
+        <text x="120" y="52" text-anchor="middle" class="card-desc">全场景反诈咨询与全景报告</text>
+    </g>
+
+    <g transform="translate(330, 65)">
+        <rect width="240" height="75" class="card"/>
+        <text x="120" y="32" text-anchor="middle" class="card-title">治理控制台 (React)</text>
+        <text x="120" y="52" text-anchor="middle" class="card-desc">案例研判、图谱治理与可视大屏</text>
+    </g>
+
+    <g transform="translate(615, 65)">
+        <rect width="240" height="75" class="card" stroke="#10B981" stroke-width="2"/>
+        <text x="120" y="32" text-anchor="middle" class="card-title" fill="#065F46">Android 系统级守护</text>
+        <text x="120" y="52" text-anchor="middle" class="card-desc">无障碍实时侦测与拦截钩子</text>
+    </g>
+  </g>
+
+  <!-- LAYER 2: Logic Layer (Indigo) -->
+  <g transform="translate(50, 290)">
+    <rect width="585" height="350" rx="16" ry="16" class="grid-block" stroke="#6366F1"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="grid-header" fill="url(#grad-indigo)" stroke="#6366F1"/>
+    <text x="20" y="25" class="grid-title" fill="#4338CA">2. 核心业务与 AI 编排</text>
+
+    <g transform="translate(35, 75)">
+        <rect width="250" height="115" class="card" stroke="#6366F1" stroke-width="2"/>
+        <text x="125" y="45" text-anchor="middle" class="card-title" fill="#4338CA">主智能体协同框架</text>
+        <text x="125" y="70" text-anchor="middle" class="card-desc">核心研判、逻辑推演与任务分发</text>
+    </g>
+
+    <g transform="translate(305, 75)">
+        <rect width="250" height="115" class="card"/>
+        <text x="125" y="45" text-anchor="middle" class="card-title">多模态专家组 Agent</text>
+        <text x="125" y="70" text-anchor="middle" class="card-desc">图/音/文专项解析与取证</text>
+    </g>
+
+    <g transform="translate(35, 210)">
+        <rect width="250" height="115" class="card"/>
+        <text x="125" y="45" text-anchor="middle" class="card-title">实时 RAG 知识召回</text>
+        <text x="125" y="70" text-anchor="middle" class="card-desc">关联全量历史案例与法律知识库</text>
+    </g>
+
+    <g transform="translate(305, 210)">
+        <rect width="250" height="115" class="card" stroke="#F59E0B" stroke-width="1.5"/>
+        <text x="125" y="45" text-anchor="middle" class="card-title" fill="#92400E">家庭防线实时预警</text>
+        <text x="125" y="70" text-anchor="middle" class="card-desc">WebSocket 驱动的多端风险广播</text>
+    </g>
+  </g>
+
+  <!-- LAYER 3: Infra Layer (Cyan) -->
+  <g transform="translate(650, 290)">
+    <rect width="300" height="350" rx="16" ry="16" class="grid-block" stroke="#0891B2"/>
+    <path d="M 0 16 Q 0 0 16 0 L 184 0 Q 200 0 200 16 L 200 40 L 0 40 Z" class="grid-header" fill="url(#grad-cyan)" stroke="#0891B2"/>
+    <text x="20" y="25" class="grid-title" fill="#0E7490">3. 基础设施层</text>
+
+    <rect x="30" y="65" width="240" height="60" rx="12" fill="#F8FAFC" stroke="#CFFAFE"/>
+    <text x="150" y="100" text-anchor="middle" class="card-title" fill="#0E7490">向量存取驱动层</text>
+
+    <rect x="30" y="135" width="240" height="60" rx="12" fill="#F8FAFC" stroke="#CFFAFE"/>
+    <text x="150" y="170" text-anchor="middle" class="card-title" fill="#0E7490">LLM 统一接入中台</text>
+
+    <rect x="30" y="205" width="240" height="60" rx="12" fill="#F8FAFC" stroke="#CFFAFE"/>
+    <text x="150" y="240" text-anchor="middle" class="card-title" fill="#0E7490">全路径日志审计</text>
+
+    <rect x="30" y="275" width="240" height="60" rx="12" fill="#F8FAFC" stroke="#CFFAFE"/>
+    <text x="150" y="310" text-anchor="middle" class="card-title" fill="#0E7490">可观测性监控大屏</text>
+  </g>
+
+  <!-- LAYER 4: Persistence (Slate) -->
+  <g transform="translate(50, 660)">
+    <rect width="900" height="150" rx="16" ry="16" class="grid-block" stroke="#64748B"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="grid-header" fill="#F1F5F9" stroke="#64748B"/>
+    <text x="20" y="25" class="grid-title" fill="#334155">4. 持久化数据层 (Persistence)</text>
+
+    <g transform="translate(45, 60)">
+        <rect width="260" height="75" class="card"/>
+        <text x="130" y="32" text-anchor="middle" class="card-title">业务主数据库</text>
+        <text x="130" y="55" text-anchor="middle" class="card-desc">用户隐私数据脱敏存证库</text>
+    </g>
+
+    <g transform="translate(330, 60)">
+        <rect width="260" height="75" class="card"/>
+        <text x="130" y="32" text-anchor="middle" class="card-title">反诈分级案例库</text>
+        <text x="130" y="55" text-anchor="middle" class="card-desc">针对分级判研的高校向量检索存证</text>
+    </g>
+
+    <g transform="translate(615, 60)">
+        <rect width="240" height="75" class="card"/>
+        <text x="120" y="32" text-anchor="middle" class="card-title">分布式活跃缓存</text>
+        <text x="120" y="55" text-anchor="middle" class="card-desc">会话高频读写与拦截状态缓存</text>
+    </g>
+  </g>
+
+  <!-- CONNECTORS -->
+  <path d="M 500 270 Q 500 280 500 290" class="line"/>
+  <path d="M 500 640 Q 500 650 500 660" class="line"/>
+
+</svg>
+

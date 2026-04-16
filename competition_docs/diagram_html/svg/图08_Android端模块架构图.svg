@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="850" viewBox="0 0 1000 850">
+  <defs>
+    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EFF6FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DBEAFE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ECFDF5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D1FAE5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <style type="text/css">
+    .bg { fill: #F8FAFC; }
+    .title { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 26px; font-weight: 800; fill: #0F172A; }
+    .subtitle { font-family: "PingFang SC", sans-serif; font-size: 14px; fill: #64748B; }
+    .bento-card { fill: #FFFFFF; stroke-width: 1.5; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02)); }
+    .bento-header { stroke-width: 1.5; }
+    .bento-title { font-family: "PingFang SC", sans-serif; font-size: 14px; font-weight: 800; fill: #1E293B; }
+    .item-text { font-family: "PingFang SC", sans-serif; font-size: 11px; fill: #475569; }
+    .box { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1.2; rx: 12; ry: 12; }
+    .box-highlight { fill: #FFFFFF; stroke-width: 2; rx: 12; ry: 12; }
+  </style>
+
+  <rect width="1000" height="850" class="bg"/>
+  <text x="500" y="55" text-anchor="middle" class="title">Android 原生端模块设计架构</text>
+
+  <!-- Top Left: UI Layer (Blue) -->
+  <g transform="translate(60, 130)">
+    <rect width="420" height="200" rx="16" ry="16" class="bento-card" stroke="#3B82F6"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="bento-header" fill="url(#grad-blue)" stroke="#3B82F6"/>
+    <text x="20" y="25" class="bento-title" fill="#1D4ED8">展现交互层 (UI Layer)</text>
+    
+    <g transform="translate(25, 65)">
+        <rect width="175" height="110" class="box"/>
+        <text x="87" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#1E3A8A">移动端 H5 容器</text>
+        <text x="87" y="70" text-anchor="middle" class="item-text">Vue/SFC 全量载入</text>
+    </g>
+    
+    <g transform="translate(220, 65)">
+        <rect width="175" height="110" class="box-highlight" stroke="#F59E0B"/>
+        <text x="87" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#92400E">风险预警悬浮窗</text>
+        <text x="87" y="70" text-anchor="middle" class="item-text" fill="#92400E">System Overlay UI</text>
+    </g>
+  </g>
+
+  <!-- Top Right: Bridge & Network (Slate/Cyan) -->
+  <g transform="translate(500, 130)">
+    <rect width="440" height="200" rx="16" ry="16" class="bento-card" stroke="#64748B"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="bento-header" fill="#F8FAFC" stroke="#64748B"/>
+    <text x="20" y="25" class="bento-title" fill="#334155">通讯路由与传输层 (Connect)</text>
+
+    <g transform="translate(30, 65)">
+        <rect width="180" height="110" class="box" stroke="#0891B2"/>
+        <text x="90" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#0E7490">JSBridge 连接枢纽</text>
+        <text x="90" y="75" text-anchor="middle" class="item-text">原生 Native 与 H5 跨端路由</text>
+    </g>
+
+    <g transform="translate(230, 65)">
+        <rect width="180" height="110" class="box"/>
+        <text x="90" y="45" text-anchor="middle" class="item-text" font-weight="800">网络通讯适配器</text>
+        <text x="90" y="75" text-anchor="middle" class="item-text">Retrofit / OkHttp / WS</text>
+    </g>
+  </g>
+
+  <!-- Bottom Left: System Services (Emerald) -->
+  <g transform="translate(60, 350)">
+    <rect width="320" height="450" rx="16" ry="16" class="bento-card" stroke="#10B981"/>
+    <path d="M 0 16 Q 0 0 16 0 L 214 0 Q 230 0 230 16 L 230 40 L 0 40 Z" class="bento-header" fill="url(#grad-emerald)" stroke="#10B981"/>
+    <text x="20" y="25" class="bento-title" fill="#065F46">后台守护层 (Service)</text>
+
+    <g transform="translate(30, 65)">
+        <rect width="260" height="120" class="box-highlight" stroke="#10B981"/>
+        <text x="130" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#065F46">无障碍守护中心 Hub</text>
+        <text x="130" y="75" text-anchor="middle" class="item-text" fill="#065F46">核心侦测与拦截触发逻辑</text>
+    </g>
+
+    <g transform="translate(30, 205)">
+        <rect width="260" height="110" class="box"/>
+        <text x="130" y="45" text-anchor="middle" class="item-text" font-weight="800">业务生命周期守护</text>
+        <text x="130" y="75" text-anchor="middle" class="item-text">Background Keep-alive</text>
+    </g>
+
+    <g transform="translate(30, 335)">
+        <rect width="260" height="95" class="box"/>
+        <text x="130" y="45" text-anchor="middle" class="item-text" font-weight="800">本地任务异步调度</text>
+        <text x="130" y="70" text-anchor="middle" class="item-text">Job Scheduler 离线同步</text>
+    </g>
+  </g>
+
+  <!-- Bottom Right: Native Core (Blue) -->
+  <g transform="translate(400, 350)">
+    <rect width="540" height="450" rx="16" ry="16" class="bento-card" stroke="#3B82F6"/>
+    <path d="M 0 16 Q 0 0 16 0 L 234 0 Q 250 0 250 16 L 250 40 L 0 40 Z" class="bento-header" fill="url(#grad-blue)" stroke="#3B82F6"/>
+    <text x="20" y="25" class="bento-title" fill="#1D4ED8">原生底层能力域 (Native)</text>
+
+    <g transform="translate(30, 70)">
+        <rect width="480" height="130" class="box-highlight" stroke="#3B82F6"/>
+        <text x="240" y="40" text-anchor="middle" class="item-text" font-weight="800" fill="#1E40AF">本地 OCR 语义处理引擎</text>
+        <text x="40" y="80" class="item-text" fill="#1D4ED8">• 截图序列流水化管理 (Image Process Pipeline)</text>
+        <text x="40" y="105" class="item-text" fill="#1D4ED8">• 本地化模型推理接口 (Offline TFLite Model)</text>
+    </g>
+
+    <g transform="translate(30, 220)">
+        <rect width="230" height="200" class="box"/>
+        <text x="115" y="45" text-anchor="middle" class="item-text" font-weight="800">全场景屏幕采集</text>
+        <text x="25" y="85" class="item-text">• MediaProjection API</text>
+        <text x="25" y="115" class="item-text">• 隐私画面动态脱敏</text>
+        <text x="25" y="145" class="item-text">• 截图缓存生命周期</text>
+    </g>
+
+    <g transform="translate(280, 220)">
+        <rect width="230" height="200" class="box" stroke="#6366F1" stroke-width="1.5"/>
+        <text x="115" y="45" text-anchor="middle" class="item-text" font-weight="800" fill="#4338CA">端侧加密持久化</text>
+        <text x="25" y="85" class="item-text" fill="#4338CA">• Room 本地分析存证</text>
+        <text x="25" y="115" class="item-text" fill="#4338CA">• SQLCipher 全盘硬加密</text>
+        <text x="25" y="145" class="item-text" fill="#4338CA">• 风险指纹安全存证</text>
+    </g>
+  </g>
+
+</svg>

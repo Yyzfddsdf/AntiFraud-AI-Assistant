@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+
+    <linearGradient id="tableHeader" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="tableHeaderAlt" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#6D28D9" />
+    </linearGradient>
+    
+    <!-- 1:N crow's foot marker -->
+    <marker id="crowFoot" viewBox="0 0 12 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 12 5 L 0 5 M 0 0 L 12 5 L 0 10 M 8 0 L 8 10" stroke="#64748B" stroke-width="2" fill="none"/>
+    </marker>
+    <!-- 1:1 marker / One -->
+    <marker id="one" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 5 L 10 5 M 3 0 L 3 10 M 7 0 L 7 10" stroke="#64748B" stroke-width="2" fill="none"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; fill: #1E293B; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 500; fill: #64748B; }
+    .table-title { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; fill: #FFFFFF; }
+    .field-key { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 600; fill: #D97706; }
+    .field-fk { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 600; fill: #3B82F6; }
+    .field-name { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 500; fill: #334155; }
+    .field-type { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 400; fill: #94A3B8; text-anchor: end; }
+    .line { stroke: #94A3B8; stroke-width: 2; fill: none; }
+    .db-label { font-family: system-ui, -apple-system, sans-serif; font-size: 24px; font-weight: 700; fill: #CBD5E1; letter-spacing: 4px; }
+  </style>
+
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  
+  <text x="600" y="50" text-anchor="middle" class="title">反诈卫士 (Sentinel AI) - 数据库实体关系 (ER) 图</text>
+  <text x="600" y="80" text-anchor="middle" class="subtitle">展示双库分离架构下，主业务对象与历史案例知识实体的数据关联</text>
+
+  <!-- DB Areas Backgrounds -->
+  <rect x="50" y="120" width="700" height="640" rx="16" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="8"/>
+  <text x="400" y="440" text-anchor="middle" class="db-label" transform="rotate(-90 400 440) translate(0 150)">主业务数据库 (auth_system.db)</text>
+
+  <rect x="800" y="120" width="350" height="640" rx="16" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="8"/>
+  <text x="975" y="440" text-anchor="middle" class="db-label" transform="rotate(-90 975 440) translate(0 120)">案例库 (knowledge.db)</text>
+
+  <!-- TABLE: users -->
+  <rect x="100" y="160" width="220" height="150" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="100" y="160" width="220" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="100" y="180" width="220" height="16" fill="url(#tableHeader)"/>
+  <text x="115" y="184" class="table-title">users (用户表)</text>
+  <text x="115" y="215" class="field-key">PK</text> <text x="145" y="215" class="field-name">id</text> <text x="310" y="215" class="field-type">int</text>
+  <text x="145" y="240" class="field-name">username</text> <text x="310" y="240" class="field-type">varchar</text>
+  <text x="145" y="265" class="field-name">phone</text> <text x="310" y="265" class="field-type">varchar</text>
+  <text x="145" y="290" class="field-name">recent_labels</text> <text x="310" y="290" class="field-type">json</text>
+  <line x1="100" y1="225" x2="320" y2="225" stroke="#E2E8F0"/>
+
+  <!-- TABLE: history_cases -->
+  <rect x="100" y="400" width="220" height="180" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="100" y="400" width="220" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="100" y="420" width="220" height="16" fill="url(#tableHeader)"/>
+  <text x="115" y="424" class="table-title">history_cases (历史归档)</text>
+  <text x="115" y="455" class="field-key">PK</text> <text x="145" y="455" class="field-name">id</text> <text x="310" y="455" class="field-type">int</text>
+  <text x="115" y="480" class="field-fk">FK</text> <text x="145" y="480" class="field-name">user_id</text> <text x="310" y="480" class="field-type">int</text>
+  <text x="145" y="505" class="field-name">scam_type</text> <text x="310" y="505" class="field-type">varchar</text>
+  <text x="145" y="530" class="field-name">risk_level</text> <text x="310" y="530" class="field-type">varchar</text>
+  <text x="145" y="555" class="field-name">report_json</text> <text x="310" y="555" class="field-type">json</text>
+  <line x1="100" y1="465" x2="320" y2="465" stroke="#E2E8F0"/>
+
+  <!-- Join users to history_cases (1:N) -->
+  <path d="M 210 310 L 210 355 L 210 400" class="line" marker-start="url(#one)" marker-end="url(#crowFoot)"/>
+
+  <!-- TABLE: user_history_vectors -->
+  <rect x="100" y="630" width="220" height="110" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="100" y="630" width="220" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="100" y="650" width="220" height="16" fill="url(#tableHeader)"/>
+  <text x="115" y="654" class="table-title">user_history_vectors</text>
+  <text x="115" y="685" class="field-key">PK</text> <text x="145" y="685" class="field-name">record_id</text> <text x="310" y="685" class="field-type">int</text>
+  <text x="115" y="710" class="field-fk">FK</text> <text x="145" y="710" class="field-name">user_id</text> <text x="310" y="710" class="field-type">int</text>
+  <text x="145" y="730" class="field-name">embedding</text> <text x="310" y="730" class="field-type">blob</text>
+  <line x1="100" y1="695" x2="320" y2="695" stroke="#E2E8F0"/>
+
+  <!-- Join history_cases to user_history_vectors (1:1) -->
+  <path d="M 210 580 L 210 630" class="line" marker-start="url(#one)" marker-end="url(#one)"/>
+
+
+  <!-- TABLE: family_groups -->
+  <rect x="450" y="160" width="240" height="120" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="450" y="160" width="240" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="450" y="180" width="240" height="16" fill="url(#tableHeader)"/>
+  <text x="465" y="184" class="table-title">family_groups (家庭组)</text>
+  <text x="465" y="215" class="field-key">PK</text> <text x="495" y="215" class="field-name">id</text> <text x="680" y="215" class="field-type">int</text>
+  <text x="465" y="240" class="field-fk">FK</text> <text x="495" y="240" class="field-name">owner_id</text> <text x="680" y="240" class="field-type">int</text>
+  <text x="495" y="265" class="field-name">invite_code</text> <text x="680" y="265" class="field-type">varchar</text>
+
+  <!-- Join users to family_groups (1:1 / N:1) -->
+  <path d="M 320 200 L 450 200" class="line" marker-start="url(#one)" marker-end="url(#crowFoot)"/>
+
+
+  <!-- TABLE: family_members -->
+  <rect x="450" y="340" width="240" height="120" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="450" y="340" width="240" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="450" y="360" width="240" height="16" fill="url(#tableHeader)"/>
+  <text x="465" y="364" class="table-title">family_members (成员表)</text>
+  <text x="465" y="395" class="field-key">PK</text> <text x="495" y="395" class="field-name">id</text> <text x="680" y="395" class="field-type">int</text>
+  <text x="465" y="420" class="field-fk">FK</text> <text x="495" y="420" class="field-name">group_id</text> <text x="680" y="420" class="field-type">int</text>
+  <text x="465" y="445" class="field-fk">FK</text> <text x="495" y="445" class="field-name">user_id</text> <text x="680" y="445" class="field-type">int</text>
+  
+  <path d="M 570 280 L 570 340" class="line" marker-start="url(#one)" marker-end="url(#crowFoot)"/>
+
+
+  <!-- TABLE: family_notifications -->
+  <rect x="450" y="520" width="240" height="150" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="450" y="520" width="240" height="36" fill="url(#tableHeader)" rx="8"/>
+  <rect x="450" y="540" width="240" height="16" fill="url(#tableHeader)"/>
+  <text x="465" y="544" class="table-title">family_notifications (通知)</text>
+  <text x="465" y="575" class="field-key">PK</text> <text x="495" y="575" class="field-name">id</text> <text x="680" y="575" class="field-type">int</text>
+  <text x="465" y="600" class="field-fk">FK</text> <text x="495" y="600" class="field-name">group_id</text> <text x="680" y="600" class="field-type">int</text>
+  <text x="465" y="625" class="field-fk">FK</text> <text x="495" y="625" class="field-name">case_id</text> <text x="680" y="625" class="field-type">int</text>
+  <text x="495" y="650" class="field-name">status</text> <text x="680" y="650" class="field-type">bool</text>
+
+  <path d="M 570 460 L 570 520" class="line" marker-start="url(#one)" marker-end="url(#crowFoot)"/>
+  <!-- Link from history_cases to notes (1:1 / N:M proxy)-->
+  <path d="M 320 540 L 450 540" class="line" stroke-dasharray="4" marker-end="url(#one)"/>
+  <text x="385" y="530" class="field-type">trigger</text>
+
+  <!-- TABLE: pending_review_cases -->
+  <rect x="850" y="160" width="260" height="150" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="850" y="160" width="260" height="36" fill="url(#tableHeaderAlt)" rx="8"/>
+  <rect x="850" y="180" width="260" height="16" fill="url(#tableHeaderAlt)"/>
+  <text x="865" y="184" class="table-title">pending_review_cases (待审)</text>
+  <text x="865" y="215" class="field-key">PK</text> <text x="895" y="215" class="field-name">id</text> <text x="1100" y="215" class="field-type">int</text>
+  <text x="895" y="240" class="field-name">title</text> <text x="1100" y="240" class="field-type">varchar</text>
+  <text x="895" y="265" class="field-name">source_user_id</text> <text x="1100" y="265" class="field-type">int</text>
+  <text x="895" y="290" class="field-name">risk_level</text> <text x="1100" y="290" class="field-type">varchar</text>
+
+  <!-- TABLE: historical_case_library -->
+  <rect x="850" y="400" width="260" height="180" fill="#FFFFFF" rx="8" filter="url(#shadow)"/>
+  <rect x="850" y="400" width="260" height="36" fill="url(#tableHeaderAlt)" rx="8"/>
+  <rect x="850" y="420" width="260" height="16" fill="url(#tableHeaderAlt)"/>
+  <text x="865" y="424" class="table-title">historical_case_library (精审案例)</text>
+  <text x="865" y="455" class="field-key">PK</text> <text x="895" y="455" class="field-name">case_id</text> <text x="1100" y="455" class="field-type">int</text>
+  <text x="895" y="480" class="field-name">scam_type</text> <text x="1100" y="480" class="field-type">varchar</text>
+  <text x="895" y="505" class="field-name">tactics_list</text> <text x="1100" y="505" class="field-type">json</text>
+  <text x="895" y="530" class="field-name">embedding</text> <text x="1100" y="530" class="field-type">blob</text>
+  <text x="895" y="555" class="field-name">legal_basis</text> <text x="1100" y="555" class="field-type">text</text>
+
+  <path d="M 980 310 L 980 400" class="line" stroke-dasharray="8" marker-start="url(#crowFoot)" marker-end="url(#one)"/>
+  <text x="1040" y="360" class="field-type">Approve Process</text>
+
+  <!-- Link from history_cases (Main) to Pending Review (Knowledge) -->
+  <path d="M 210 580 L 210 750 L 800 750 L 980 750 L 980 580" class="line" stroke-dasharray="4"/>
+  <text x="600" y="740" class="field-type" fill="#D97706">Typcial Cases Promoted to Library Matrix.</text>
+
+</svg>
+

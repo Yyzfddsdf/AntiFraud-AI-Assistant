@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 400" width="100%" height="100%">
+  <defs>
+    <filter id="cardShadow3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+    <clipPath id="cardClip3">
+      <rect width="260" height="380" rx="16" />
+    </clipPath>
+  </defs>
+
+  <g transform="translate(10, 10)">
+    <rect width="260" height="380" rx="16" fill="#FFFFFF" filter="url(#cardShadow3)" />
+    <g clip-path="url(#cardClip3)">
+      <rect width="260" height="8" fill="#14B8A6" />
+      
+      <circle cx="130" cy="90" r="44" fill="#CCFBF1" />
+      <path d="M100,110 V75 Q115,70 130,80 V115 Q115,105 100,110 Z" fill="#5EEAD4" />
+      <path d="M160,110 V75 Q145,70 130,80 V115 Q145,105 160,110 Z" fill="#2DD4BF" />
+      <path d="M130,80 Q115,55 130,55 Q145,55 130,80" fill="#14B8A6" />
+      
+      <text x="130" y="170" font-family="sans-serif" font-size="14" font-weight="bold" fill="#94A3B8" text-anchor="middle" letter-spacing="1">业务模式 3</text>
+      <text x="130" y="205" font-family="sans-serif" font-size="22" font-weight="bold" fill="#1E293B" text-anchor="middle">教育与公益服务</text>
+      
+      <line x1="90" y1="230" x2="170" y2="230" stroke="#E2E8F0" stroke-width="2" />
+      
+      <text x="130" y="270" font-family="sans-serif" font-size="14" fill="#475569" text-anchor="middle">面向社区、学校、公益平台</text>
+      <text x="130" y="295" font-family="sans-serif" font-size="14" fill="#475569" text-anchor="middle">提供宣传教育、模拟训练</text>
+      <text x="130" y="320" font-family="sans-serif" font-size="14" fill="#475569" text-anchor="middle">和辅助判断能力。</text>
+    </g>
+  </g>
+</svg>
