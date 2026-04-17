@@ -20,3 +20,4 @@ frontend/desktop-vue/dist
 frontend/mobile-vue/node_modules
 frontend/mobile-vue/dist
 .agents/
+scripts/
